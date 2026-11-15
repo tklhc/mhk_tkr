@@ -2,6 +2,7 @@ import { takimProfili } from "../geometry/profil";
 import { sayfaDuzeni, olcekYaz } from "./sayfaDuzeni";
 import { Draggable } from "./Draggable";
 import { YanGorunus } from "./YanGorunus";
+import { DetayA } from "./DetayA";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
 import { CIZGI, YAZI } from "./iso";
@@ -33,6 +34,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
       <rect x={c.x} y={c.y} width={c.w} height={c.h} fill="none" stroke={CIZGI.renk} strokeWidth={0.7} />
 
       <YanGorunus params={params} yerlesim={yan} {...ek} />
+      <DetayA params={params} yerlesim={yan} {...ek} />
       <UcGorunus params={params} yerlesim={uc} {...ek} />
       <Antet params={params} sayfa={duzen} olcekMetni={olcekMetni} />
 

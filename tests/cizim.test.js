@@ -67,3 +67,31 @@ describe("yeni tipler ve sap detayı çizimi", () => {
     expect(render({ ...DEFAULT_PARAMS, ...ek[3] })).toContain("DIN 6535-HB");
   });
 });
+
+import { detayOzelligi } from "../src/drawing/DetayA.jsx";
+import { takimProfili } from "../src/geometry/profil.js";
+
+describe("Detay A", () => {
+  const ozel = (ek) => { const p = { ...DEFAULT_PARAMS, ...ek }; return detayOzelligi(p, takimProfili(p)); };
+  it("radyüs frezede R etiketi ve merkez yay merkezinde", () => {
+    const f = ozel({ toolType: "bullnose", D: 12, d: 12, L: 75, rCorner: 1 });
+    expect(f.metin).toBe("R1");
+    expect(f.cx).toBe(74);
+    expect(f.cr).toBe(5);
+  });
+  it("pah ve rayba girişinde pah etiketi", () => {
+    expect(ozel({ toolType: "chamfer", chamferSize: 3 }).metin).toBe("3×45°");
+    expect(ozel({ toolType: "reamer", chamferSize: 0.5, helix: 0 }).metin).toBe("0,5×45°");
+  });
+  it("matkapta uç açısı", () => {
+    expect(ozel({ toolType: "drill", pointAngle: 118 }).metin).toBe("118°");
+  });
+  it("düz frezede detay yok", () => {
+    expect(ozel({ toolType: "flat" })).toBeNull();
+  });
+  it("sayfada: radyüs frezede DETAY A çizilir, düz frezede çizilmez", () => {
+    const r = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
+    expect(r).toMatch(/DETAY A \(\d+:1\)/);
+    expect(render({ ...DEFAULT_PARAMS, toolType: "flat" })).not.toContain("DETAY A");
+  });
+});
