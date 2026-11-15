@@ -44,3 +44,26 @@ describe("Sayfa çizimi", () => {
     expect(tarihYaz("", new Date(2026, 0, 5))).toBe("05.01.2026");
   });
 });
+
+describe("yeni tipler ve sap detayı çizimi", () => {
+  const ek = [
+    { toolName: "R1", toolType: "reamer", D: 10, d: 10, L: 100, l1: 40, chamferSize: 0.5, helix: 0, z: 6 },
+    { toolName: "K1", toolType: "taperreamer", D: 10, d: 10, L: 100, l1: 50, tipD: 9, helix: 0, z: 6 },
+    { toolName: "T1", toolType: "tslot", D: 16, d: 10, L: 80, l1: 3, l2: 12, neckDia: 8, helix: 0 },
+    { toolName: "HB1", D: 10, d: 10, L: 100, l1: 30, sapTipi: "HB" },
+    { toolName: "HE1", D: 10, d: 10, L: 100, l1: 30, sapTipi: "HE", sapDuzUzunluk: 18, sapDuzDerinlik: 0.8 },
+  ];
+  for (const e of ek) {
+    it(`${e.toolName}: çizilir, NaN yok`, () => {
+      const svg = render({ ...DEFAULT_PARAMS, ...e });
+      expect(svg).not.toMatch(/NaN|undefined|Infinity/);
+      expect(svg).toContain(e.toolName);
+    });
+  }
+  it("konik rayba koniklik oranını yazar", () => {
+    expect(render({ ...DEFAULT_PARAMS, ...ek[1] })).toContain("Konik 1:50");
+  });
+  it("Weldon düzlüğü DIN 6535-HB etiketiyle", () => {
+    expect(render({ ...DEFAULT_PARAMS, ...ek[3] })).toContain("DIN 6535-HB");
+  });
+});

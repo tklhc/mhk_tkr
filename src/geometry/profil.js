@@ -55,6 +55,7 @@ export function takimProfili(params) {
   const neckAngle = sayi(params.neckAngle, 45);
   const rCorner = sayi(params.rCorner);
   const chamferSize = sayi(params.chamferSize);
+  const tipD = sayi(params.tipD);
   const pointAngle = sayi(params.pointAngle, 140) || 140;
   const dCore = sayi(params.dCore);
   const hatalar = [];
@@ -97,7 +98,11 @@ export function takimProfili(params) {
   if (l2 > 0 && d > nD && !(neckAngle > 0 && neckAngle < 90)) hata("neckAngle", "Geçiş açısı 0° ile 90° arasında olmalı.");
   if (dCore > 0 && dCore >= D) hata("dCore", `Çekirdek çapı (${dCore}) kesici çaptan (${D}) küçük olmalı.`);
   if (tip === "bullnose" && rCorner > D / 2) hata("rCorner", `Köşe radyüsü (${rCorner}) çapın yarısından (${D / 2}) büyük olamaz.`);
-  if (tip === "chamfer" && chamferSize > D / 2) hata("chamferSize", `Pah boyu (${chamferSize}) çapın yarısından (${D / 2}) büyük olamaz.`);
+  if ((tip === "chamfer" || tip === "reamer") && chamferSize > D / 2) hata("chamferSize", `Pah boyu (${chamferSize}) çapın yarısından (${D / 2}) büyük olamaz.`);
+  if (tip === "taperreamer") {
+    if (!(tipD > 0)) hata("tipD", "Konik rayba için uç çapı (tipD) girilmeli.");
+    else if (tipD >= D) hata("tipD", `Uç çapı (${tipD}) büyük uç çapından (${D}) küçük olmalı.`);
+  }
   if (tip === "ballnose" && D / 2 > l1) hata("l1", `Küre frezede kesici boy (${l1}) yarıçaptan (${D / 2}) kısa olamaz.`);
   if (tip === "drill" && !(pointAngle > 0 && pointAngle < 180)) hata("pointAngle", "Uç açısı 0° ile 180° arasında olmalı.");
 
@@ -110,9 +115,34 @@ export function takimProfili(params) {
   } else {
     kenar(sapSonu, Math.min(hd, hD));
   }
+  // Sap detayı: DIN 6535 HB (Weldon düzlüğü) ve HE (Whistle Notch, eğimli düzlük).
+  // Düzlük sapın serbest ucunda, üst yarıda çizilir; alt yarı tam daire kalır.
+  // Uzunluk/derinlik girilmezse yaklaşık otomatik değer alınır (standart tablosu DEĞİL).
+  const sapDuzu = () => {
+    const sapTipi = params.sapTipi === "HB" || params.sapTipi === "HE" ? params.sapTipi : "HA";
+    if (sapTipi === "HA" || !(sapBoyu > 0)) return null;
+    let uzunluk = sayi(params.sapDuzUzunluk), derinlik = sayi(params.sapDuzDerinlik);
+    const oto = { uzunluk: !(uzunluk > 0), derinlik: !(derinlik > 0) };
+    if (oto.uzunluk) uzunluk = Math.min(2 * d, 0.7 * sapBoyu);
+    if (oto.derinlik) derinlik = 0.1 * d;
+    const rampa = sapTipi === "HB" ? derinlik : 0; // HB düzlüğünün çıkış rampası 45°
+    if (derinlik >= hd) hata("sapDuzDerinlik", `Düzlük derinliği (${derinlik}) sap yarıçapından (${hd}) küçük olmalı.`);
+    if (uzunluk + rampa > sapBoyu - 1e-9) hata("sapDuzUzunluk", `Düzlük (${(uzunluk + rampa).toFixed(2)} mm) sap boyuna (${sapBoyu.toFixed(2)} mm) sığmıyor.`);
+    return { tip: sapTipi, uzunluk, derinlik, rampa, oto };
+  };
+  const duzUygula = (ust, duz) => {
+    const { uzunluk: uz, derinlik: t, rampa } = duz;
+    const yeni = duz.tip === "HB"
+      ? [cizgi(0, 0, 0, hd - t), cizgi(0, hd - t, uz, hd - t), cizgi(uz, hd - t, uz + rampa, hd), cizgi(uz + rampa, hd, sapSonu, hd)]
+      : [cizgi(0, 0, 0, hd - t), cizgi(0, hd - t, uz, hd), cizgi(uz, hd, sapSonu, hd)];
+    return [...yeni, ...ust.slice(2)];
+  };
   const sonuc = (ust) => {
     kenarlar.sort((a, b) => a.x - b.x);
-    return { tip, D, d, L, l1, l2, nD, gecisBoyu, sapBoyu, x, kademeler, kenarlar, ust, hatalar };
+    const sonuc = { tip, D, d, L, l1, l2, nD, gecisBoyu, sapBoyu, x, kademeler, kenarlar, ust, ustAlt: null, sapDuz: null, konik: null, hatalar };
+    const duz = sapDuzu();
+    if (duz) { sonuc.ustAlt = ust; sonuc.ust = duzUygula(ust, duz); sonuc.sapDuz = duz; }
+    return sonuc;
   };
   const ust = [];
   ust.push(cizgi(0, 0, 0, hd));
@@ -126,6 +156,7 @@ export function takimProfili(params) {
   }
 
   const k0 = boyunSonu; // kesici bölümün başlangıcı
+  let konikOran = 0;
   const kademeler = [];
   // Sap/boğaz sonu ile kesici başlangıcındaki yarıçap (basamak çizgisi için)
   const oncekiY = l2 > 0 ? hN : hd;
@@ -176,7 +207,12 @@ export function takimProfili(params) {
     ust.push(cizgi(k0, hD, L - rCorner, hD));
     ust.push(yay(L - rCorner, hD - rCorner, rCorner, 90, 0));
     ust.push(cizgi(L, hD - rCorner, L, 0));
-  } else if (tip === "chamfer" && chamferSize > 0) {
+  } else if (tip === "taperreamer" && tipD > 0 && tipD < D) {
+    ust.push(cizgi(k0, hD, L, tipD / 2));
+    ust.push(cizgi(L, tipD / 2, L, 0));
+    kenar(k0, hD);
+    konikOran = l1 > 0 ? (D - tipD) / l1 : 0;
+  } else if ((tip === "chamfer" || tip === "reamer") && chamferSize > 0) {
     ust.push(cizgi(k0, hD, L - chamferSize, hD));
     ust.push(cizgi(L - chamferSize, hD, L, hD - chamferSize));
     ust.push(cizgi(L, hD - chamferSize, L, 0));
@@ -186,7 +222,9 @@ export function takimProfili(params) {
     ust.push(cizgi(L, hD, L, 0));
   }
 
-  return sonuc(ust);
+  const sonucu = sonuc(ust);
+  if (konikOran > 0) sonucu.konik = { oran: konikOran, bolen: 1 / konikOran };
+  return sonucu;
 }
 
 /** Bir parçanın x eksenine göre aynası (alt yarı için). */
@@ -200,8 +238,9 @@ function aynala(s) {
  * Eksen üzerindeki sıfır boylu parçalar atlanır.
  */
 export function tamKontur(profil) {
-  const ust = profil.ust.filter((s) => s.t === "A" || Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > EPS);
-  const alt = [...ust].reverse().map(aynala);
+  const uzun = (s) => s.t === "A" || Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > EPS;
+  const ust = profil.ust.filter(uzun);
+  const alt = [...(profil.ustAlt || profil.ust).filter(uzun)].reverse().map(aynala);
   return [...ust, ...alt];
 }
 

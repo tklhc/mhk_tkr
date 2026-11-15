@@ -140,3 +140,73 @@ describe("yaricapAt", () => {
     expect(pts[pts.length - 1][0]).toBeCloseTo(14, 9); expect(pts[pts.length - 1][1]).toBeCloseTo(0, 9);
   });
 });
+
+describe("yeni takım tipleri", () => {
+  it("rayba: girişte pah, kontur kapalı", () => {
+    const g = takimProfili(p({ toolType: "reamer", D: 10, d: 10, L: 100, l1: 40, chamferSize: 0.5, helix: 0 }));
+    expect(g.ust).toContainEqual({ t: "L", x1: 99.5, y1: 5, x2: 100, y2: 4.5 });
+    expect(kesintisizVeKapali(tamKontur(g))).toBe(true);
+    expect(g.hatalar).toEqual([]);
+  });
+
+  it("konik rayba: uç çapı küçük, konikliğe göre 1:N", () => {
+    const g = takimProfili(p({ toolType: "taperreamer", D: 10, d: 10, L: 100, l1: 50, tipD: 9 }));
+    expect(yaricapAt(g, 50)).toBe(5);
+    expect(yaricapAt(g, 100)).toBe(4.5);
+    expect(yaricapAt(g, 75)).toBeCloseTo(4.75, 9);
+    expect(g.konik.bolen).toBeCloseTo(50, 9);
+    expect(kesintisizVeKapali(tamKontur(g))).toBe(true);
+  });
+
+  it("konik rayba: uç çapı girilmemiş ya da büyükse uyarı", () => {
+    expect(takimProfili(p({ toolType: "taperreamer", tipD: 0 })).hatalar.map((h) => h.alan)).toContain("tipD");
+    expect(takimProfili(p({ toolType: "taperreamer", D: 10, tipD: 12 })).hatalar.map((h) => h.alan)).toContain("tipD");
+  });
+
+  it("T-freze: boğaz + kısa baş, kontur kapalı", () => {
+    const g = takimProfili(p({ toolType: "tslot", D: 16, d: 10, L: 80, l1: 3, l2: 12, neckDia: 8, neckAngle: 45 }));
+    expect(yaricapAt(g, 79)).toBe(8);     // baş
+    expect(yaricapAt(g, 70)).toBe(4);     // boğaz
+    expect(kesintisizVeKapali(tamKontur(g))).toBe(true);
+  });
+});
+
+describe("sap detayı (DIN 6535)", () => {
+  const ek = { D: 10, d: 10, L: 100, l1: 30, l2: 0 };
+
+  it("HA: düz sap, ustAlt yok", () => {
+    const g = takimProfili(p({ ...ek, sapTipi: "HA" }));
+    expect(g.sapDuz).toBeNull();
+    expect(g.ustAlt).toBeNull();
+  });
+
+  it("HB: üst yarıda düzlük, alt yarı tam daire; kontur kapalı", () => {
+    const g = takimProfili(p({ ...ek, sapTipi: "HB", sapDuzUzunluk: 20, sapDuzDerinlik: 1 }));
+    expect(g.sapDuz).toMatchObject({ tip: "HB", uzunluk: 20, derinlik: 1, rampa: 1 });
+    expect(yaricapAt(g, 10)).toBe(4);        // düzlük: 5 - 1
+    expect(yaricapAt(g, 40)).toBe(5);        // düzlük dışı
+    const kontur = tamKontur(g);
+    expect(kesintisizVeKapali(kontur)).toBe(true);
+    const alt = kontur.filter((s) => s.t === "L" && s.y1 < 0 && s.y2 < 0);
+    expect(alt.every((s) => Math.abs(s.y1) >= 4.999 || Math.abs(s.y2) >= 4.999 || s.x1 === s.x2)).toBe(true);
+  });
+
+  it("HE: eğimli düzlük", () => {
+    const g = takimProfili(p({ ...ek, sapTipi: "HE", sapDuzUzunluk: 20, sapDuzDerinlik: 1 }));
+    expect(yaricapAt(g, 0)).toBeCloseTo(4, 9);        // x=0'da derinlik 1 (hd - t)
+    expect(yaricapAt(g, 10)).toBeCloseTo(4.5, 9);     // yarıda derinlik 0,5
+    expect(kesintisizVeKapali(tamKontur(g))).toBe(true);
+  });
+
+  it("otomatik değer: uzunluk ≈ 2d, derinlik ≈ 0,1d ve işaretlenir", () => {
+    const g = takimProfili(p({ ...ek, sapTipi: "HB" }));
+    expect(g.sapDuz.oto).toEqual({ uzunluk: true, derinlik: true });
+    expect(g.sapDuz.uzunluk).toBe(20);
+    expect(g.sapDuz.derinlik).toBeCloseTo(1, 9);
+  });
+
+  it("sığmayan düzlük uyarı verir", () => {
+    const g = takimProfili(p({ ...ek, L: 40, l1: 30, sapTipi: "HB", sapDuzUzunluk: 20 }));
+    expect(g.hatalar.map((h) => h.alan)).toContain("sapDuzUzunluk");
+  });
+});

@@ -5,6 +5,16 @@ const TOOL_TYPES = {
   chamfer: "Pah (Chamfer)",
   drill: "Matkap (Drill)",
   stepdrill: "Kademeli Matkap (Step)",
+  reamer: "Rayba (Reamer)",
+  taperreamer: "Konik Rayba",
+  tslot: "T-Freze (T-Slot)",
+};
+
+// Takım tipine geçilirken uygulanan başlangıç değerleri (düzenlenebilir; standart değil)
+export const TIP_VARSAYILAN = {
+  reamer: (p) => ({ z: 6, helix: 0, chamferSize: p.chamferSize > 0 ? p.chamferSize : 0.5, l2: 0 }),
+  taperreamer: (p) => ({ z: 6, helix: 0, l2: 0, tipD: Math.max(0.1, Math.round((p.D - p.l1 / 50) * 100) / 100) }), // 1:50 konik
+  tslot: (p) => ({ z: Math.max(p.z || 0, 4), helix: 0, l1: 3, l2: 10, neckDia: Math.round(p.D * 0.5 * 10) / 10, neckAngle: 45 }),
 };
 
 const DEFAULT_PARAMS = {
@@ -22,6 +32,11 @@ const DEFAULT_PARAMS = {
   cutDir: "Sağ",
   rCorner: 0,
   chamferSize: 0,
+  tipD: 0,              // konik rayba: uç çapı
+  tolTip: "",
+  sapTipi: "HA",        // HA düz | HB Weldon düzlüklü | HE Whistle Notch
+  sapDuzUzunluk: 0,     // 0 = otomatik
+  sapDuzDerinlik: 0,    // 0 = otomatik
   pointAngle: 140,
   steps: [
     { dia: 10, len: 15, angle: 140, tolDia: "±0.01", tolLen: "±0.01" },

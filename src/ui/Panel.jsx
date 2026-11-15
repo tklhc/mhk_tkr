@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { TOOL_TYPES } from "../constants";
+import { TOOL_TYPES, TIP_VARSAYILAN } from "../constants";
 import { NI, TolInput, NIT } from "./inputs";
 import { LibraryPanel } from "./LibraryPanel";
 import { LOGO_IMG } from "../assets/images";
@@ -8,7 +8,7 @@ import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
 
 function Panel({ params, setParams, isMobile, showPanel, onClose }) {
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
-  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, page: true, doc: false, notes: false, cust: false, lib: false, step: true });
+  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, page: true, doc: false, notes: false, cust: false, lib: false, step: true, shank: false });
   const hatalar = takimProfili(params).hatalar;
   const togSec = useCallback((k) => setOpenSec((s) => ({ ...s, [k]: !s[k] })), []);
 
@@ -92,7 +92,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
       {/* ── TAKIM TİPİ (always visible) ── */}
       <div style={{ padding: "8px 12px", background: "var(--bg-surface)", borderBottom: "1px solid var(--border-mid)", flexShrink: 0 }}>
         <div style={{ fontSize: 8, fontWeight: 700, color: "var(--text-label)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 5, fontFamily: "var(--mono)" }}>▸ TAKIM TİPİ</div>
-        <select value={params.toolType} onChange={(e) => u("toolType", e.target.value)}
+        <select value={params.toolType} onChange={(e) => { const v = e.target.value; setParams((p) => ({ ...p, toolType: v, ...(TIP_VARSAYILAN[v] ? TIP_VARSAYILAN[v](p) : {}) })); }}
           style={{ ...INP, fontSize: 11.5, padding: "5px 8px", fontWeight: 600, color: "var(--accent)" }}>
           {Object.entries(TOOL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
@@ -157,7 +157,8 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
             ))}
           </div>
           {params.toolType === "bullnose" && <NI label="Köşe R" value={params.rCorner} onChange={(v) => u("rCorner", v)} min={0} max={params.D/2} step={0.1} />}
-          {params.toolType === "chamfer" && <NI label="Pah Boyu" value={params.chamferSize} onChange={(v) => u("chamferSize", v)} min={0} max={params.D/2} step={0.1} />}
+          {params.toolType === "taperreamer" && <NIT label="Uç Çapı" value={params.tipD} onChange={(v) => u("tipD", v)} min={0.1} max={params.D} step={0.01} tolVal={params.tolTip} onTolChange={(v) => u("tolTip", v)} />}
+          {(params.toolType === "chamfer" || params.toolType === "reamer") && <NI label={params.toolType === "reamer" ? "Giriş Pahı" : "Pah Boyu"} value={params.chamferSize} onChange={(v) => u("chamferSize", v)} min={0} max={params.D/2} step={0.1} />}
         </div>}
 
         {/* KADEMELER */}
@@ -222,6 +223,24 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
               <label style={{ fontSize: 10, color: params[key] ? "var(--text-hi)" : "var(--text-mid)", fontFamily: "var(--mono)", cursor: "pointer" }}>{lbl}</label>
             </div>
           ))}
+        </div>}
+
+        {/* SAP */}
+        {SH("Sap Detayı", "shank", "▤")}
+        {openSec.shank && <div style={SB}>
+          <label style={LBL}>Sap Tipi (DIN 6535)</label>
+          <select value={params.sapTipi || "HA"} onChange={(e) => u("sapTipi", e.target.value)} style={{ ...INP, marginBottom: 6 }}>
+            <option value="HA">HA — Düz sap</option>
+            <option value="HB">HB — Weldon düzlüğü</option>
+            <option value="HE">HE — Whistle Notch</option>
+          </select>
+          {params.sapTipi && params.sapTipi !== "HA" && <>
+            <NI label="Düzlük Boyu" value={params.sapDuzUzunluk || 0} onChange={(v) => u("sapDuzUzunluk", v)} min={0} max={200} step={0.5} />
+            <NI label="Derinlik (t)" value={params.sapDuzDerinlik || 0} onChange={(v) => u("sapDuzDerinlik", v)} min={0} max={20} step={0.1} />
+            <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)", lineHeight: 1.4 }}>
+              0 = otomatik (boy ≈ 2·d, derinlik ≈ 0,1·d). Otomatik değerler yaklaşıktır; standart tablosundan teyit edin.
+            </div>
+          </>}
         </div>}
 
         {/* SAYFA */}

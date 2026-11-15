@@ -9,7 +9,7 @@ const CSV_HEADER_MAP = {
   "Diş Sayısı":"z","Helis Açısı":"helix","Çekirdek Çapı":"dCore",
   "Malzeme":"material","Kaplama":"coating",
   "Boğaz Çapı":"neckDia","Geçiş Açısı":"neckAngle",
-  "Köşe R":"rCorner","Pah Boyu":"chamferSize",
+  "Köşe R":"rCorner","Pah Boyu":"chamferSize","Uç Çapı (kon.)":"tipD","Sap Tipi":"sapTipi","Düzlük Boyu":"sapDuzUzunluk","Düzlük Derinliği":"sapDuzDerinlik",
   "Uç Açısı":"pointAngle","Soğutma":"coolantHole","Soğutma Adet":"coolantCount",
   "Tol D":"tolD","Tol d":"told","Tol l1":"toll1",
   "Çizim No":"drawingNo","Revizyon":"revision","Müşteri":"customerName","Sipariş No":"orderNo","Tol L":"tolL","Tol l2":"toll2","Tol Boğaz":"tolNeck",
@@ -56,6 +56,13 @@ function csvSatirlari(text, ayrac) {
 const TIP_KUCUK = Object.fromEntries(Object.entries(TIP_MAP).map(([k, v]) => [k.toLocaleLowerCase("tr"), v]));
 TIP_KUCUK["radyüs freze"] = "bullnose";
 TIP_KUCUK["radyus freze"] = "bullnose";
+TIP_KUCUK["rayba"] = "reamer";
+TIP_KUCUK["konik rayba"] = "taperreamer";
+TIP_KUCUK["t-freze"] = "tslot";
+TIP_KUCUK["t freze"] = "tslot";
+TIP_KUCUK["reamer"] = "reamer";
+TIP_KUCUK["tslot"] = "tslot";
+TIP_KUCUK["taperreamer"] = "taperreamer";
 
 const sayiCoz = (s) => {
   const t = String(s ?? "").trim().replace(",", ".");
@@ -75,7 +82,7 @@ function csvOku(text) {
   const satirlar = csvSatirlari(temiz, ayrac);
   if (satirlar.length < 2) return { items: [], uyarilar: [] };
   const headers = satirlar[0].map((h) => h.trim()).map((h) => CSV_HEADER_MAP[h] || h);
-  const numFields = ["D","d","L","l1","l2","z","helix","dCore","neckDia","neckAngle","rCorner","chamferSize","pointAngle","coolantCount"];
+  const numFields = ["D","d","L","l1","l2","z","helix","dCore","neckDia","neckAngle","rCorner","chamferSize","tipD","sapDuzUzunluk","sapDuzDerinlik","pointAngle","coolantCount"];
   const boolFields = ["coolantHole"];
   const uyarilar = [];
   const items = satirlar.slice(1).map((ham, satirNo) => {

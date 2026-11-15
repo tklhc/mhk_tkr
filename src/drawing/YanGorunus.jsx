@@ -100,7 +100,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   e.push(<Eksen key="eksen" x1={n(X(0) - 4)} y1={oy} x2={n(X(g.L) + 4)} y2={oy} />);
 
   // ── ÖLÇÜLER ──
-  const sapR = yaricapAt(g, 0);
+  const sapR = hd; // sap düzlüğü üst yarıyı alçaltsa da alt yarı tam daire
 
   // Alt: kesici boy (l1) ve toplam boy (L)
   const altSatir = (i) => alt + 7 * i;
@@ -137,7 +137,12 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   if (!stepdrill && params.showDimD) {
     const xd = xCapta(g, hD);
     e.push(<Olcu key="dD" id="dD" yon="dikey" p1={[X(xd), Y(hD)]} p2={[X(xd), Y(-hD)]}
-      konum={X(g.L) + 10} deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
+      konum={X(g.L) + (g.konik ? 20 : 10)} deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
+  }
+  if (g.konik && params.showDimD) {
+    const rt = params.tipD / 2;
+    e.push(<Olcu key="dTip" id="dTip" yon="dikey" p1={[X(g.L), Y(rt)]} p2={[X(g.L), Y(-rt)]}
+      konum={X(g.L) + 10} deger={params.tipD} onEk="⌀" tol={params.tolTip} anma={params.tipD} {...ek} />);
   }
   // Sol: sap çapı (d)
   if (params.showDimd) {
@@ -149,6 +154,23 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     const xm = (g.x.gecisSonu + g.x.boyunSonu) / 2;
     e.push(<Olcu key="dN" id="dN" yon="dikey" p1={[X(xm), Y(hN)]} p2={[X(xm), Y(-hN)]}
       konum={X(xm)} deger={g.nD} onEk="⌀" tol={params.tolNeck} anma={g.nD} {...ek} />);
+  }
+
+  // Sap düzlüğü (HB/HE): uzunluk ölçüsü ve tip etiketi
+  if (g.sapDuz && params.showDimd) {
+    const dz = g.sapDuz;
+    const yDuz = hd - dz.derinlik;
+    e.push(<Olcu key="dDuz" id="dDuz" yon="yatay" p1={[X(0), Y(yDuz)]} p2={[X(dz.uzunluk), Y(dz.tip === "HB" ? yDuz : hd)]}
+      konum={ust - 7} deger={dz.uzunluk} {...ek} />);
+    const etiket = `DIN 6535-${dz.tip}${dz.oto.derinlik ? "" : ` · t ${fmt(dz.derinlik)}`}`;
+    e.push(<Kilavuz key="aDuz" id="aDuz" hedef={[X(dz.uzunluk * 0.12), Y(dz.tip === "HB" ? yDuz : hd - dz.derinlik * 0.88)]}
+      dirsek={[X(dz.uzunluk * 0.12), ust - 13]} metin={etiket} {...ek} />);
+  }
+  // Konik rayba: koniklik oranı
+  if (g.konik && params.showDimAngles) {
+    const xm = (g.x.boyunSonu + g.L) / 2;
+    e.push(<Kilavuz key="aKonik" id="aKonik" hedef={[X(xm), Y((hD + params.tipD / 2) / 2)]} dirsek={[X(xm), ust - 6]}
+      metin={`Konik 1:${fmt(Math.round(g.konik.bolen * 100) / 100)}`} {...ek} />);
   }
 
   // ── AÇILAR VE ÖZEL ÖLÇÜLER (kılavuz çizgili) ──
@@ -184,7 +206,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
       e.push(<Kilavuz key="aR" id="aR" hedef={[hx, hy]} dirsek={[X(g.L) + 12, ust - 6]} metin={`R${fmt(r)}`} {...ek} />);
     }
     // Pah
-    if (g.tip === "chamfer" && params.chamferSize > 0) {
+    if ((g.tip === "chamfer" || g.tip === "reamer") && params.chamferSize > 0) {
       const c = params.chamferSize;
       const hx = X(g.L - c / 2), hy = Y(hD - c / 2);
       e.push(<Kilavuz key="aC" id="aC" hedef={[hx, hy]} dirsek={[X(g.L) + 12, ust - 6]} metin={`${fmt(c)}×45°`} {...ek} />);

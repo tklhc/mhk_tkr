@@ -105,7 +105,7 @@ function ThreeDView({ params }) {
 
     // 1) Dönel parçalar: sap, geçiş, boğaz, basamak yüzleri. Her kontur parçası ayrı lathe,
     //    böylece keskin kenarlarda gölgeleme yumuşamaz.
-    for (const s of g.ust) {
+    for (const s of g.ustAlt || g.ust) { // sap düzlüğü 3B'de gösterilmez
       const pts = parcaNoktalari(s);
       if (Math.max(...pts.map((q) => q[0])) > x0 + 1e-9) continue; // kanallı bölgeye girenler aşağıda
       if (pts.length === 2 && Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]) < 1e-9) continue;
