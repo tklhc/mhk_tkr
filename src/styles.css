@@ -364,3 +364,8 @@ details.ek > .ek-ic { padding: 4px 12px 12px; }
 .katalog-oge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .katalog-sayfa { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 13px; color: var(--text-mid); }
 @media (max-width: 860px) { .katalog-govde { grid-template-columns: 1fr; } }
+
+/* ─── Firma ayarları ───────────────────────────────────── */
+.firma-logo { display: grid; grid-template-columns: 1fr 170px; gap: 12px; align-items: center; margin-bottom: 6px; }
+.firma-logo-kutu { height: 96px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid var(--border-mid); border-radius: 8px; padding: 10px; }
+.firma-logo-kutu img { max-width: 100%; max-height: 100%; object-fit: contain; }

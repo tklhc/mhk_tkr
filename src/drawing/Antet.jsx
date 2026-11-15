@@ -1,6 +1,6 @@
 import qrcode from "qrcode-generator";
 import { FIRMA } from "../config";
-import { LOGO_IMG } from "../assets/images";
+import { logoAl } from "../assets/images";
 import { CIZGI, YAZI } from "./iso";
 import { mt } from "./metinler";
 
@@ -78,7 +78,7 @@ export function Antet({ params, sayfa }) {
       <line x1={rx} y1={a.y} x2={rx} y2={a.y + a.h} stroke="#000" strokeWidth={kalin * 0.7} />
 
       {/* Sol sütun: logo ve firma adı */}
-      <image href={LOGO_IMG} x={a.x + (sol - logoW) / 2} y={a.y + 7} width={logoW} height={logoH} preserveAspectRatio="xMidYMid meet" />
+      <image href={logoAl()} x={a.x + (sol - logoW) / 2} y={a.y + 7} width={logoW} height={logoH} preserveAspectRatio="xMidYMid meet" />
       <text x={a.x + sol / 2} y={a.y + 35} fontSize={firmaFs} fontWeight={700} textAnchor="middle" fill="#000" letterSpacing="0.3">{FIRMA.ad}</text>
 
       {/* Sağ alan: ALET ADI / ÇİZİM NO / REV; TARİH / MÜŞTERİ / İE NO; ÇİZEN / ONAYLAYAN */}

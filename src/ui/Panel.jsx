@@ -5,12 +5,13 @@ import { disProfiliHatalari, disVerisiVar, disProfiliYeterli } from "../geometry
 import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
 import { pngBlobu, dosyaIndir } from "../io/export";
 import { guvenliAd } from "../io/dosya";
-import { LOGO_IMG } from "../assets/images";
+import { logoAl } from "../assets/images";
 import { Sayi, SayiKutu, Metin, Secim, Anahtar, Cip, Grup, Ek } from "./inputs";
 import { LibraryPanel } from "./LibraryPanel";
 import { TipSecici } from "./TipSecici";
 import { Ikon } from "./Ikon";
 import { DILLER } from "../drawing/metinler";
+import { onayla, onaylanabilir, yeniRevizyon, sonrakiRevizyon, sonSatiriSil } from "../io/onay";
 
 const fmtSayi = (v) => String(Math.round((+v || 0) * 1000) / 1000).replace(".", ",");
 
@@ -57,6 +58,9 @@ ${govde}`)}`
 
 function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPanel, onClose, onYeni }) {
   const [sekme, setSekme] = useState("takim");
+  const [revAciklama, setRevAciklama] = useState("");
+  const [onayMesaj, setOnayMesaj] = useState("");
+  const islem = (f) => { try { setParams(f(params)); setOnayMesaj(""); return true; } catch (e) { setOnayMesaj(e.message); return false; } };
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
   const profil = useMemo(() => takimProfili(params), [params]);
   const hatalar = useMemo(() => [...profil.hatalar, ...disProfiliHatalari(params, profil)], [params, profil]);
@@ -81,7 +85,7 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
   return (
     <aside className={`panel${isMobile && !showPanel ? " kapali" : ""}`} aria-label="Takım ayarları">
       <div className="panel-ust">
-        <img src={LOGO_IMG} alt="MİHENK" />
+        <img src={logoAl()} alt="Firma logosu" />
         <div className="baslik"><b>Teknik Resim</b><span>Kesici takım çizim sistemi</span></div>
         <button className="btn kucuk" title="Boş bir takımla yeni resim başlat (taslak otomatik kaydedilir)" onClick={onYeni}>+ Yeni</button>
         {isMobile && <button className="btn kucuk ikon" onClick={onClose} aria-label="Paneli kapat"><Ikon ad="kapat" boyut={16} /></button>}
@@ -300,6 +304,34 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
               <Metin label="Çizen" value={params.createdBy} onChange={(v) => u("createdBy", v)} placeholder="Varsayılan: firma" />
               <Metin label="Onaylayan" value={params.approvedBy} onChange={(v) => u("approvedBy", v)} />
             </div>
+          </Grup>
+
+          <Grup baslik="Onay ve revizyon" sag={params.stamp ? `${params.stamp.toLowerCase()}` : "taslak"}>
+            <div className="ipucu" style={{ marginTop: 0, marginBottom: 8 }}>
+              Akış: Taslak → <b>Onayla</b> (onaylayan adı gerekir) → ONAYLANDI → değişiklik için <b>Yeni revizyon</b> → REVİZYON → yeniden onay. Her adım geçmişe ve sayfadaki revizyon tablosuna yazılır.
+            </div>
+            <button className="btn tam" disabled={!onaylanabilir(params).var} title={onaylanabilir(params).neden} onClick={() => islem(onayla)}>
+              {params.stamp === "ONAYLANDI" ? "Onaylı" : "Onayla"}
+            </button>
+            {!onaylanabilir(params).var && <div className="ipucu">{onaylanabilir(params).neden}</div>}
+            <div style={{ marginTop: 10 }}>
+              <Metin label={`Yeni revizyon (${sonrakiRevizyon(params.revision)}) — ne değişti?`} value={revAciklama} onChange={setRevAciklama} placeholder="ör. Kesici boy 25 → 30" />
+              <button className="btn tam hayalet" onClick={() => { if (islem((p) => yeniRevizyon(p, revAciklama))) setRevAciklama(""); }}>Yeni revizyon aç</button>
+            </div>
+            {onayMesaj && <div className="ipucu" style={{ color: "var(--accent2)" }}>{onayMesaj}</div>}
+            {(params.revizyonlar || []).length > 0 && (
+              <>
+                <div className="liste" style={{ marginTop: 10 }}>
+                  {[...params.revizyonlar].reverse().map((r, i) => (
+                    <div key={i} className="liste-oge" style={{ cursor: "default", padding: "6px 10px" }}>
+                      <span className="not-no" style={{ background: "var(--accent)", color: "#1b1305", width: "auto", minWidth: 22, padding: "0 5px", borderRadius: 11 }}>{r.rev}</span>
+                      <div className="govde"><div className="ad" style={{ fontWeight: 500, fontSize: 13 }}>{r.aciklama}</div><div className="alt">{r.tarih} · {r.kisi}</div></div>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn kucuk hayalet" style={{ marginTop: 8 }} onClick={() => islem(sonSatiriSil)}>Son satırı sil</button>
+              </>
+            )}
           </Grup>
 
           <Grup baslik="Müşteri ve sipariş">

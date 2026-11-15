@@ -16,6 +16,7 @@ const SOZLUK = {
     kesme_acisi: "Kesme açısı", sy1: "1. SY", sy2: "2. SY", konik: "Konik",
     sigmiyor: "⚠ Seçilen ölçek ({0}) takımı sayfaya sığdırmıyor",
     kat_katalog: "Takım Kataloğu", kat_dis: "diş", kat_cizim_no: "Çizim no", kat_sayfa: "Sayfa",
+    rev_rev: "REV.", rev_tarih: "TARİH", rev_aciklama: "AÇIKLAMA", rev_kisi: "KİŞİ",
     ONAYLANDI: "ONAYLANDI", TASLAK: "TASLAK", "REVİZYON": "REVİZYON", "İPTAL": "İPTAL",
   },
   en: {
@@ -31,6 +32,7 @@ const SOZLUK = {
     kesme_acisi: "Rake angle", sy1: "1st relief", sy2: "2nd relief", konik: "Taper",
     sigmiyor: "⚠ Selected scale ({0}) does not fit the tool on the sheet",
     kat_katalog: "Tool Catalog", kat_dis: "flutes", kat_cizim_no: "Drawing no", kat_sayfa: "Page",
+    rev_rev: "REV.", rev_tarih: "DATE", rev_aciklama: "DESCRIPTION", rev_kisi: "BY",
     ONAYLANDI: "APPROVED", TASLAK: "DRAFT", "REVİZYON": "REVISION", "İPTAL": "CANCELLED",
   },
 };

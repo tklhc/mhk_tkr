@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Grup } from "./inputs";
 import { kutuphaneKaydi } from "../io/dosya";
 import { takimProfili } from "../geometry/profil";
+import * as ortak from "../io/ortakKlasor";
 
 const ANAHTAR = "mihenk-lib";
 
@@ -27,6 +28,50 @@ export function LibraryPanel({ params, dimOff, yukle }) {
   const gorunen = filtre
     ? lib.filter((t) => `${t.toolName || ""} ${t.material || ""} ${t.coating || ""}`.toLowerCase().includes(filtre))
     : lib;
+  // ── Ortak klasör (File System Access API: yalnız Chrome / Edge) ──
+  const [klasor, setKlasor] = useState(null);          // izinli klasör tutamacı
+  const [bekleyen, setBekleyen] = useState(null);      // önceki oturumdan kalan, izin bekleyen klasör
+  const [dosyalar, setDosyalar] = useState([]);
+  const [ortakMesaj, setOrtakMesaj] = useState("");
+  const destek = ortak.destekleniyor();
+  const hata = (e) => setOrtakMesaj(e?.name === "AbortError" ? "" : `Klasör işlemi başarısız: ${e?.message || e}`);
+  const tazele = async (k = klasor) => { try { setDosyalar(await ortak.listele(k)); } catch (e) { hata(e); } };
+
+  useEffect(() => {
+    if (!destek) return;
+    ortak.tutamacOku().then(async (k) => {
+      if (!k) return;
+      if (await ortak.izinVarMi(k)) { setKlasor(k); setDosyalar(await ortak.listele(k).catch(() => [])); } else setBekleyen(k);
+    });
+  }, [destek]);
+
+  const klasorSec = async () => {
+    try {
+      const k = await window.showDirectoryPicker({ mode: "readwrite" });
+      await ortak.tutamacKaydet(k);
+      setKlasor(k); setBekleyen(null); setOrtakMesaj(""); await tazele(k);
+    } catch (e) { hata(e); }
+  };
+  const yenidenBagla = async () => {
+    try { if (await ortak.izinVarMi(bekleyen, true)) { setKlasor(bekleyen); setBekleyen(null); setOrtakMesaj(""); await tazele(bekleyen); } else setOrtakMesaj("İzin verilmedi."); } catch (e) { hata(e); }
+  };
+  const klasoreKaydet = async () => {
+    try {
+      const ad = ortak.dosyaAdiOlustur(params.toolName);
+      if (await ortak.varMi(klasor, ad) && !window.confirm(`"${ad}" klasörde zaten var. Üzerine yazılsın mı? (Başkasının güncel çalışması olabilir.)`)) return;
+      await ortak.yaz(klasor, params, dimOff);
+      setOrtakMesaj(`"${ad}" klasöre kaydedildi.`); await tazele();
+    } catch (e) { hata(e); }
+  };
+  const klasordenAc = async (d) => {
+    try {
+      const r = await ortak.oku(d.tutamac);
+      yukle({ ...r.params, dimOff: r.dimOff });
+      setOrtakMesaj(`"${d.ad}" açıldı.`);
+    } catch (e) { setOrtakMesaj(e.message); }
+  };
+  const klasoruBirak = async () => { await ortak.tutamacSil(); setKlasor(null); setBekleyen(null); setDosyalar([]); setOrtakMesaj(""); };
+
   const adVar = lib.some((t) => t.toolName === (params.toolName || "İsimsiz"));
 
   return (
@@ -65,6 +110,40 @@ export function LibraryPanel({ params, dimOff, yukle }) {
             </div>
           ))}
         </div>
+      </Grup>
+
+      <Grup baslik="Ortak klasör" sag={klasor ? klasor.name : "bağlı değil"}>
+        {!destek && <div className="ipucu">Bu tarayıcı klasör bağlamayı desteklemiyor. Chrome ya da Edge kullanın; ya da aşağıdan dışa/içe aktarın.</div>}
+        {destek && !klasor && !bekleyen && (
+          <>
+            <button className="btn tam" onClick={klasorSec}>Klasör bağla…</button>
+            <div className="ipucu">Ağ sürücüsü, OneDrive ya da Dropbox içindeki bir klasör seçin: takımlar orada <b>.mhk.json</b> dosyaları olur, klasöre erişen herkes aynı kütüphaneyi görür. Sunucu gerekmez; dosyalar bilgisayarınızda kalır.</div>
+          </>
+        )}
+        {destek && bekleyen && (
+          <>
+            <button className="btn tam" onClick={yenidenBagla}>“{bekleyen.name}” klasörünü yeniden bağla</button>
+            <div className="ipucu">Önceki oturumdaki klasör; tarayıcı izni yeniden ister. <button className="btn kucuk hayalet" onClick={klasoruBirak}>Bırak</button></div>
+          </>
+        )}
+        {destek && klasor && (
+          <>
+            <div className="btn-satir" style={{ marginBottom: 8 }}>
+              <button className="btn birincil" onClick={klasoreKaydet}>Geçerli takımı kaydet</button>
+              <button className="btn" onClick={() => tazele()}>Yenile</button>
+            </div>
+            <div className="liste">
+              {dosyalar.length === 0 && <div className="ipucu" style={{ textAlign: "center", padding: 12 }}>Klasörde .mhk.json dosyası yok.</div>}
+              {dosyalar.map((d) => (
+                <div key={d.ad} className="liste-oge" onClick={() => klasordenAc(d)} title="Açmak için tıklayın (geçerli resmin yerini alır)">
+                  <div className="govde"><div className="ad">{d.ad.replace(/\.mhk\.json$/i, "")}</div></div>
+                </div>
+              ))}
+            </div>
+            <button className="btn kucuk hayalet" style={{ marginTop: 8 }} onClick={klasoruBirak}>Klasörü bırak</button>
+          </>
+        )}
+        {ortakMesaj && <div className="ipucu" style={{ color: "var(--accent2)" }}>{ortakMesaj}</div>}
       </Grup>
 
       <Grup baslik="Yedekle">

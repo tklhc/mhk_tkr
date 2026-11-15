@@ -8,6 +8,7 @@ import { UcGorunus } from "./UcGorunus";
 import { DisProfili, disProfiliGorunsun } from "./DisProfili";
 import { ToleransSembolleri, SALGI_UST_EK } from "./ToleransSembolleri";
 import { Antet } from "./Antet";
+import { RevizyonTablosu } from "./RevizyonTablosu";
 import { Cerceve } from "./Cerceve";
 import { BilgiTablosu, tabloIcerigi, sayfaNotlari } from "./BilgiTablosu";
 import { YAZI } from "./iso";
@@ -62,6 +63,7 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
       <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
       {sayfaNot && <BilgiTablosu icerik={sayfaNot.icerik} kutu={sayfaNot.kutu} yer={sayfaNot.yer} sayfa={duzen} />}
       <Antet params={params} sayfa={duzen} />
+      <RevizyonTablosu params={params} sayfa={duzen} />
 
       {/* Yazı çakışması işaretleri (yalnız ekranda; dışa aktarmada kaldırılır) */}
       {cakisma && cakisma.length > 0 && (
@@ -97,15 +99,17 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
       {/* Onay damgası */}
       {params.stamp && (() => {
         const col = DAMGA_RENK[params.stamp] || "#333";
-        const cx = alan.x + 38, cy = alan.y + alan.h - 24;
+        const cx = alan.x + 38, cy = alan.y + 18;          // sol üst köşe: alt bölge diş profili detayı ve notlarla paylaşılıyor
         const tarih = params.stampDate ? params.stampDate.split("-").reverse().join(".") : new Date().toLocaleDateString("tr-TR");
         return (
+          <Draggable id="damga" offsets={dimOff} setOffsets={setDimOff}>
           <g transform={`rotate(-12 ${cx} ${cy})`} opacity={0.8} fontFamily={YAZI.font}>
             <rect x={cx - 24} y={cy - 8} width={48} height={16} rx={1.5} fill="none" stroke={col} strokeWidth={0.7} strokeDasharray="1.8 0.8" />
             <rect x={cx - 22.8} y={cy - 6.8} width={45.6} height={13.6} rx={1} fill="none" stroke={col} strokeWidth={0.3} />
             <text x={cx} y={cy + 1} textAnchor="middle" fontSize={5.2} fontWeight="800" fill={col} letterSpacing="0.6">{mt(params, params.stamp)}</text>
             <text x={cx} y={cy + 5.2} textAnchor="middle" fontSize={2.2} fill={col}>{tarih}</text>
           </g>
+          </Draggable>
         );
       })()}
     </svg>

@@ -9,9 +9,10 @@ const UZANTI_RESIM = /\.(png|jpe?g|bmp|gif|webp|tiff?)$/i;
  * İş emrinden resim çizme penceresi: 1) PDF yükle ya da metin yapıştır,
  * 2) okunan değerleri, uyarıları ve geometri hatalarını gör, onayla.
  */
-export function IsEmriPenceresi({ mevcut, kapat, uygula }) {
-  const [adim, setAdim] = useState("gir");
-  const [metin, setMetin] = useState("");
+export function IsEmriPenceresi({ mevcut, kapat, uygula, baslangicMetni = "" }) {
+  // Bağlantıyla (ÜTS köprüsü) gelen yazı varsa doğrudan okunan değerler gösterilir; yine de kullanıcı onaylar
+  const [adim, setAdim] = useState(baslangicMetni ? "onay" : "gir");
+  const [metin, setMetin] = useState(baslangicMetni);
   const [hata, setHata] = useState("");
   const [mesgul, setMesgul] = useState(false);
   const [dosya, setDosya] = useState("");

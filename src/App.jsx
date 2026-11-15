@@ -16,6 +16,8 @@ import { DurumCubugu } from "./ui/DurumCubugu";
 import { Ikon } from "./ui/Ikon";
 import { Yardim } from "./ui/Yardim";
 import { KatalogPenceresi } from "./ui/KatalogPenceresi";
+import { FirmaAyarlari } from "./ui/FirmaAyarlari";
+import { ieBaglantisindanOku } from "./io/utsKopru";
 import { takimProfili } from "./geometry/profil";
 import { disProfiliHatalari } from "./geometry/disProfili";
 
@@ -51,6 +53,9 @@ function App() {
   const [isaretAcik, setIsaretAcik] = useState(true);
   const [yardimAcik, setYardimAcik] = useState(false);
   const [katalogAcik, setKatalogAcik] = useState(false);
+  const [firmaAcik, setFirmaAcik] = useState(false);
+  const [ieMetni, setIeMetni] = useState("");   // bağlantıyla gelen iş emri yazısı (ÜTS köprüsü)
+  const [, firmaYenile] = useState(0);   // firma ayarı değişince çizimi yeniden çiz
   const [tema, setTema] = useState(() => { try { return localStorage.getItem("mihenk-tema") === "acik" ? "acik" : "koyu"; } catch { return "koyu"; } });
 
   // Tema: <html data-tema> ile CSS değişkenleri değişir; tercih bu tarayıcıda saklanır
@@ -58,6 +63,19 @@ function App() {
     document.documentElement.dataset.tema = tema;
     try { localStorage.setItem("mihenk-tema", tema); } catch { /* depolama kapalı */ }
   }, [tema]);
+
+  // ÜTS köprüsü: adres #ie=<iş emri yazısı> ise iş emri penceresini bu yazıyla aç (onay kullanıcıda)
+  useEffect(() => {
+    const oku = () => {
+      const m = ieBaglantisindanOku(window.location.hash);
+      if (!m) return;
+      setIeMetni(m); setIeAcik(true);
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);   // adres temizlenir, yenilemede tekrar açılmaz
+    };
+    oku();
+    window.addEventListener("hashchange", oku);
+    return () => window.removeEventListener("hashchange", oku);
+  }, []);
 
   // "?" yardım penceresini açar (yazı alanında değilken)
   useEffect(() => {
@@ -219,11 +237,12 @@ function App() {
     <div className="uygulama">
       <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} odak={odak} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
+      {firmaAcik && <FirmaAyarlari kapat={() => setFirmaAcik(false)} kaydedildi={() => firmaYenile((n) => n + 1)} />}
       {katalogAcik && <KatalogPenceresi mevcut={params} kapat={() => setKatalogAcik(false)} />}
       {yardimAcik && <Yardim kapat={() => setYardimAcik(false)} />}
       {ieAcik && (
-        <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
-          uygula={(yeniParams) => { setParams(yeniParams); setDimOff({}); setBatch([]); setBatchIdx(0); setView("all"); resetZoom(); setIeAcik(false); }} />
+        <IsEmriPenceresi key={ieMetni} baslangicMetni={ieMetni} mevcut={params} kapat={() => { setIeAcik(false); setIeMetni(""); }}
+          uygula={(yeniParams) => { setParams(yeniParams); setDimOff({}); setBatch([]); setBatchIdx(0); setView("all"); resetZoom(); setIeAcik(false); setIeMetni(""); }} />
       )}
 
       <main className="ana">
@@ -260,6 +279,7 @@ function App() {
             <MenuOge onClick={() => dosyaGirdi.current?.click()} altMetin="Ctrl+O · .mhk.json">Aç…</MenuOge>
             <MenuOge onClick={dosyaKaydet} altMetin="Ctrl+S · resim ve görünüş konumları">Dosya olarak kaydet</MenuOge>
             <MenuAyrac />
+            <MenuOge onClick={() => setFirmaAcik(true)} altMetin="Ad, çizen, iletişim bilgileri, logo">Firma ayarları…</MenuOge>
             <MenuOge onClick={yinele} altMetin="Ctrl+Y">Yinele</MenuOge>
             <MenuOge onClick={() => setDimOff({})} altMetin="Ölçü, etiket ve görünüşleri yerine koyar">Konumları sıfırla</MenuOge>
             <MenuOge onClick={() => setTema((t) => (t === "koyu" ? "acik" : "koyu"))} altMetin={tema === "koyu" ? "Açık temaya geç" : "Koyu temaya geç"}>Tema değiştir</MenuOge>
@@ -267,7 +287,7 @@ function App() {
           </Menu>
 
           <Menu etiket="Veri" ikon={<Ikon ad="veri" />}>
-            <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
+            <MenuOge onClick={() => { setIeMetni(""); setIeAcik(true); }} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
             <MenuAyrac />
             <MenuOge onClick={() => setKatalogAcik(true)} altMetin="Kütüphanedeki takımlardan katalog (PDF / PNG / SVG)">Katalog sayfası…</MenuOge>
             <MenuOge onClick={() => csvGirdi.current?.click()} altMetin="UTF-8 ya da Excel (Windows-1254) CSV">CSV içe aktar…</MenuOge>

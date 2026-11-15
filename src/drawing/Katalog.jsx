@@ -3,7 +3,7 @@ import { KAGITLAR } from "./sayfaDuzeni";
 import { CIZGI, YAZI, fmt } from "./iso";
 import { kaplamaRengi, ton } from "./stil";
 import { mt } from "./metinler";
-import { LOGO_IMG } from "../assets/images";
+import { logoAl } from "../assets/images";
 import { FIRMA } from "../config";
 import { sigdir, tarihYaz } from "./Antet";
 
@@ -77,7 +77,7 @@ export function KatalogSayfasi({ id = "katalog-svg", takimlar, sayfa = 1, sayfaS
     <svg id={id} viewBox={`0 0 ${k.w} ${k.h}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto", display: "block" }}>
       <rect x={0} y={0} width={k.w} height={k.h} fill="#fff" />
       {/* Üst bant */}
-      <image href={LOGO_IMG} x={KENAR} y={KENAR - 2} width={38} height={USTBANT - 4} preserveAspectRatio="xMinYMid meet" />
+      <image href={logoAl()} x={KENAR} y={KENAR - 2} width={38} height={USTBANT - 4} preserveAspectRatio="xMinYMid meet" />
       <text x={KENAR + 44} y={KENAR + 8} fontSize={8} fontWeight={700} fontFamily={YAZI.font} fill="#000">{baslik || mt(dp, "kat_katalog")}</text>
       <text x={k.w - KENAR} y={KENAR + 6} textAnchor="end" fontSize={3.2} fontFamily={YAZI.font} fill="#444">{tarihYaz(tarih)}</text>
       <line x1={KENAR} y1={KENAR + USTBANT - 2} x2={k.w - KENAR} y2={KENAR + USTBANT - 2} stroke="#000" strokeWidth={0.5} />

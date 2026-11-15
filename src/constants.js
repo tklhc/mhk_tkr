@@ -49,6 +49,7 @@ const DEFAULT_PARAMS = {
   toolName: "MHK-E10x75-4Z",
   drawingNo: "",
   revision: "",
+  revizyonlar: [],       // revizyon geçmişi: [{ rev, tarih, aciklama, kisi }] (onay akışı ekler)
   createdBy: "",
   approvedBy: "",
   // Show/hide toggles
