@@ -5,19 +5,17 @@ import { Surukle } from "./Draggable";
 const n = (v) => +v.toFixed(3);
 const metin = (v) => String(v ?? "").trim();
 
-/** Salgı (kesici kenar, sap A datumuna göre) ya da sap yüzey pürüzlülüğü girilmiş mi? */
+/** Salgı (kesici kenar, sap A datumuna göre) girilmiş mi? */
 export function tolSembolVar(params) {
-  return !!(metin(params.salgi) || metin(params.ra));
+  return !!metin(params.salgi);
 }
 
 /** Salgı çerçevesi için takımın üstünde ayrılacak ek boşluk (mm). */
 export const SALGI_UST_EK = 12;
 
 /**
- * Geometrik tolerans ve yüzey işaretleri (yan görünüşte, sürüklenebilir):
- *  • Salgı çerçevesi  ↗ 0,01 | A  — kesici kısma, A datumuna göre; A datumu sapın üstünde.
- *  • Yüzey pürüzlülüğü √ Ra 0,4 — sap yüzeyinde.
- * Değerler kullanıcının girdiği metindir; program standart tabloya göre değer önermez.
+ * Salgı işareti (yan görünüşte, sürüklenebilir): kesici kısma ↗ 0,01 | A çerçevesi, sapın üstünde A datumu.
+ * Değer kullanıcının girdiği metindir; program standart tabloya göre değer önermez.
  */
 export function ToleransSembolleri({ params, yerlesim, dimOff, setDimOff }) {
   const g = takimProfili(params);
@@ -27,24 +25,11 @@ export function ToleransSembolleri({ params, yerlesim, dimOff, setDimOff }) {
   const Y = (r) => oy - r * s;
   const hmax = Math.max(g.D, g.d) / 2, hd = g.d / 2, hD = g.D / 2;
   const ust = Y(hmax);
-  const salgi = metin(params.salgi), ra = metin(params.ra);
+  const salgi = metin(params.salgi);
   const e = [];
   const cizgi = { stroke: CIZGI.renk, strokeWidth: CIZGI.ince, fill: "none" };
   const yazi = { fontFamily: YAZI.font, fill: CIZGI.renk };
   const sapOrta = X(g.x.sapSonu * 0.5);
-
-  // ── Yüzey pürüzlülüğü: sap üst çizgisinde, ucu yüzeye değen √ ──
-  if (ra) {
-    const x0 = X(g.x.sapSonu * 0.72), y0 = Y(hd);
-    const w = Math.max(8, ra.length * 2.1 + 4.5);
-    const yuk = 6.5;
-    e.push(
-      <g key="ra">
-        <path d={`M ${n(x0 - 1.8)} ${n(y0 - 3.4)} L ${n(x0)} ${n(y0)} L ${n(x0 + 3.2)} ${n(y0 - yuk)} L ${n(x0 + 3.2 + w)} ${n(y0 - yuk)}`} {...cizgi} strokeLinejoin="round" />
-        <text x={n(x0 + 4)} y={n(y0 - yuk - 0.9)} fontSize={3.2} {...yazi}>Ra {ra}</text>
-      </g>
-    );
-  }
 
   // ── Salgı: A datumu + tolerans çerçevesi ──
   if (salgi) {

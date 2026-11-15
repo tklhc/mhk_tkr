@@ -71,7 +71,7 @@ export function Antet({ params, sayfa }) {
   const firmaFs = sigdir(FIRMA.ad, sol - 6, 3.5, 2.4) * 0.86; // dar sütunda firma adı sığsın
 
   return (
-    <g fontFamily={YAZI.font}>
+    <g id="antet" fontFamily={YAZI.font}>
       {/* ── Antet çerçevesi ── */}
       <rect x={a.x} y={a.y} width={a.w} height={a.h} fill="none" stroke="#000" strokeWidth={kalin} />
       <line x1={rx} y1={a.y} x2={rx} y2={a.y + a.h} stroke="#000" strokeWidth={kalin * 0.7} />

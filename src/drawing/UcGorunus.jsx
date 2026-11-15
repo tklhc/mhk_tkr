@@ -68,7 +68,7 @@ export function UcGorunus({ params, yerlesim, dimOff, setDimOff }) {
 
   // Çap ölçüsü (altta, yatay) ve çekirdek
   if (params.showDimD) {
-    e.push(<Olcu key="uD" id="uD" yon="yatay" p1={[cx - R, cy + R * 0.0]} p2={[cx + R, cy + R * 0.0]}
+    e.push(<Olcu key="uD" id="uD" alan="D" yon="yatay" p1={[cx - R, cy + R * 0.0]} p2={[cx + R, cy + R * 0.0]}
       konum={cy + R + 8} deger={D} onEk="⌀" tol={stepdrill ? "" : params.tolD} anma={D}
       offsets={dimOff} setOffsets={setDimOff} />);
   }

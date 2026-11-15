@@ -8,7 +8,7 @@ const goster = (v) => (Number.isFinite(+v) ? String(Math.round(+v * 10000) / 100
  * Sayı alanı (+ isteğe bağlı tolerans). Yazarken ara değerler ("8.", "") korunur,
  * virgül ondalık olarak kabul edilir, ↑/↓ ile adım atılır.
  */
-export function Sayi({ label, value, onChange, step = 1, min, unit = "mm", tol, onTol, hata, disabled }) {
+export function Sayi({ label, value, onChange, step = 1, min, unit = "mm", tol, onTol, hata, disabled, alan }) {
   const [yerel, setYerel] = useState(null);
   const metin = yerel ?? goster(value);
   const uygula = (v) => { if (min != null && v < min) v = min; onChange(Math.round(v * 10000) / 10000); };
@@ -16,7 +16,7 @@ export function Sayi({ label, value, onChange, step = 1, min, unit = "mm", tol, 
     <div className={`satir${onTol ? "" : " tolsuz"}`}>
       <label title={label}>{label}</label>
       <input
-        type="text" inputMode="decimal" value={metin} disabled={disabled}
+        type="text" inputMode="decimal" value={metin} disabled={disabled} data-alan={alan}
         className={hata ? "hatali" : ""} title={hata || undefined} aria-invalid={!!hata}
         onChange={(e) => {
           const t = e.target.value;

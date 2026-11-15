@@ -1,7 +1,7 @@
 import { takimProfili } from "../geometry/profil";
 import { disProfiliGeometri } from "../geometry/disProfili";
 import { olcekSec, olcekYaz } from "./sayfaDuzeni";
-import { CIZGI, YAZI, DESEN, AciOlcusu, Kilavuz, fmt } from "./iso";
+import { CIZGI, YAZI, DESEN, Kilavuz, fmt } from "./iso";
 import { kaplamaRengi, ton } from "./stil";
 import { Surukle } from "./Draggable";
 
@@ -48,16 +48,21 @@ export function DisProfili({ params, yerlesim, dimOff, setDimOff }) {
   const govde = `M ${n(Fx)} ${n(Fy)} L ${n(Px)} ${n(Py)} L ${n(Ax)} ${n(Ay)} L ${n(Bx)} ${n(By)} L ${n(Hx)} ${n(Hy)} Z`;
   const yuzey = `M ${n(Fx)} ${n(Fy)} L ${n(Px)} ${n(Py)} L ${n(Ax)} ${n(Ay)} L ${n(Bx)} ${n(By)} L ${n(Hx)} ${n(Hy)}`;
 
-  // Açı ölçüleri (ekran açısı: saat yönü +, aşağı = 90°)
+  // Açı yayları (ekran açısı: saat yönü +, aşağı = 90°). Küçük açılarda ok sığmaz: ince yay + kılavuz yazısı
   const taban0 = yon > 0 ? 0 : 180;                         // teğet çizgisinin yönü
   const ekranAci = (a) => (yon > 0 ? a : 180 - a);
-  const gAci = yon > 0 ? 90 - gamma / (Math.PI / 180) : 90 + gamma / (Math.PI / 180);
   const derece = (r) => (r * 180) / Math.PI;
-  const rs = Math.min(0.5 * rr, 10);
-  const yaz = (v) => `${fmt(v)}°`;
+  const gAci = yon > 0 ? 90 - derece(gamma) : 90 + derece(gamma);
+  const yay = (mx, my, r, aA, aB) => {
+    const nk = (a) => [mx + r * Math.cos((a * Math.PI) / 180), my + r * Math.sin((a * Math.PI) / 180)];
+    const [x1, y1] = nk(aA), [x2, y2] = nk(aB);
+    return `M ${n(x1)} ${n(y1)} A ${n(r)} ${n(r)} 0 0 ${aB > aA ? 1 : 0} ${n(x2)} ${n(y2)}`;
+  };
+  const boy1 = Math.hypot(Ax - Px, Ay - Py), boy2 = Math.hypot(Bx - Ax, By - Ay);
+  const yayStil = { fill: "none", stroke: CIZGI.renk, strokeWidth: 0.3 };
 
-  const solX = cx + yon * (rr + 3);                         // etiketler pencerenin topuk tarafında
-  const lbl = (dy) => [solX, cy + dy * rr];
+  const onX = cx - yon * (rr + 3), arkaX = cx + yon * (rr + 3);   // etiket sütunları: talaş (ön) tarafı ve topuk (arka) tarafı
+  const lbl = (x, dy) => [x, cy + dy * rr];
 
   return (
     <Surukle id="g-dis" offsets={dimOff} setOffsets={setDimOff} kutu={[cx - rr - 1, cy - rr - 1, 2 * rr + 2, 2 * rr + 8]}>
@@ -83,20 +88,20 @@ export function DisProfili({ params, yerlesim, dimOff, setDimOff }) {
       </g>
       <circle cx={cx} cy={cy} r={rr} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
 
-      {/* Açılar: γ (talaş yüzeyi ↔ radyal), α₁ (1. SY ↔ teğet), α₂ (2. SY ↔ teğet) */}
-      <AciOlcusu id="dpG" cx={Px} cy={Py} r={rs} a1={90} a2={gAci} metinAci={yon > 0 ? 112 : 68} metin={`γ ${yaz(derece(gamma))}`} {...ek} />
-      <AciOlcusu id="dpA1" cx={Px} cy={Py} r={rs * 0.8} a1={taban0} a2={ekranAci(derece(a1))} metinAci={yon > 0 ? -14 : 194} metin={`α₁ ${yaz(derece(a1))}`} {...ek} />
-      {ikinci && <AciOlcusu id="dpA2" cx={Ax} cy={Ay} r={rs * 0.55} a1={taban0} a2={ekranAci(derece(a2))} metinAci={yon > 0 ? -14 : 194} metin={`α₂ ${yaz(derece(a2))}`} {...ek} />}
+      {/* Açılar: ince yaylar (okları sığmaz) + her biri kılavuz çizgisiyle tam adı ve değeriyle yazılır */}
+      <path d={yay(Px, Py, Math.min(12, 0.5 * rr), 90, gAci)} {...yayStil} />
+      <path d={yay(Px, Py, Math.min(0.92 * boy1, 12), taban0, ekranAci(derece(a1)))} {...yayStil} />
+      {ikinci && <path d={yay(Ax, Ay, Math.min(0.92 * boy2, 11), taban0, ekranAci(derece(a2)))} {...yayStil} />}
 
-      {/* Genişlikler: kılavuz çizgisi, serbest yüzeyin ortasına */}
-      <Kilavuz id="dpW1" hedef={[n((Px + Ax) / 2), n((Py + Ay) / 2)]} dirsek={lbl(-0.7).map(n)} metin={`1. SY  ${fmt(w1)}`} {...ek} />
-      {ikinci && <Kilavuz id="dpW2" hedef={[n((Ax + Bx) / 2), n((Ay + By) / 2)]} dirsek={lbl(-0.35).map(n)} metin={`2. SY  ${fmt(w2)}`} {...ek} />}
+      <Kilavuz id="dpGk" hedef={[n((Px + Fx) / 2), n((Py + Fy) / 2)]} dirsek={lbl(onX, 0.25).map(n)} metin={`Kesme açısı  ${fmt(derece(gamma))}°`} {...ek} />
+      <Kilavuz id="dpW1" hedef={[n((Px + Ax) / 2), n((Py + Ay) / 2)]} dirsek={lbl(arkaX, -0.7).map(n)} metin={`1. SY  ${fmt(w1)} mm / ${fmt(derece(a1))}°`} {...ek} />
+      {ikinci && <Kilavuz id="dpW2" hedef={[n((Ax + Bx) / 2), n((Ay + By) / 2)]} dirsek={lbl(arkaX, -0.3).map(n)} metin={`2. SY  ${fmt(w2)} mm / ${fmt(derece(a2))}°`} {...ek} />}
 
       <text x={cx} y={n(cy + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
         DİŞ PROFİLİ DETAYI ({olcekYaz(sc)})
       </text>
       <text x={cx} y={n(cy + rr + 8.2)} textAnchor="middle" fontSize={2.3} fontFamily={YAZI.font} fill="#666">
-        şematik · genişlik mm, açı °
+        şematik · açı ve genişlik iş emrinden
       </text>
     </Surukle>
   );

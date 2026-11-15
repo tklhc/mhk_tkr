@@ -121,11 +121,9 @@ describe("diş profili detayı sayfada", () => {
   it("iş emri çiziminde çizilir: başlık, açılar, genişlikler; çökmez", () => {
     const svg = render(ie818);
     expect(svg).toContain("DİŞ PROFİLİ DETAYI");
-    expect(svg).toContain("γ 8°");
-    expect(svg).toContain("α₁ 8°");
-    expect(svg).toContain("α₂ 16°");
-    expect(svg).toContain("1. SY  1,033");
-    expect(svg).toContain("2. SY  2,067");
+    expect(svg).toContain("Kesme açısı  8°");
+    expect(svg).toContain("1. SY  1,033 mm / 8°");
+    expect(svg).toContain("2. SY  2,067 mm / 16°");
     expect(svg).not.toMatch(/NaN|undefined/);
   });
   it("müşteri çiziminde ve kapatılınca çizilmez", () => {

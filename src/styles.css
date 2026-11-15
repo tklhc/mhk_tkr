@@ -235,3 +235,58 @@ details.ek > .ek-ic { padding: 4px 12px 12px; }
 /* Görünüş sürükleme tutamağı: üzerine gelince kesikli çerçeve (dışa aktarmada kaldırılır) */
 .gorunum-tutac { cursor: move; }
 .gorunum-tutac:hover { stroke: #4a9eff; stroke-width: 0.35; stroke-dasharray: 1.6 1; fill: rgba(74, 158, 255, 0.05); }
+
+/* ─── İkonlar ──────────────────────────────────────────── */
+.ikon-svg { display: block; flex-shrink: 0; }
+.btn .ikon-svg { opacity: 0.92; }
+.btn.ikon { padding: 0; }
+.menu > .btn { gap: 7px; }
+.menu > .btn .metin { margin-right: 1px; }
+
+/* ─── Görsel takım tipi seçici ─────────────────────────── */
+.tip-secici-kap { position: relative; margin-bottom: 16px; }
+.tip-dugme {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; background: var(--bg-input);
+  border: 1px solid var(--border-mid); border-radius: 9px; color: var(--accent); cursor: pointer; text-align: left;
+}
+.tip-dugme:hover { border-color: var(--border-hi); }
+.tip-dugme[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(240,160,48,0.14); }
+.tip-dugme .tip-ad { flex: 1; font-size: 15px; font-weight: 650; color: var(--text-hi); }
+.tip-dugme .ikon-svg { color: var(--text-lo); }
+.tip-siluet { color: var(--accent); flex-shrink: 0; }
+.tip-izgara {
+  position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px;
+  background: var(--bg-surface); border: 1px solid var(--border-hi); border-radius: 11px; box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+}
+.tip-kart {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 7px; background: var(--bg-input);
+  border: 1px solid var(--border-dim); border-radius: 8px; color: var(--text-mid); font-size: 12px; cursor: pointer;
+}
+.tip-kart .tip-siluet { color: var(--text-lo); }
+.tip-kart:hover { border-color: var(--border-hi); color: var(--text-hi); background: var(--bg-raised); }
+.tip-kart:hover .tip-siluet { color: var(--text-mid); }
+.tip-kart.secili { border-color: var(--accent); color: var(--accent); background: rgba(240,160,48,0.10); }
+.tip-kart.secili .tip-siluet { color: var(--accent); }
+
+/* ─── Durum çubuğu ─────────────────────────────────────── */
+.durum-cubugu {
+  display: flex; align-items: center; gap: 14px; padding: 0 14px; height: 30px; flex-shrink: 0; overflow: hidden;
+  background: var(--bg-panel); border-top: 1px solid var(--border-mid); font-size: 12px; color: var(--text-lo); white-space: nowrap;
+}
+.dc-oge { display: inline-flex; align-items: center; gap: 6px; }
+.dc-oge b { color: var(--text-mid); font-weight: 650; }
+.dc-oge.tamam { color: var(--text-lo); }
+.dc-oge.tamam .ikon-svg { color: var(--green); }
+.dc-oge.uyari { color: #e8c58a; }
+.dc-dugme { background: none; border: none; font: inherit; cursor: pointer; padding: 2px 8px; border-radius: 5px; }
+.dc-dugme.cakisma { color: #f2a5a0; background: rgba(229,83,75,0.12); border: 1px solid rgba(229,83,75,0.4); }
+.dc-dugme.cakisma:not(.acik) { opacity: 0.65; }
+.dc-dugme.cakisma:hover { background: rgba(229,83,75,0.2); }
+.dc-bosluk { flex: 1; }
+.dc-ipucu { color: var(--text-lo); overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1280px) { .dc-ipucu { display: none; } }
+@media (max-width: 899px) { .dc-takim { display: none; } .durum-cubugu { gap: 10px; padding: 0 8px; } }
+
+/* ─── Araç çubuğu: dar ekranda etiketler gizlenir ──────── */
+@media (max-width: 1240px) { .arac .menu > .btn .metin { display: none; } .arac .menu > .btn { padding: 0 10px; } }
+@media (max-width: 1100px) { .segment button { padding: 0 11px; } }

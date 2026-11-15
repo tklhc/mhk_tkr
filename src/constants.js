@@ -37,7 +37,6 @@ const DEFAULT_PARAMS = {
   ],
   dCore: 6,
   salgi: "",            // salgı toleransı (kesici kenar, sap A datumuna göre), ör. "0,01"; boşsa çizilmez
-  ra: "",               // sap yüzey pürüzlülüğü Ra, ör. "0,4"; boşsa çizilmez
   // Diş profili detayı (uçtan kesit): 0 = girilmedi. Kesme açısı γ, 1./2. serbest yüzey genişliği (mm) ve açısı (°)
   dpKesme: 0, dpSy1Gen: 0, dpSy1Aci: 0, dpSy2Gen: 0, dpSy2Aci: 0,
   coolantHole: false,

@@ -118,7 +118,7 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
  * yon "dikey": ölçü çizgisi x = konum'da.
  * Sürüklenince yalnız ölçü çizgisinin yeri değişir; yardımcı çizgiler uzar/kısalır.
  */
-export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets }) {
+export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan }) {
   const yatay = yon === "yatay";
   const { off, olaylar } = useSurukle(id, offsets, setOffsets, yatay ? "y" : "x");
   const k = konum + (yatay ? off.dy : off.dx);
@@ -165,7 +165,7 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
     : <OlcuYazisi x={k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} dondur />;
 
   return (
-    <g {...olaylar}>
+    <g {...olaylar} data-alan={alan}>
       {yardimci}
       <line x1={cx1} y1={cy1} x2={cx2} y2={cy2} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
       {oklar}

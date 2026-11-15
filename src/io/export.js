@@ -17,7 +17,7 @@ function temizKlon(svgEl) {
   klon.setAttribute("height", `${vb.height}mm`);
   klon.removeAttribute("style");
   klon.removeAttribute("id");
-  klon.querySelectorAll(".gorunum-tutac").forEach((e) => e.remove()); // sürükleme tutamaçları çıktıda olmasın
+  klon.querySelectorAll(".gorunum-tutac, .cakisma-isaret").forEach((e) => e.remove()); // sürükleme tutamaçları çıktıda olmasın
   // Yazı tipini SVG'nin içine göm: dosya, resim olarak yüklenince ve başka cihazda açılınca da aynı görünsün
   const stil = document.createElementNS(NS, "style");
   stil.textContent = YAZI_CSS;

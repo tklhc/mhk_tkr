@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_PARAMS } from "./constants";
 import { Sayfa, duzenHesapla } from "./drawing/Sayfa";
-import { olcekYaz } from "./drawing/sayfaDuzeni";
 import { Panel } from "./ui/Panel";
 import { Menu, MenuOge, MenuAyrac } from "./ui/Menu";
 import { csvOku, csvMetniOku, getInitialBatch } from "./io/csv";
@@ -12,6 +11,11 @@ import { generateDXF } from "./io/dxf";
 import { svgIndir, pngIndir, pdfIndir, pdfYazdir, dosyaIndir } from "./io/export";
 import { kayittanYukle, kismiYukle, dosyaMetni, dosyaCoz, guvenliAd } from "./io/dosya";
 import { useGecmis } from "./ui/useGecmis";
+import { useCakisma } from "./ui/useCakisma";
+import { DurumCubugu } from "./ui/DurumCubugu";
+import { Ikon } from "./ui/Ikon";
+import { takimProfili } from "./geometry/profil";
+import { disProfiliHatalari } from "./geometry/disProfili";
 
 const TASLAK = "mihenk-taslak-v1";
 const ZOOM_MIN = 1, ZOOM_MAX = 5;
@@ -40,11 +44,14 @@ function App() {
   const [batchIdx, setBatchIdx] = useState(0);
   const csvGirdi = useRef(null);
   const [ieAcik, setIeAcik] = useState(false);
+  const [kayitZamani, setKayitZamani] = useState(null);
+  const [odak, setOdak] = useState(null);
+  const [isaretAcik, setIsaretAcik] = useState(true);
 
   // ── Taslak otomatik kaydı ──
   useEffect(() => {
     const t = setTimeout(() => {
-      try { localStorage.setItem(TASLAK, JSON.stringify({ params, dimOff })); } catch { /* depolama dolu/kapalı */ }
+      try { localStorage.setItem(TASLAK, JSON.stringify({ params, dimOff })); setKayitZamani(new Date()); } catch { setKayitZamani(null); /* depolama dolu/kapalı */ }
     }, 500);
     return () => clearTimeout(t);
   }, [params, dimOff]);
@@ -126,6 +133,15 @@ function App() {
   }, []);
 
   const duzen = useMemo(() => duzenHesapla(params), [params]);
+  const uyariSayisi = useMemo(() => { const g = takimProfili(params); return g.hatalar.length + disProfiliHatalari(params, g).length; }, [params]);
+  const cakisma = useCakisma(view !== "3d", params, dimOff);
+  // Çizimde ölçüye çift tıklayınca ilgili alanı paneldeki girdide aç
+  const olcuyeCiftTikla = (e) => {
+    const el = e.target.closest?.("[data-alan]");
+    if (!el) return;
+    setOdak({ alan: el.dataset.alan, n: Date.now() });
+    if (isMobile) setShowPanel(true);
+  };
   const svgAl = () => document.getElementById("teknik-svg");
   const adAl = dosyaAdi(params);
 
@@ -177,7 +193,7 @@ function App() {
 
   return (
     <div className="uygulama">
-      <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
+      <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} odak={odak} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
       {ieAcik && (
         <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
@@ -187,7 +203,7 @@ function App() {
       <main className="ana">
         {/* ── Araç çubuğu ── */}
         <div className="arac">
-          {isMobile && <button className="btn ikon" onClick={() => setShowPanel(true)} aria-label="Takım ayarlarını aç">☰</button>}
+          {isMobile && <button className="btn ikon" onClick={() => setShowPanel(true)} aria-label="Takım ayarlarını aç"><Ikon ad="menu" /></button>}
 
           <div className="segment" role="tablist" aria-label="Görünüm">
             {[["all", "Çizim"], ["3d", "3D"]].map(([v, ad]) => (
@@ -205,22 +221,19 @@ function App() {
             </div>
           )}
 
-          <div className="durum">
-            <b>{olcekYaz(duzen.yan.olcek)}</b> · {duzen.kagit.ad} · ⌀{params.D}×{params.L} mm · {params.z}Z
-          </div>
           <div className="bosluk" />
 
-          <button className="btn ikon hayalet" title="Geri al (Ctrl+Z)" aria-label="Geri al" disabled={!geriVar} onClick={geriAl}>↶</button>
-          <button className="btn ikon hayalet" title="Yinele (Ctrl+Y)" aria-label="Yinele" disabled={!yineleVar} onClick={yinele}>↷</button>
-          <button className="btn ikon hayalet" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}>↺</button>
+          <button className="btn ikon hayalet" title="Geri al (Ctrl+Z)" aria-label="Geri al" disabled={!geriVar} onClick={geriAl}><Ikon ad="geriAl" /></button>
+          <button className="btn ikon hayalet" title="Yinele (Ctrl+Y)" aria-label="Yinele" disabled={!yineleVar} onClick={yinele}><Ikon ad="yinele" /></button>
+          <button className="btn ikon hayalet" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}><Ikon ad="sifirla" /></button>
 
-          <Menu etiket="Dosya" ikon="🗎 ">
+          <Menu etiket="Dosya" ikon={<Ikon ad="dosya" />}>
             <MenuOge onClick={yeni} altMetin="Boş takımla başla">Yeni resim</MenuOge>
             <MenuOge onClick={() => dosyaGirdi.current?.click()} altMetin="Ctrl+O · .mhk.json">Aç…</MenuOge>
             <MenuOge onClick={dosyaKaydet} altMetin="Ctrl+S · resim ve görünüş konumları">Dosya olarak kaydet</MenuOge>
           </Menu>
 
-          <Menu etiket="Veri" ikon="⇅ ">
+          <Menu etiket="Veri" ikon={<Ikon ad="veri" />}>
             <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
             <MenuAyrac />
             <MenuOge onClick={() => csvGirdi.current?.click()} altMetin="UTF-8 ya da Excel (Windows-1254) CSV">CSV içe aktar…</MenuOge>
@@ -236,7 +249,7 @@ function App() {
             <MenuOge onClick={() => { const it = getInitialBatch(); setBatch(it); setBatchIdx(0); kismiGoster(it[0]); }} altMetin="8 hazır takımla deneme">Örnek takımları yükle</MenuOge>
           </Menu>
 
-          <Menu etiket="Dışa aktar" ikon="⬇ " birincil>
+          <Menu etiket="Dışa aktar" ikon={<Ikon ad="indir" />} birincil>
             <MenuOge onClick={() => { const s = svgAl(); if (s) pdfIndir(s, adAl).catch((e) => alert(`PDF üretilemedi: ${e.message}`)); }} altMetin="Sayfa = kağıt boyutu, 300 dpi, gerçek ölçek">PDF indir</MenuOge>
             <MenuOge onClick={() => { const s = svgAl(); if (s) pdfYazdir(s, `MİHENK - ${adAl}`); }} altMetin="Yazdır penceresi (ölçek: yüzde 100 seçin)">Yazdır…</MenuOge>
             <MenuOge onClick={() => { const s = svgAl(); if (s) pngIndir(s, `${adAl}.png`); }} altMetin="≈305 dpi">PNG resim</MenuOge>
@@ -278,10 +291,11 @@ function App() {
           onMouseMove={cizimde ? onMouseMove : undefined}
           onMouseUp={cizimde ? onMouseUp : undefined}
           onMouseLeave={cizimde ? onMouseUp : undefined}
+          onDoubleClick={cizimde ? olcuyeCiftTikla : undefined}
         >
           {!cizimde ? <ThreeDView params={params} /> : (
             <>
-              <Sayfa params={params} dimOff={dimOff} setDimOff={setDimOff} style={{
+              <Sayfa params={params} dimOff={dimOff} setDimOff={setDimOff} cakisma={isaretAcik ? cakisma : []} style={{
                 flex: 1, display: "block", background: "transparent", borderRadius: 2, minWidth: 0,
                 filter: "drop-shadow(0 6px 30px rgba(0,0,0,0.45))",
                 transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
@@ -290,15 +304,16 @@ function App() {
                 touchAction: zoom > 1 ? "none" : "auto",
               }} />
               <div className="zoom-kutusu" role="group" aria-label="Yakınlaştırma">
-                <button onClick={() => yakinlastir(1 / 1.25)} disabled={zoom <= ZOOM_MIN} aria-label="Uzaklaştır" title="Uzaklaştır">−</button>
+                <button onClick={() => yakinlastir(1 / 1.25)} disabled={zoom <= ZOOM_MIN} aria-label="Uzaklaştır" title="Uzaklaştır"><Ikon ad="eksi" boyut={16} /></button>
                 <span className="oran">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => yakinlastir(1.25)} disabled={zoom >= ZOOM_MAX} aria-label="Yakınlaştır" title="Yakınlaştır (Ctrl + tekerlek)">+</button>
-                <button onClick={resetZoom} aria-label="Sayfaya sığdır" title="Sayfaya sığdır">⤢</button>
+                <button onClick={() => yakinlastir(1.25)} disabled={zoom >= ZOOM_MAX} aria-label="Yakınlaştır" title="Yakınlaştır (Ctrl + tekerlek)"><Ikon ad="artı" boyut={16} /></button>
+                <button onClick={resetZoom} aria-label="Sayfaya sığdır" title="Sayfaya sığdır"><Ikon ad="sigdir" boyut={16} /></button>
               </div>
               {isMobile && zoom <= 1.05 && <div className="ipucu-yuzen">İki parmakla yakınlaştır</div>}
             </>
           )}
         </div>
+        <DurumCubugu params={params} duzen={duzen} kayitZamani={kayitZamani} uyariSayisi={uyariSayisi} cakisma={cakisma} isaretAcik={isaretAcik} onIsaret={() => setIsaretAcik((a) => !a)} />
       </main>
     </div>
   );

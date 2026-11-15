@@ -30,7 +30,7 @@ export function duzenHesapla(params) {
 const DAMGA_RENK = { ONAYLANDI: "#1b7a2e", TASLAK: "#b08a10", "REVİZYON": "#1565C0", "İPTAL": "#c62828" };
 
 /** A4/A3 resim sayfası: çerçeve, görünüşler, antet, notlar, damga. Birim mm. */
-export function Sayfa({ params, dimOff, setDimOff, style }) {
+export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
   const duzen = duzenHesapla(params);
   const { kagit, cerceve: c, alan, yan, uc } = duzen;
   const olcekMetni = olcekYaz(yan.olcek);
@@ -61,6 +61,16 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
       <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
       {sayfaNot && <BilgiTablosu icerik={sayfaNot.icerik} kutu={sayfaNot.kutu} yer={sayfaNot.yer} sayfa={duzen} />}
       <Antet params={params} sayfa={duzen} />
+
+      {/* Yazı çakışması işaretleri (yalnız ekranda; dışa aktarmada kaldırılır) */}
+      {cakisma && cakisma.length > 0 && (
+        <g className="cakisma-isaret" pointerEvents="none">
+          {cakisma.map((c, i) => (
+            <rect key={i} x={+(c.alan.x - 0.6).toFixed(2)} y={+(c.alan.y - 0.6).toFixed(2)} width={+(c.alan.w + 1.2).toFixed(2)} height={+(c.alan.h + 1.2).toFixed(2)}
+              fill="rgba(229,83,75,0.14)" stroke="#e5534b" strokeWidth={0.35} strokeDasharray="1.2 0.8" />
+          ))}
+        </g>
+      )}
 
       {yan.tasiyor && (
         <text x={alan.x + 3} y={alan.y + 5} fontSize={3} fontFamily={YAZI.font} fill="#c62828">

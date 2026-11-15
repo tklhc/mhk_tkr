@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Ikon } from "./Ikon";
 
 /** Açılır menü düğmesi: dışarı tıklayınca ya da Esc ile kapanır. */
 export function Menu({ etiket, ikon, birincil = false, children }) {
@@ -20,7 +21,7 @@ export function Menu({ etiket, ikon, birincil = false, children }) {
   return (
     <div className="menu" ref={ref}>
       <button type="button" className={`btn${birincil ? " birincil" : ""}`} aria-haspopup="menu" aria-expanded={acik} onClick={() => setAcik((a) => !a)}>
-        {ikon}<span className="metin">{etiket}</span> <span aria-hidden="true">▾</span>
+        {ikon}<span className="metin">{etiket}</span><Ikon ad="asagi" boyut={14} />
       </button>
       {acik && <div className="menu-liste" role="menu" onClick={() => setAcik(false)}>{children}</div>}
     </div>

@@ -138,17 +138,17 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   const altSatir = (i) => alt + 7 * i;
   if (!stepdrill && params.showDiml1) {
     const xs = g.x.boyunSonu;
-    e.push(<Olcu key="dl1" id="dl1" yon="yatay" p1={[X(xs), Y(-yaricapAt(g, xs))]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
+    e.push(<Olcu key="dl1" id="dl1" alan="l1" yon="yatay" p1={[X(xs), Y(-yaricapAt(g, xs))]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
       konum={altSatir(1)} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
   }
   if (params.showDimL) {
-    e.push(<Olcu key="dL" id="dL" yon="yatay" p1={[X(0), Y(-sapR)]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
+    e.push(<Olcu key="dL" id="dL" alan="L" yon="yatay" p1={[X(0), Y(-sapR)]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
       konum={altSatir(stepdrill ? 1 : 2)} deger={g.L} tol={params.tolL} anma={g.L} {...ek} />);
   }
 
   // Üst: boğaz boyu (l2) ya da kademe boyları
   if (g.l2 > 0 && params.showDiml2) {
-    e.push(<Olcu key="dl2" id="dl2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(g.x.boyunSonu), Y(yaricapAt(g, g.x.boyunSonu))]}
+    e.push(<Olcu key="dl2" id="dl2" alan="l2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(g.x.boyunSonu), Y(yaricapAt(g, g.x.boyunSonu))]}
       konum={ust - 7} deger={g.l2} tol={params.toll2} anma={g.l2} {...ek} />);
   }
   if (stepdrill) {
@@ -168,23 +168,23 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   // Sağ: kesici çap (D) — kademelide kademelerde gösterilir
   if (!stepdrill && params.showDimD) {
     const xd = xCapta(g, hD);
-    e.push(<Olcu key="dD" id="dD" yon="dikey" p1={[X(xd), Y(hD)]} p2={[X(xd), Y(-hD)]}
+    e.push(<Olcu key="dD" id="dD" alan="D" yon="dikey" p1={[X(xd), Y(hD)]} p2={[X(xd), Y(-hD)]}
       konum={X(g.L) + (g.konik ? 20 : 10)} deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
   }
   if (g.konik && params.showDimD) {
     const rt = params.tipD / 2;
-    e.push(<Olcu key="dTip" id="dTip" yon="dikey" p1={[X(g.L), Y(rt)]} p2={[X(g.L), Y(-rt)]}
+    e.push(<Olcu key="dTip" id="dTip" alan="tipD" yon="dikey" p1={[X(g.L), Y(rt)]} p2={[X(g.L), Y(-rt)]}
       konum={X(g.L) + 10} deger={params.tipD} onEk="⌀" tol={params.tolTip} anma={params.tipD} {...ek} />);
   }
   // Sol: sap çapı (d)
   if (params.showDimd) {
-    e.push(<Olcu key="dd" id="dd" yon="dikey" p1={[X(0), Y(hd)]} p2={[X(0), Y(-hd)]}
+    e.push(<Olcu key="dd" id="dd" alan="d" yon="dikey" p1={[X(0), Y(hd)]} p2={[X(0), Y(-hd)]}
       konum={X(0) - 10} deger={g.d} onEk="⌀" tol={params.told} anma={g.d} {...ek} />);
   }
   // Boğaz çapı
   if (g.l2 > 0 && params.showDimNeck) {
     const xm = (g.x.gecisSonu + g.x.boyunSonu) / 2;
-    e.push(<Olcu key="dN" id="dN" yon="dikey" p1={[X(xm), Y(hN)]} p2={[X(xm), Y(-hN)]}
+    e.push(<Olcu key="dN" id="dN" alan="neckDia" yon="dikey" p1={[X(xm), Y(hN)]} p2={[X(xm), Y(-hN)]}
       konum={X(xm)} deger={g.nD} onEk="⌀" tol={params.tolNeck} anma={g.nD} {...ek} />);
   }
 
