@@ -34,7 +34,10 @@ function ThreeDView({ params }) {
     const toolGroup = new T.Group(); scene.add(toolGroup);
     stateRef.current = { scene, camera, renderer, toolGroup, el, T };
 
-    let isDrag=false, pX=0, pY=0, rX=-0.15, rY=0.6, dist=4.2;
+    let isDrag=false, pX=0, pY=0, rX=-0.2, rY=0.45;
+    // Takım yatay yatar (boy 3): kadraj genişliğe göre; yakın uç perspektifle büyüdüğü için pay bırakılır
+    const kadraj=()=>Math.max(4.8, 2.3/(Math.tan(16*Math.PI/180)*Math.max(0.6, el.clientWidth/Math.max(el.clientHeight,1))));
+    let dist=kadraj();
     const onD=(e)=>{isDrag=true;const p=e.touches?e.touches[0]:e;pX=p.clientX;pY=p.clientY;};
     const onM=(e)=>{if(!isDrag)return;e.preventDefault();const p=e.touches?e.touches[0]:e;rY+=(p.clientX-pX)*0.007;rX+=(p.clientY-pY)*0.007;rX=Math.max(-1.5,Math.min(1.5,rX));pX=p.clientX;pY=p.clientY;};
     const onU=()=>{isDrag=false;};
@@ -47,7 +50,7 @@ function ThreeDView({ params }) {
     let raf;
     const anim=()=>{raf=requestAnimationFrame(anim);camera.position.set(dist*Math.sin(rY)*Math.cos(rX),dist*Math.sin(rX),dist*Math.cos(rY)*Math.cos(rX));camera.lookAt(0,0,0);renderer.render(scene,camera);};
     anim();
-    const onRz=()=>{if(!el.clientWidth)return;camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight);};
+    const onRz=()=>{if(!el.clientWidth)return;dist=Math.max(dist,kadraj());camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight);};
     window.addEventListener("resize",onRz);
     return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",onRz);
       cv.removeEventListener("mousedown",onD);cv.removeEventListener("mousemove",onM);cv.removeEventListener("mouseup",onU);cv.removeEventListener("mouseleave",onU);

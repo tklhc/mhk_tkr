@@ -7,7 +7,7 @@ import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
-import { BilgiTablosu, tabloIcerigi } from "./BilgiTablosu";
+import { BilgiTablosu, tabloIcerigi, sayfaNotlari } from "./BilgiTablosu";
 import { YAZI } from "./iso";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
@@ -32,6 +32,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
   const olcekMetni = olcekYaz(yan.olcek);
   const ek = { dimOff, setDimOff };
   const notlar = params.notes || [];
+  const sayfaNot = sayfaNotlari(params, duzen);
   const detayHarfi = kesitVarMi(params, takimProfili(params)) ? "B" : "A";
 
   return (
@@ -52,6 +53,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
         <UcGorunus params={params} yerlesim={uc} {...ek} />
       </Surukle>
       <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
+      {sayfaNot && <BilgiTablosu icerik={sayfaNot.icerik} kutu={sayfaNot.kutu} yer={sayfaNot.yer} sayfa={duzen} />}
       <Antet params={params} sayfa={duzen} />
 
       {yan.tasiyor && (

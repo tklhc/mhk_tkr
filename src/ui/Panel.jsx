@@ -3,7 +3,8 @@ import { TOOL_TYPES } from "../constants";
 import { tipDegistir } from "../geometry/tipler";
 import { takimProfili } from "../geometry/profil";
 import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
-import { pngBlobu } from "../io/export";
+import { pngBlobu, dosyaIndir } from "../io/export";
+import { guvenliAd } from "../io/dosya";
 import { LOGO_IMG } from "../assets/images";
 import { Sayi, SayiKutu, Metin, Secim, Anahtar, Cip, Grup, Ek } from "./inputs";
 import { LibraryPanel } from "./LibraryPanel";
@@ -20,13 +21,18 @@ const DAMGALAR = [
   ["", "Yok", ""], ["ONAYLANDI", "Onaylandı", "damga-onay"], ["TASLAK", "Taslak", ""], ["REVİZYON", "Revizyon", ""], ["İPTAL", "İptal", "damga-iptal"],
 ];
 
-/** Resmi PNG olarak paylaşır; Web Share yoksa WhatsApp / e-posta bağlantısına düşer. */
+/**
+ * Resmi paylaşır. Telefonda (Web Share) dosya doğrudan paylaşım menüsüne gider. Bilgisayarda
+ * tarayıcı dosya eklemeyi desteklemez: PNG önce indirilir, WhatsApp / e-posta açılır ve
+ * kullanıcıya dosyayı eklemesi söylenir.
+ */
 async function paylas(params, tur) {
   const svg = document.getElementById("teknik-svg");
   if (!svg) return;
   const ad = params.toolName || "teknik-resim";
+  let blob = null;
   try {
-    const blob = await pngBlobu(svg, 6);
+    blob = await pngBlobu(svg, 6);
     const dosya = new File([blob], `${ad}.png`, { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [dosya] })) {
       await navigator.share({ title: `${ad} - Teknik Resim`, text: `MİHENK Kesici Takımlar - ${ad}`, files: [dosya] });
@@ -35,13 +41,16 @@ async function paylas(params, tur) {
   } catch (e) {
     if (e && e.name === "AbortError") return;
   }
+  if (blob) dosyaIndir(blob, `${guvenliAd(ad)}.png`);
   const baslik = `${ad} - MİHENK Teknik Resim`;
+  const govde = "Teknik resim ektedir (indirilen PNG dosyasını ekleyin).";
   window.open(tur === "wa"
-    ? `https://wa.me/?text=${encodeURIComponent(baslik)}`
-    : `mailto:?subject=${encodeURIComponent(baslik)}&body=${encodeURIComponent("Teknik resim ektedir.")}`, "_blank");
+    ? `https://wa.me/?text=${encodeURIComponent(`${baslik}
+${govde}`)}`
+    : `mailto:?subject=${encodeURIComponent(baslik)}&body=${encodeURIComponent(govde)}`, "_blank");
 }
 
-function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
+function Panel({ params, setParams, dimOff, kayitYukle, isMobile, showPanel, onClose, onYeni }) {
   const [sekme, setSekme] = useState("takim");
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
   const hatalar = useMemo(() => takimProfili(params).hatalar, [params]);
@@ -258,12 +267,12 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
               <button className="btn" onClick={() => paylas(params, "wa")}>WhatsApp</button>
               <button className="btn" onClick={() => paylas(params, "mail")}>E-posta</button>
             </div>
-            <div className="ipucu">Telefonda resim doğrudan paylaşım menüsüyle gider; bilgisayarda ilgili uygulama açılır.</div>
+            <div className="ipucu">Telefonda resim doğrudan paylaşım menüsüyle gider. Bilgisayarda PNG indirilir ve uygulama açılır; dosyayı siz eklersiniz.</div>
           </Grup>
         </>}
 
         {/* ═════════ KÜTÜPHANE ═════════ */}
-        {sekme === "kutuphane" && <LibraryPanel params={params} setParams={setParams} />}
+        {sekme === "kutuphane" && <LibraryPanel params={params} dimOff={dimOff} yukle={kayitYukle} />}
       </div>
     </aside>
   );

@@ -1,6 +1,9 @@
 // Resim dışa aktarma: SVG, PNG, PDF (yazdır). Sayfa mm cinsindendir; çıktıda
 // width/height mm olarak yazılır, böylece SVG ve PDF gerçek ölçekte açılır.
 
+import { YAZI_CSS } from "../assets/yazi";
+import { pdfOlustur, rgbaDanRgbye } from "./pdf";
+
 export const PX_PER_MM = 12; // ≈ 305 dpi
 
 const NS = "http://www.w3.org/2000/svg";
@@ -15,6 +18,10 @@ function temizKlon(svgEl) {
   klon.removeAttribute("style");
   klon.removeAttribute("id");
   klon.querySelectorAll(".gorunum-tutac").forEach((e) => e.remove()); // sürükleme tutamaçları çıktıda olmasın
+  // Yazı tipini SVG'nin içine göm: dosya, resim olarak yüklenince ve başka cihazda açılınca da aynı görünsün
+  const stil = document.createElementNS(NS, "style");
+  stil.textContent = YAZI_CSS;
+  klon.insertBefore(stil, klon.firstChild);
   return { klon, w: vb.width, h: vb.height };
 }
 
@@ -33,8 +40,8 @@ export function svgIndir(svgEl, ad) {
   dosyaIndir(new Blob([svgMetni(svgEl)], { type: "image/svg+xml" }), ad);
 }
 
-/** PNG blob'u: beyaz zemin, mm başına PX_PER_MM piksel. */
-export function pngBlobu(svgEl, pxPerMm = PX_PER_MM) {
+/** Resim blob'u (beyaz zemin, mm başına pxPerMm piksel). tur: "image/png". */
+function rasterCanvas(svgEl, pxPerMm) {
   const { klon, w, h } = temizKlon(svgEl);
   const svgUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(klon)], { type: "image/svg+xml;charset=utf-8" }));
   return new Promise((resolve, reject) => {
@@ -48,11 +55,28 @@ export function pngBlobu(svgEl, pxPerMm = PX_PER_MM) {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(svgUrl);
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG üretilemedi"))), "image/png");
+      resolve({ canvas, ctx, w, h });
     };
     img.onerror = () => { URL.revokeObjectURL(svgUrl); reject(new Error("SVG yüklenemedi")); };
     img.src = svgUrl;
   });
+}
+
+/** PNG blob'u: beyaz zemin, mm başına PX_PER_MM piksel. */
+export async function pngBlobu(svgEl, pxPerMm = PX_PER_MM) {
+  const { canvas } = await rasterCanvas(svgEl, pxPerMm);
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG üretilemedi"))), "image/png"));
+}
+
+/** Gerçek ölçekli PDF blob'u (sayfa = kağıt boyutu, 300 dpi, kayıpsız). */
+export async function pdfBlobu(svgEl, baslik) {
+  const { canvas, ctx, w, h } = await rasterCanvas(svgEl, 300 / 25.4);
+  const rgb = rgbaDanRgbye(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+  return new Blob([await pdfOlustur(rgb, canvas.width, canvas.height, w, h, baslik)], { type: "application/pdf" });
+}
+
+export async function pdfIndir(svgEl, ad) {
+  dosyaIndir(await pdfBlobu(svgEl, ad), `${ad}.pdf`);
 }
 
 export async function pngIndir(svgEl, ad) {

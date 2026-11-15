@@ -218,6 +218,7 @@ describe("Ölçü yazısı toleransı", () => {
 });
 
 import { tabloSutunlari } from "../src/drawing/sayfaDuzeni.js";
+import { sayfaNotlari } from "../src/drawing/BilgiTablosu.jsx";
 import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
 
 describe("Üretim özellikleri tablosu", () => {
@@ -288,5 +289,34 @@ describe("Görünüşlerin sürüklenmesi", () => {
   it("tutamaçlar ölçü/etiket tutamaçlarını bozmaz: setOffsets yoksa tutamaç da yok", () => {
     const svg = renderToStaticMarkup(h(Sayfa, { params: p, dimOff: {}, setDimOff: undefined }));
     expect(svg).not.toContain("gorunum-tutac");
+  });
+});
+
+describe("Sayfa notları (ölçek, birim, genel tolerans)", () => {
+  it("müşteri ve iş emri çiziminde ölçek ve birim yazılır; genel tolerans doluysa o da", () => {
+    for (const cizimTuru of ["musteri", "ie"]) {
+      const svg = render({ ...DEFAULT_PARAMS, cizimTuru, ekOzellikler: [["Kesme Açısı", "8 °"]] });
+      expect(svg).toContain('id="sayfa-notlari"');
+      expect(svg).toContain(">Ölçek<");
+      expect(svg).toContain(">2:1<");
+      expect(svg).toContain(">Birim<");
+      expect(svg).toContain(">ISO 2768-m<");
+    }
+  });
+  it("genel tolerans boşsa o satır yazılmaz; ölçek elle seçilince notta görünür", () => {
+    const svg = render({ ...DEFAULT_PARAMS, genelTolerans: "  ", olcek: "1:1" });
+    expect(svg).not.toContain(">Genel tol.<");
+    expect(svg).toContain(">1:1<");
+  });
+  it("çok sütunlu üretim tablosunda yer yoksa sayfa notları atlanır, çökmez", () => {
+    const cok = Array.from({ length: 30 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
+    expect(() => render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: cok })).not.toThrow();
+  });
+  it("sayfa notları tablosu antet-solu tabloyla çakışmaz", () => {
+    const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "musteri" });
+    const n = sayfaNotlari({ ...DEFAULT_PARAMS }, d);
+    expect(n).not.toBeNull();
+    expect(n.kutu.x + n.kutu.w).toBeLessThanOrEqual(d.veriTablosu.x);
+    expect(n.kutu.y + n.kutu.h).toBeCloseTo(d.antet.y + d.antet.h, 6);
   });
 });

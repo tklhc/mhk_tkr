@@ -9,12 +9,14 @@ import { ThreeDView } from "./view3d/ThreeDView";
 import { IsEmriPenceresi } from "./ui/IsEmriPenceresi";
 import { downloadExcel, generateTemplateExcel, generateExcelReport } from "./io/excel";
 import { generateDXF } from "./io/dxf";
-import { svgIndir, pngIndir, pdfYazdir, dosyaIndir } from "./io/export";
+import { svgIndir, pngIndir, pdfIndir, pdfYazdir, dosyaIndir } from "./io/export";
+import { kayittanYukle, kismiYukle, dosyaMetni, dosyaCoz, guvenliAd } from "./io/dosya";
+import { useGecmis } from "./ui/useGecmis";
 
 const TASLAK = "mihenk-taslak-v1";
 const ZOOM_MIN = 1, ZOOM_MAX = 5;
 const sinirla = (z) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
-const dosyaAdi = (p) => (p.toolName || "teknik-resim").replace(/[\\/:*?"<>|]+/g, "_").trim() || "teknik-resim";
+const dosyaAdi = (p) => guvenliAd(p.toolName);
 
 /** Son çalışma: tarayıcıda saklanan taslak (bozuksa ya da yoksa null). */
 function taslakYukle() {
@@ -46,6 +48,9 @@ function App() {
     }, 500);
     return () => clearTimeout(t);
   }, [params, dimOff]);
+
+  const gecmisUygula = useCallback((p, d) => { setParams(p); setDimOff(d); }, []);
+  const { geriAl, yinele, geriVar, yineleVar } = useGecmis(params, dimOff, gecmisUygula);
 
   const yeni = useCallback(() => {
     if (!window.confirm("Geçerli çizim kapatılıp varsayılan takımla yeni resim başlatılsın mı?\n(Kütüphanede kayıtlı takımlar etkilenmez.)")) return;
@@ -124,14 +129,43 @@ function App() {
   const svgAl = () => document.getElementById("teknik-svg");
   const adAl = dosyaAdi(params);
 
-  const topluGit = (i) => { setBatchIdx(i); setParams((p) => ({ ...p, ...batch[i] })); setDimOff({}); };
+  // Yeni takım yüklenirken önceki resmin notları, damgası ve konumları taşınmaz (bkz. io/dosya.js)
+  const kismiGoster = (yeni) => { const r = kismiYukle(params, yeni); setParams(r.params); setDimOff(r.dimOff); };
+  const kayitYukle = (kayit) => { const r = kayittanYukle(kayit); setParams(r.params); setDimOff(r.dimOff); setBatch([]); setBatchIdx(0); };
+  // ── Dosya olarak kaydet / aç (.mhk.json): resim + görünüş konumları ──
+  const dosyaGirdi = useRef(null);
+  const dosyaKaydet = useCallback(() => {
+    dosyaIndir(new Blob([dosyaMetni(params, dimOff)], { type: "application/json" }), `${dosyaAdi(params)}.mhk.json`);
+  }, [params, dimOff]);
+  const dosyaSec = (e) => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    const okuyucu = new FileReader();
+    okuyucu.onload = () => {
+      try { kayitYukle(dosyaCoz(okuyucu.result)); resetZoom(); }
+      catch (err) { alert(err.message); }
+    };
+    okuyucu.readAsText(f);
+  };
+  useEffect(() => {
+    const tus = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "s") { e.preventDefault(); dosyaKaydet(); }
+      else if (k === "o") { e.preventDefault(); dosyaGirdi.current?.click(); }
+    };
+    window.addEventListener("keydown", tus);
+    return () => window.removeEventListener("keydown", tus);
+  }, [dosyaKaydet]);
+
+  const topluGit = (i) => { setBatchIdx(i); kismiGoster(batch[i]); };
 
   const csvSec = (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const { items, uyarilar } = csvOku(csvMetniOku(ev.target.result));
-      if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams((p) => ({ ...p, ...items[0] })); setDimOff({}); }
+      if (items.length > 0) { setBatch(items); setBatchIdx(0); kismiGoster(items[0]); }
       if (items.length === 0) alert("CSV dosyası okunamadı veya boş.");
       else if (uyarilar.length > 0) alert(`${items.length} takım okundu. ${uyarilar.length} uyarı:\n\n` + uyarilar.slice(0, 8).join("\n") + (uyarilar.length > 8 ? `\n… (+${uyarilar.length - 8})` : ""));
     };
@@ -143,7 +177,7 @@ function App() {
 
   return (
     <div className="uygulama">
-      <Panel params={params} setParams={setParams} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
+      <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
       {ieAcik && (
         <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
@@ -176,7 +210,15 @@ function App() {
           </div>
           <div className="bosluk" />
 
+          <button className="btn ikon hayalet" title="Geri al (Ctrl+Z)" aria-label="Geri al" disabled={!geriVar} onClick={geriAl}>↶</button>
+          <button className="btn ikon hayalet" title="Yinele (Ctrl+Y)" aria-label="Yinele" disabled={!yineleVar} onClick={yinele}>↷</button>
           <button className="btn ikon hayalet" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}>↺</button>
+
+          <Menu etiket="Dosya" ikon="🗎 ">
+            <MenuOge onClick={yeni} altMetin="Boş takımla başla">Yeni resim</MenuOge>
+            <MenuOge onClick={() => dosyaGirdi.current?.click()} altMetin="Ctrl+O · .mhk.json">Aç…</MenuOge>
+            <MenuOge onClick={dosyaKaydet} altMetin="Ctrl+S · resim ve görünüş konumları">Dosya olarak kaydet</MenuOge>
+          </Menu>
 
           <Menu etiket="Veri" ikon="⇅ ">
             <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
@@ -191,16 +233,18 @@ function App() {
               downloadExcel(html, `mihenk-rapor-${new Date().toISOString().slice(0, 10)}.xls`);
             }} altMetin="Toplu liste ya da kütüphane">Excel raporu</MenuOge>
             <MenuAyrac />
-            <MenuOge onClick={() => { const it = getInitialBatch(); setBatch(it); setBatchIdx(0); setParams((p) => ({ ...p, ...it[0] })); setDimOff({}); }} altMetin="8 hazır takımla deneme">Örnek takımları yükle</MenuOge>
+            <MenuOge onClick={() => { const it = getInitialBatch(); setBatch(it); setBatchIdx(0); kismiGoster(it[0]); }} altMetin="8 hazır takımla deneme">Örnek takımları yükle</MenuOge>
           </Menu>
 
           <Menu etiket="Dışa aktar" ikon="⬇ " birincil>
-            <MenuOge onClick={() => { const s = svgAl(); if (s) pdfYazdir(s, `MİHENK - ${adAl}`); }} altMetin="Kağıt boyutunda, gerçek ölçek">PDF / Yazdır</MenuOge>
+            <MenuOge onClick={() => { const s = svgAl(); if (s) pdfIndir(s, adAl).catch((e) => alert(`PDF üretilemedi: ${e.message}`)); }} altMetin="Sayfa = kağıt boyutu, 300 dpi, gerçek ölçek">PDF indir</MenuOge>
+            <MenuOge onClick={() => { const s = svgAl(); if (s) pdfYazdir(s, `MİHENK - ${adAl}`); }} altMetin="Yazdır penceresi (ölçek: yüzde 100 seçin)">Yazdır…</MenuOge>
             <MenuOge onClick={() => { const s = svgAl(); if (s) pngIndir(s, `${adAl}.png`); }} altMetin="≈305 dpi">PNG resim</MenuOge>
             <MenuOge onClick={() => { const s = svgAl(); if (s) svgIndir(s, `${adAl}.svg`); }} altMetin="Vektör, mm ölçekli">SVG vektör</MenuOge>
             <MenuOge onClick={() => dosyaIndir(new Blob([generateDXF(params)], { type: "application/dxf" }), `${adAl}.dxf`)} altMetin="CAD için kontur ve eksen">DXF</MenuOge>
           </Menu>
           <input ref={csvGirdi} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={csvSec} />
+          <input ref={dosyaGirdi} type="file" accept=".json,.mhk" style={{ display: "none" }} onChange={dosyaSec} />
         </div>
 
         {/* ── Toplu liste ── */}

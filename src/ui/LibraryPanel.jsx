@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Grup } from "./inputs";
+import { kutuphaneKaydi } from "../io/dosya";
 
 const ANAHTAR = "mihenk-lib";
 
@@ -11,7 +12,7 @@ function yaz(liste) {
 }
 
 /** Takım kütüphanesi: bu tarayıcıda saklanır; JSON olarak dışa/içe aktarılabilir. */
-export function LibraryPanel({ params, setParams }) {
+export function LibraryPanel({ params, dimOff, yukle }) {
   const [lib, setLib] = useState(oku);
   const [ara, setAra] = useState("");
   const [mesaj, setMesaj] = useState("");
@@ -32,7 +33,7 @@ export function LibraryPanel({ params, setParams }) {
       <Grup baslik="Geçerli takım">
         <button className="btn birincil tam" onClick={() => {
           const ad = params.toolName || "İsimsiz";
-          const kayit = { ...params, toolName: ad, savedAt: new Date().toISOString() };
+          const kayit = kutuphaneKaydi(params, dimOff, ad);
           const i = lib.findIndex((t) => t.toolName === ad);
           if (kaydet(i >= 0 ? lib.map((t, j) => (j === i ? kayit : t)) : [...lib, kayit])) setMesaj(i >= 0 ? `"${ad}" güncellendi.` : `"${ad}" kütüphaneye eklendi.`);
         }}>
@@ -51,7 +52,7 @@ export function LibraryPanel({ params, setParams }) {
             </div>
           )}
           {gorunen.map((t) => (
-            <div key={t.toolName} className="liste-oge" onClick={() => setParams((p) => ({ ...p, ...t }))} title="Yüklemek için tıklayın">
+            <div key={t.toolName} className="liste-oge" onClick={() => yukle(t)} title="Yüklemek için tıklayın (geçerli resmin yerini alır)">
               <div className="govde">
                 <div className="ad">{t.toolName}</div>
                 <div className="alt">⌀{t.D}×{t.L} · {t.z}Z{t.material ? ` · ${t.material}` : ""}</div>

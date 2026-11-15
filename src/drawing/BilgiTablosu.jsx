@@ -1,6 +1,6 @@
 import { CIZGI, YAZI, fmt } from "./iso";
 import { sigdir } from "./Antet";
-import { TABLO } from "./sayfaDuzeni";
+import { TABLO, tabloSutunlari, olcekYaz } from "./sayfaDuzeni";
 
 /** Üretim özelliği tablosu gösterilecek mi? Yalnız iş emri çiziminde (müşteri çiziminde üretim verisi yok). */
 export function uretimVarMi(params) {
@@ -31,11 +31,14 @@ export function tabloIcerigi(params, g) {
   return { id: "teknik-veri", baslik: "TEKNİK VERİ", ogeler: teknikVeriSatirlari(params, g) };
 }
 
-/** Antetin soluna bitişik bilgi tablosu. Yeri ve sütun sayısı sayfa düzeninden gelir (sayfa.veriTablosu, sayfa.tablo). */
-export function BilgiTablosu({ icerik, sayfa }) {
-  const yr = sayfa.tablo;
+/**
+ * Bilgi tablosu. Varsayılan yeri antetin solu (sayfa.veriTablosu, sayfa.tablo);
+ * sayfa notları gibi ikinci bir tablo için `kutu` ve `yer` verilir.
+ */
+export function BilgiTablosu({ icerik, sayfa, kutu, yer }) {
+  const yr = yer || sayfa.tablo;
   if (!icerik || !yr) return null;
-  const { x, y, w, h } = sayfa.veriTablosu;
+  const { x, y, w, h } = kutu || sayfa.veriTablosu;
   const { sutun, satir, satirH } = yr;
   const cw = w / sutun;
   const oge = icerik.ogeler.slice(0, yr.adet);
@@ -64,4 +67,20 @@ export function BilgiTablosu({ icerik, sayfa }) {
       })}
     </g>
   );
+}
+
+/**
+ * Sayfa notları tablosu (ölçek, birim, genel tolerans): şeritte antet-solundaki tablonun da soluna,
+ * çerçevenin sol alt köşesine konur; yer yoksa null. Genel tolerans boşsa satırı yazılmaz.
+ * @returns {null | {icerik: object, kutu: object, yer: object}}
+ */
+export function sayfaNotlari(params, sayfa) {
+  const ogeler = [["Ölçek", olcekYaz(sayfa.yan.olcek)], ["Birim", "mm"]];
+  if (String(params.genelTolerans || "").trim()) ogeler.push(["Genel tol.", String(params.genelTolerans).trim()]);
+  const yer = tabloSutunlari(ogeler.length, sayfa.antet.h);
+  const sagSinir = sayfa.veriTablosu.w > 0 ? sayfa.veriTablosu.x : sayfa.antet.x;
+  const serbest = sagSinir - sayfa.cerceve.x;
+  if (!yer || serbest < yer.w + 4) return null;
+  const alt = sayfa.antet.y + sayfa.antet.h;
+  return { icerik: { id: "sayfa-notlari", baslik: "SAYFA", ogeler }, yer, kutu: { x: sayfa.cerceve.x, y: alt - yer.h, w: yer.w, h: yer.h } };
 }

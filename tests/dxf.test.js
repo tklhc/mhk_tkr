@@ -85,3 +85,47 @@ describe("DXF", () => {
     });
   }
 });
+
+import { olcuMetni } from "../src/io/dxf.js";
+
+describe("DXF: katmanlar, çizgi tipleri, ölçüler", () => {
+  const dxf = generateDXF(p({ tolD: "h6", told: "h6", tolL: "±0.1", toll1: "" }));
+  const n = nesneler(dxf);
+  it("CENTER ve HIDDEN çizgi tipleri tanımlı ve katmanlara bağlı", () => {
+    expect(dxf).toMatch(/0\nLTYPE\n2\nCENTER\n/);
+    expect(dxf).toMatch(/0\nLTYPE\n2\nHIDDEN\n/);
+    expect(dxf).toMatch(/0\nLAYER\n2\nCENTER\n70\n0\n62\n1\n6\nCENTER/);
+    expect(dxf).toMatch(/0\nLAYER\n2\nHIDDEN\n70\n0\n62\n3\n6\nHIDDEN/);
+    expect(dxf).toMatch(/0\nLAYER\n2\nDIM\n/);
+  });
+  it("ölçüler DIM katmanında: çizgi, dolu ok (SOLID) ve yazı", () => {
+    expect(n.filter((x) => x.tip === "LINE" && x.k["8"] === "DIM").length).toBeGreaterThan(8);
+    expect(n.filter((x) => x.tip === "SOLID").length).toBeGreaterThanOrEqual(8);
+    const yazilar = n.filter((x) => x.tip === "TEXT" && x.k["8"] === "DIM").map((x) => x.k["1"]);
+    expect(yazilar.some((t) => t.startsWith("%%c10") && t.includes("h6"))).toBe(true);
+    expect(yazilar).toContain("75 %%p0,1");
+  });
+  it("dikey ölçü yazısı 90° döner; ortalı yazıda hizalama noktası var", () => {
+    const dikey = n.find((x) => x.tip === "TEXT" && x.k["1"].startsWith("%%c10"));
+    expect(+dikey.k["50"]).toBe(90);
+    expect(dikey.k["72"]).toBe("1");
+    expect(dikey.k["11"]).toBeDefined();
+  });
+  it("kapalı kontur ölçüler yüzünden bozulmaz; eksen CENTER katmanında", () => {
+    expect(konturKapali(n)).toEqual([]);
+    expect(n.some((x) => x.tip === "LINE" && x.k["8"] === "CENTER")).toBe(true);
+  });
+  it("kapatılan ölçü gösterimi DXF'e de yansır", () => {
+    const k = nesneler(generateDXF(p({ showDimL: false, showDimD: false, showDimd: false, showDiml1: false })));
+    expect(k.filter((x) => x.tip === "SOLID")).toHaveLength(0);
+  });
+  it("ölçü metni: ⌀ → %%c, sapmalar, tanınmayan tolerans olduğu gibi", () => {
+    expect(olcuMetni(10, { onEk: "⌀", tol: "h6", anma: 10 })).toMatch(/^%%c10 h6 \(0 \/ −0,009\)$|^%%c10 h6 \(0 \/ -0,009\)$/);
+    expect(olcuMetni(25, { tol: "+0.02/-0.01", anma: 25 })).toContain("/");
+    expect(olcuMetni(8.5, {})).toBe("8,5");
+    expect(olcuMetni(5, { tol: "özel", anma: 5 })).toBe("5 özel");
+  });
+  it("hiçbir yazı NaN ya da undefined içermez", () => {
+    expect(dxf).not.toMatch(/NaN|undefined/);
+  });
+});
