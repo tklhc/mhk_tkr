@@ -1,0 +1,40 @@
+:root {
+  --bg-base:       #080d14;
+  --bg-panel:      #0c1220;
+  --bg-surface:    #111a2b;
+  --bg-raised:     #0f1926;
+  --bg-input:      #080e18;
+  --border-dim:    #151f30;
+  --border-mid:    #1e2e45;
+  --border-hi:     #2a4060;
+  --accent:        #e8922a;
+  --accent-dim:    #b36a18;
+  --accent2:       #3a8fd4;
+  --text-hi:       #d4dce8;
+  --text-mid:      #6e88a4;
+  --text-lo:       #354a60;
+  --text-label:    #3d5570;
+  --red:           #cc4444;
+  --green:         #2d8a58;
+  --mono:          'JetBrains Mono','IBM Plex Mono',monospace;
+  --display:       'Rajdhani','Syne',sans-serif;
+  --panel-w:       288px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; -webkit-overflow-scrolling: touch; background: var(--bg-base); }
+input, select, button { font-size: 16px; }
+@media (min-width: 900px) { input, select, button { font-size: inherit; } }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+input:focus, select:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 1px rgba(232,146,42,0.12) !important; }
+input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+.cad-area {
+  background-color: #f7f9fb;
+  background-image:
+    linear-gradient(rgba(160,185,210,0.30) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,185,210,0.30) 1px, transparent 1px),
+    linear-gradient(rgba(160,185,210,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,185,210,0.10) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+}
