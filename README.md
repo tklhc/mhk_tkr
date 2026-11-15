@@ -55,3 +55,9 @@ Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D öl
 - **Uydurma yok:** iş emrinde olmayan değer (tolerans, helis/kesim yönü, kademe ve konik rayba ölçüleri, T-freze boğazı) varsayılan/boş bırakılır ve onay penceresinde uyarı olarak yazılır.
 - Resim dosyaları (PNG/JPG) okunmaz: OCR ile sayı okumak yanlış ölçü riski taşır. Taranmış (metin katmanı olmayan) PDF'ler de okunamaz.
 - Dosya yalnız tarayıcıda işlenir, hiçbir yere gönderilmez.
+
+## Diş profili detayı, salgı ve yüzey işaretleri
+
+- **Diş profili detayı** (yalnız *İş emri çizimi*): uçtan kesitte bir dişin kesici kenarı büyütülmüş çizilir. İş emrinden `Kesme Açısı`, `1./2. Serbest Yüzey Gen.` ve `1./2.Alın SY. Açısı` okunur; değerler *Takım → Diş profili detayı* alanlarından da elle girilir (0 = girilmedi). Kesme açısı ve 1. serbest yüzey (genişlik + açı) birlikte yoksa detay çizilmez, uydurma değer kullanılmaz. Açılar ve genişlikler ölçeklidir; kanal tabanı ve arka duvar şematiktir. Etiketlerin yorumu (kesme açısı = talaş açısı γ, Alın SY açısı = serbest yüzey açısı) içe aktarırken uyarı olarak yazılır.
+- **Salgı ve yüzey** (*Takım → Salgı ve yüzey*): girilen salgı toleransı için sap üstüne A datumu ve kesici kısma tolerans çerçevesi, girilen Ra için sap yüzeyine pürüzlülük işareti konur. Değerleri kullanıcı yazar.
+- Yan görünüş, detaylar, uçtan görünüş, kesit ve bu işaretler çizim üzerinde tutulup **sürüklenebilir**; konumlar dosyayla birlikte kaydedilir.

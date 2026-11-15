@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { TOOL_TYPES } from "../constants";
 import { tipDegistir } from "../geometry/tipler";
 import { takimProfili } from "../geometry/profil";
+import { disProfiliHatalari, disVerisiVar, disProfiliYeterli } from "../geometry/disProfili";
 import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
 import { pngBlobu, dosyaIndir } from "../io/export";
 import { guvenliAd } from "../io/dosya";
@@ -14,7 +15,7 @@ const SEKMELER = [["takim", "Takım"], ["resim", "Resim"], ["belge", "Belge"], [
 const GOSTER = [
   ["showDimD", "⌀D"], ["showDimd", "⌀d"], ["showDimL", "L"], ["showDiml1", "l₁"], ["showDiml2", "l₂"],
   ["showDimNeck", "⌀ Boğaz"], ["showDimHelix", "Helis açısı"], ["showDimAngles", "Açı / R / pah"],
-  ["kesitAA", "Kesit A-A"], ["detayA", "Uç detayı"],
+  ["kesitAA", "Kesit A-A"], ["detayA", "Uç detayı"], ["disProfili", "Diş profili"],
 ];
 
 const DAMGALAR = [
@@ -53,7 +54,7 @@ ${govde}`)}`
 function Panel({ params, setParams, dimOff, kayitYukle, isMobile, showPanel, onClose, onYeni }) {
   const [sekme, setSekme] = useState("takim");
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
-  const hatalar = useMemo(() => takimProfili(params).hatalar, [params]);
+  const hatalar = useMemo(() => { const g = takimProfili(params); return [...g.hatalar, ...disProfiliHatalari(params, g)]; }, [params]);
   const hata = useMemo(() => Object.fromEntries(hatalar.map((h) => [h.alan, h.mesaj])), [hatalar]);
   const tip = params.toolType;
   const kademeli = tip === "stepdrill";
@@ -140,6 +141,21 @@ function Panel({ params, setParams, dimOff, kayitYukle, isMobile, showPanel, onC
               })}>+ Kademe ekle</button>
             </Grup>
           )}
+
+          <Ek baslik="Salgı ve yüzey" rozet={[params.salgi && "salgı", params.ra && "Ra"].filter(Boolean).join(" · ") || "Yok"} acik={!!(params.salgi || params.ra)}>
+            <Metin label="Salgı toleransı (kesici kısım, A datumuna göre)" value={params.salgi} onChange={(v) => u("salgi", v)} placeholder="ör. 0,01" />
+            <Metin label="Sap yüzey pürüzlülüğü Ra" value={params.ra} onChange={(v) => u("ra", v)} placeholder="ör. 0,4" />
+            <div className="ipucu">Boş bırakılan çizilmez. Salgı girilince sap üstüne A datumu ve kesici kısma tolerans çerçevesi konur. Değerleri siz yazarsınız; program standart tablodan değer önermez.</div>
+          </Ek>
+
+          <Ek baslik="Diş profili detayı" rozet={disProfiliYeterli(params) ? "Var" : disVerisiVar(params) ? "Eksik" : "Yok"} acik={disVerisiVar(params)}>
+            <Sayi label="Kesme açısı  γ" value={params.dpKesme} onChange={(v) => u("dpKesme", v)} step={1} unit="°" hata={hata.dpKesme} />
+            <Sayi label="1. serbest yüzey gen." value={params.dpSy1Gen} onChange={(v) => u("dpSy1Gen", v)} step={0.1} hata={hata.dpSy1Gen} />
+            <Sayi label="1. serbest yüzey açısı" value={params.dpSy1Aci} onChange={(v) => u("dpSy1Aci", v)} step={1} unit="°" hata={hata.dpSy1Aci} />
+            <Sayi label="2. serbest yüzey gen." value={params.dpSy2Gen} onChange={(v) => u("dpSy2Gen", v)} step={0.1} hata={hata.dpSy2Gen} />
+            <Sayi label="2. serbest yüzey açısı" value={params.dpSy2Aci} onChange={(v) => u("dpSy2Aci", v)} step={1} unit="°" hata={hata.dpSy2Aci} />
+            <div className="ipucu">0 = girilmedi. Uçtan kesit detayı kesme açısı ve 1. serbest yüzey ile çizilir; 2. serbest yüzey isteğe bağlıdır. Yalnız <b>İş emri çiziminde</b> görünür. Şematiktir: açı ve genişlikler ölçeklidir, kanal tabanı gerçek profil değildir.</div>
+          </Ek>
 
           <Ek baslik="Sap detayı" rozet={params.sapTipi && params.sapTipi !== "HA" ? `DIN 6535 ${params.sapTipi}` : "Düz"} acik={sapOzel}>
             <Secim label="Sap tipi (DIN 6535)" value={params.sapTipi || "HA"} onChange={(v) => u("sapTipi", v)}

@@ -5,6 +5,8 @@ import { YanGorunus } from "./YanGorunus";
 import { DetayA } from "./DetayA";
 import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
+import { DisProfili, disProfiliGorunsun } from "./DisProfili";
+import { ToleransSembolleri, SALGI_UST_EK } from "./ToleransSembolleri";
 import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
 import { BilgiTablosu, tabloIcerigi, sayfaNotlari } from "./BilgiTablosu";
@@ -20,6 +22,8 @@ export function duzenHesapla(params) {
     olcek: params.olcek,
     tur: params.cizimTuru === "ie" ? "ie" : "musteri",
     tabloSayisi: tabloIcerigi(params, g)?.ogeler.length ?? 0,
+    ustEk: String(params.salgi ?? "").trim() ? SALGI_UST_EK : 0,   // salgı çerçevesi için takımın üstünde yer aç
+    altEk: disProfiliGorunsun(params, g) ? 30 : 0,   // diş profili detayı için takımın altında yer aç
   });
 }
 
@@ -47,8 +51,10 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
         <DetayA params={params} yerlesim={yan} bolum="isaret" harf={detayHarfi} {...ek} />
         <Kesit params={params} yan={yan} uc={uc} bolum="duzlem" {...ek} />
       </Surukle>
+      <ToleransSembolleri params={params} yerlesim={yan} {...ek} />
       <DetayA params={params} yerlesim={yan} bolum="gorunum" harf={detayHarfi} {...ek} />
       <Kesit params={params} yan={yan} uc={uc} bolum="gorunum" {...ek} />
+      <DisProfili params={params} yerlesim={yan} {...ek} />
       <Surukle id="g-uc" offsets={dimOff} setOffsets={setDimOff}>
         <UcGorunus params={params} yerlesim={uc} {...ek} />
       </Surukle>

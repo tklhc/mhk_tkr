@@ -63,9 +63,11 @@ export const ANTET = { w: 140, h: 52 };                  // iki çizim türünde
  * @param {number} [o.kademeSayisi]  üstte ek ölçü satırı için
  * @param {string} [o.olcek]  "otomatik" ya da "2:1" gibi
  * @param {"musteri"|"ie"} [o.tur]  çizim türü (antet ve tablo ölçüleri aynı; yalnız tablonun içeriği değişir)
+ * @param {number} [o.ustEk]  takımın üstünde ek boş yer (mm): salgı çerçevesi gibi işaretler için
+ * @param {number} [o.altEk]  takımın altında ek boş yer (mm): büyük detay görünüşleri için (diş profili)
  * @param {number} [o.tabloSayisi]  antetin solundaki bilgi tablosunun satır sayısı (0: tablo yok)
  */
-export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0 }) {
+export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0, altEk = 0, ustEk = 0 }) {
   const k = KAGITLAR[kagit] || KAGITLAR.A4;
   const ie = tur === "ie";
   const cerceve = { x: CERCEVE.sol, y: CERCEVE.ust, w: k.w - CERCEVE.sol - CERCEVE.sag, h: k.h - CERCEVE.ust - CERCEVE.alt };
@@ -82,8 +84,8 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
 
   // Ölçü çizgileri için pay: solda d, sağda D; altta L ve l1, üstte l2/kademeler
   const yatayPay = 36;
-  const ustPay = 16 + kademeSayisi * 7;
-  const altPay = 30;
+  const ustPay = 16 + kademeSayisi * 7 + ustEk;
+  const altPay = 30 + altEk;
   const secilen = olcekOku(olcek);
   const yanOlcek = secilen || olcekSec([[L, yanBolge.w - yatayPay], [D, yanBolge.h - ustPay - altPay]]);
   const ucOlcek = olcekSec([[D, Math.min(ucBolge.w - 30, ucBolge.h - 46)]]);

@@ -5,6 +5,7 @@
 // kullanıcıya uyarı olarak bildirilir. Toleranslar iş emrinde yer almadığı için boş bırakılır.
 
 import { tipUygula } from "../geometry/tipler";
+import { disProfiliYeterli } from "../geometry/disProfili";
 
 // Karakter sayısını koruyarak Türkçe harfleri sadeleştirir: konumlar özgün metinle aynı kalır.
 const HARITA = { ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", İ: "i", I: "i", ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u", â: "a", Â: "a", î: "i", Î: "i", û: "u", Û: "u", " ": " ", "×": "x", "’": "'", "‘": "'" };
@@ -193,6 +194,28 @@ export function isEmriMetniCoz(metin) {
   return { tip, tipAdi, tipKodu, degerler, bulunan, ekOzellikler, bilgi, uyarilar };
 }
 
+// İş emri etiketi → diş profili alanı (norm ile karşılaştırılır). Eşleme etiketlerin okunuşuna göredir:
+// "1./2. serbest yüzey genişliği" ile "1./2. alın SY açısı" aynı satırda çifttir.
+const DIS_ETIKETLERI = {
+  dpKesme: ["Kesme Açısı"],
+  dpSy1Gen: ["1. Serbest Yüzey Gen.", "1.SY Genişliği"],
+  dpSy1Aci: ["1.Alın SY. Açısı", "1.Alın Açısı"],
+  dpSy2Gen: ["2.Serb. Yüzey Gen.", "2. Serbest Yüzey Gen.", "2.SY Genişliği"],
+  dpSy2Aci: ["2.Alın SY. Açısı", "2.Alın Açısı"],
+};
+
+/** Ek özelliklerden diş profili sayılarını çıkarır; bulunamayan alan 0 (girilmedi) olur. */
+export function disProfiliDegerleri(ekOzellikler) {
+  const sonuc = { dpKesme: 0, dpSy1Gen: 0, dpSy1Aci: 0, dpSy2Gen: 0, dpSy2Aci: 0 };
+  for (const [alan, adlar] of Object.entries(DIS_ETIKETLERI)) {
+    const hedef = adlar.map((a) => norm(a).replace(/[\s.]/g, ""));
+    const bulunan = (ekOzellikler || []).find(([ad]) => hedef.includes(norm(ad).replace(/[\s.]/g, "")));
+    const v = bulunan ? sayiOku(bulunan[1]) : null;
+    if (v != null) sonuc[alan] = v;
+  }
+  return sonuc;
+}
+
 const gecerliTarih = (s) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) || /^(\d{2})[./](\d{2})[./](\d{4})$/.exec(s);
   if (!m) return "";
@@ -255,6 +278,13 @@ export function isEmriParametreleri(sonuc, mevcut) {
   p.coating = b.kaplama || "";
   p.ekOzellikler = sonuc.ekOzellikler;
   p.ekGoster = true;
+  Object.assign(p, disProfiliDegerleri(sonuc.ekOzellikler));
+  const dp = disProfiliDegerleri(sonuc.ekOzellikler);
+  if (disProfiliYeterli(dp)) {
+    uyarilar.push("Diş profili detayı: 'Kesme Açısı' talaş açısı (γ), '1./2. Serbest Yüzey Gen.' ve '1./2.Alın SY. Açısı' 1./2. serbest yüzeyin genişliği ve açısı olarak yorumlandı; iş emrindeki anlamlarını kontrol edin.");
+  } else if (Object.values(dp).some((v) => v > 0)) {
+    uyarilar.push("Diş profili detayı çizilmedi: kesme açısı ve 1. serbest yüzey (genişlik + açı) birlikte gerekli.");
+  }
   p.cizimTuru = "ie";   // iş emrinden gelen resim iş emri çizimidir (müşteriye vermek için türü değiştirin)
   return { params: p, uyarilar };
 }

@@ -36,6 +36,10 @@ const DEFAULT_PARAMS = {
     { dia: 14, len: 15, angle: 90, tolDia: "±0.01", tolLen: "±0.01" },
   ],
   dCore: 6,
+  salgi: "",            // salgı toleransı (kesici kenar, sap A datumuna göre), ör. "0,01"; boşsa çizilmez
+  ra: "",               // sap yüzey pürüzlülüğü Ra, ör. "0,4"; boşsa çizilmez
+  // Diş profili detayı (uçtan kesit): 0 = girilmedi. Kesme açısı γ, 1./2. serbest yüzey genişliği (mm) ve açısı (°)
+  dpKesme: 0, dpSy1Gen: 0, dpSy1Aci: 0, dpSy2Gen: 0, dpSy2Aci: 0,
   coolantHole: false,
   coolantCount: 2,
   material: "Karbür",
@@ -56,6 +60,7 @@ const DEFAULT_PARAMS = {
   showDimAngles: true,
   kesitAA: false,       // kesit görünüşü A-A (şematik; açık değilse çizilmez)
   detayA: true,         // büyütülmüş uç detayı
+  disProfili: true,     // diş profili detayı (yalnız iş emri çiziminde, verisi varsa)
   ekOzellikler: [],     // iş emrinden gelen çizilmeyen üretim özellikleri: [[ad, değer], ...]
   ekGoster: true,       // üretim özellikleri tablosu resimde görünsün
   sunum: true,          // sunum stili: gölgeli gövde + kaplama rengi (false: yalnız çizgi)
