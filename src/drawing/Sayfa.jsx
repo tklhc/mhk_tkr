@@ -39,7 +39,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
       <DetayA params={params} yerlesim={yan} harf={kesitVarMi(params, takimProfili(params)) ? "B" : "A"} {...ek} />
       <Kesit params={params} yan={yan} uc={uc} {...ek} />
       <UcGorunus params={params} yerlesim={uc} {...ek} />
-      <Antet params={params} sayfa={duzen} olcekMetni={olcekMetni} />
+      <Antet params={params} sayfa={duzen} />
 
       {yan.tasiyor && (
         <text x={alan.x + 3} y={alan.y + 5} fontSize={3} fontFamily={YAZI.font} fill="#c62828">

@@ -144,10 +144,15 @@ describe("Antet okunabilirliği", () => {
     expect(svg).toContain(">Malzeme<");
     expect(svg).toContain(">Kaplama<");
   });
-  it("antet alanları: ölçek, kağıt, tarih, çizen, onaylayan, genel tolerans, çizim no, rev", () => {
+  it("antet alanları: çizim no, rev, tarih, teslim, müşteri, İE no, çizen, onaylayan, genel tolerans", () => {
     const svg = render({ ...DEFAULT_PARAMS, drawingNo: "MHK-TR-1", revision: "A" });
-    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "ÖLÇEK", "KAĞIT", "TARİH", "ÇİZEN", "ONAYLAYAN", "GENEL TOLERANS"]) expect(svg).toContain(`>${e}<`);
+    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "TESLİM", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN", "GENEL TOLERANS"]) expect(svg).toContain(`>${e}<`);
     expect(svg).toContain(">MHK-TR-1<");
+  });
+  it("antette Ölçek ve Kağıt hücresi yok", () => {
+    const svg = render({ ...DEFAULT_PARAMS });
+    expect(svg).not.toContain(">ÖLÇEK<");
+    expect(svg).not.toContain(">KAĞIT<");
   });
   it("yazı boyutları: antette hiçbir yazı 2,4 mm'den küçük değil", () => {
     const svg = render({ ...DEFAULT_PARAMS, customerName: "X", orderNo: "1", deliveryDate: "2026-11-20" });
@@ -156,10 +161,31 @@ describe("Antet okunabilirliği", () => {
     expect(boyutlar.length).toBeGreaterThan(20);
     expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
   });
-  it("müşteri modunda iletişim bilgisi gizlenir, müşteri satırları kalır", () => {
-    const svg = render({ ...DEFAULT_PARAMS, customerMode: true, customerName: "ABC Makina", orderNo: "S-1" });
+  it("müşteri modunda iletişim bilgisi gizlenir; müşteri ve İE no antet hücresinde", () => {
+    const svg = render({ ...DEFAULT_PARAMS, customerMode: true, customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
     expect(svg).not.toContain("0507");
-    expect(svg).toContain("Müşteri: ABC Makina");
-    expect(svg).toContain("Sipariş: S-1");
+    expect(svg).toContain(">ABC Makina<");
+    expect(svg).toContain(">İE-818<");
+    expect(svg).toContain(">20.11.2026<");
+  });
+});
+
+import { tolYigini, YAZI_PAYI } from "../src/drawing/iso.jsx";
+
+describe("Ölçü yazısı toleransı", () => {
+  it("ISO sınıfı (tabloda varsa) ve iki sapma yığınlıdır; ± ve boş değildir", () => {
+    expect(tolYigini("h6", 10)).toBe(true);
+    expect(tolYigini("+0.02/-0.01", 10)).toBe(true);
+    expect(tolYigini("±0.05", 10)).toBe(false);
+    expect(tolYigini("", 10)).toBe(false);
+    expect(tolYigini("K7", 10)).toBe(false); // tabloda yok: yalnız metin
+  });
+  it("yığınlı toleransta yazı ölçü çizgisinden daha yukarıda durur", () => {
+    expect(YAZI_PAYI.yigin).toBeGreaterThan(YAZI_PAYI.duz);
+  });
+  it("sayfada h6 sapmaları ana yazıyla aynı grupta, yazılar çizgiyi örtmez (üst sapma < taban)", () => {
+    const svg = render({ ...DEFAULT_PARAMS });
+    expect(svg).toContain("−0,009");
+    expect(svg).toContain("h6");
   });
 });

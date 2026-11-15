@@ -1,6 +1,7 @@
 // ISO 128 (çizgiler) ve ISO 129 (ölçülendirme) yapı taşları.
 // Tüm boyutlar kağıt üzerinde mm'dir.
 
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSurukle } from "./Draggable";
 import { toleransCoz, sapmaYaz } from "../geometry/tolerans";
 
@@ -45,17 +46,30 @@ export function Ok({ x, y, ux, uy }) {
   return <polygon points={`${x},${y} ${bx - ay * OK.yari},${by + ax * OK.yari} ${bx + ay * OK.yari},${by - ax * OK.yari}`} fill={CIZGI.renk} stroke="none" />;
 }
 
+// Sunucuda (testler) useLayoutEffect uyarı verir; orada useEffect kullanılır.
+const useOlcumEfekti = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/** Tolerans, ana yazının yanında alt alta iki sapma olarak mı yazılacak? */
+export function tolYigini(tol, anma) {
+  const t = toleransCoz(tol, anma);
+  return !!t && ((t.tur === "iso" && t.ust != null) || t.tur === "sapma");
+}
+
+/** Yığınlı toleransta yazının ölçü çizgisinden ne kadar yukarı alınacağı (alt sapma taban çizgisinin altına iner). */
+export const YAZI_PAYI = { duz: 1, yigin: 2.8 };
+
 /**
  * Ölçü yazısı: değer + tolerans (ISO 129-1).
  *   ISO sınıfı:  ⌀10 h6  ⁰₋₀,₀₀₉  (sapmalar tabloda varsa)
  *   Simetrik:    75 ±0,05
  *   Sapmalı:     25 ⁺⁰,⁰²₋₀,₀₁
  * (x, y) yazının ortası / taban çizgisi; dondur: dikey ölçüde -90°.
+ * Ana yazının ve sapmaların gerçek genişliği tarayıcıda ölçülür; böylece sapmalar
+ * ana yazıya bitişik durur (sunucuda ve ilk çizimde tahmin kullanılır).
  */
 export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, hizala = "middle" }) {
   const t = toleransCoz(tol, anma ?? deger);
   const ana = `${onEk}${fmt(deger)}`;
-  const parcalar = [];
   let ek = "";       // ana satıra eklenen (ISO sınıfı, ±)
   let ust = null, alt = null;
   if (t?.tur === "iso") {
@@ -69,19 +83,30 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
     ek = ` ${String(tol).trim()}`; // tanınmayan metin olduğu gibi
   }
   const anaMetin = ana + ek;
-  const wAna = yaziGenisligi(anaMetin, YAZI.olcu);
-  const wTol = ust != null ? Math.max(yaziGenisligi(ust, YAZI.tol), yaziGenisligi(alt, YAZI.tol)) + 0.8 : 0;
-  const w = wAna + wTol;
-  const x0 = hizala === "start" ? x : hizala === "end" ? x - w : x - w / 2;
 
-  parcalar.push(
-    <text key="a" x={x0} y={y} fontSize={YAZI.olcu} fontFamily={YAZI.font} fill={CIZGI.renk}>{anaMetin}</text>
-  );
+  const refA = useRef(null), refU = useRef(null), refL = useRef(null);
+  const [olc, setOlc] = useState(null);
+  useOlcumEfekti(() => {
+    const uzun = (r) => { try { const v = r.current?.getComputedTextLength?.(); return Number.isFinite(v) && v > 0 ? v : null; } catch { return null; } };
+    const yeni = { a: uzun(refA), u: uzun(refU), l: uzun(refL) };
+    if (yeni.a == null) return;
+    setOlc((o) => (o && ["a", "u", "l"].every((k) => Math.abs((o[k] ?? 0) - (yeni[k] ?? 0)) < 0.02) ? o : yeni));
+  }, [anaMetin, ust, alt]);
+
+  const BOSLUK = 0.7;
+  const wAna = olc?.a ?? yaziGenisligi(anaMetin, YAZI.olcu);
+  const wSapma = ust != null ? Math.max(olc?.u ?? yaziGenisligi(ust, YAZI.tol), olc?.l ?? yaziGenisligi(alt, YAZI.tol)) : 0;
+  const w = wAna + (ust != null ? BOSLUK + wSapma : 0);
+  const x0 = hizala === "start" ? x : hizala === "end" ? x - w : x - w / 2;
+  const tx = x0 + wAna + BOSLUK;
+  // Sapma yığını: üst sapmanın tepesi ana yazının tepesiyle hizalı, alt sapma taban çizgisinin biraz altında
+  const parcalar = [
+    <text key="a" ref={refA} x={x0} y={y} fontSize={YAZI.olcu} fontFamily={YAZI.font} fill={CIZGI.renk}>{anaMetin}</text>,
+  ];
   if (ust != null) {
-    const tx = x0 + wAna + 0.8;
     parcalar.push(
-      <text key="u" x={tx} y={y - YAZI.olcu * 0.55} fontSize={YAZI.tol} fontFamily={YAZI.font} fill={CIZGI.renk}>{ust}</text>,
-      <text key="l" x={tx} y={y + YAZI.tol * 0.15} fontSize={YAZI.tol} fontFamily={YAZI.font} fill={CIZGI.renk}>{alt}</text>
+      <text key="u" ref={refU} x={tx} y={y - 0.7} fontSize={YAZI.tol} fontFamily={YAZI.font} fill={CIZGI.renk}>{ust}</text>,
+      <text key="l" ref={refL} x={tx} y={y + 1.55} fontSize={YAZI.tol} fontFamily={YAZI.font} fill={CIZGI.renk}>{alt}</text>
     );
   }
   return dondur ? <g transform={`rotate(-90 ${x} ${y})`}>{parcalar}</g> : <g>{parcalar}</g>;
@@ -132,11 +157,12 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
     <Ok key="o2" x={ox2} y={oy2} ux={-sy * ex} uy={-sy * ey} />,
   ];
 
-  // Yazı: yatayda çizginin üstünde, dikeyde solunda (sağdan okunur)
+  // Yazı: yatayda çizginin üstünde, dikeyde solunda (sağdan okunur); sapma yığını varsa daha yukarı/uzağa
+  const pay = tolYigini(tol, anma ?? deger) ? YAZI_PAYI.yigin : YAZI_PAYI.duz;
   const orta = (lo + hi) / 2;
   const yazi = yatay
-    ? <OlcuYazisi x={orta} y={k - 1} deger={deger} onEk={onEk} tol={tol} anma={anma} />
-    : <OlcuYazisi x={k - 1} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} dondur />;
+    ? <OlcuYazisi x={orta} y={k - pay} deger={deger} onEk={onEk} tol={tol} anma={anma} />
+    : <OlcuYazisi x={k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} dondur />;
 
   return (
     <g {...olaylar}>

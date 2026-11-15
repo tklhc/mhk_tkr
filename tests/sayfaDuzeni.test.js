@@ -19,12 +19,13 @@ describe("ölçek", () => {
 });
 
 describe("sayfa düzeni", () => {
-  it("A4 yatay: çerçeve ISO 5457, antet 180 mm sağ altta", () => {
+  it("A4 yatay: çerçeve ISO 5457, antet 200 mm sağ altta", () => {
     const s = sayfaDuzeni({ kagit: "A4", L: 75, D: 10 });
     expect(s.cerceve).toEqual({ x: 20, y: 10, w: 267, h: 190 });
     expect(s.antet.x + s.antet.w).toBe(287);
     expect(s.antet.y + s.antet.h).toBe(200);
-    expect(s.antet.w).toBe(180);
+    expect(s.antet.w).toBe(200);
+    expect(s.veriTablosu.w).toBe(67); // teknik veri tablosu dar
   });
 
   it("A4'te 75 mm freze 2:1, 150 mm 1:1, 300 mm 1:2", () => {
