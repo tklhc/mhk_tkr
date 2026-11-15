@@ -33,7 +33,7 @@ export function olcekSec(sigdirmalar) {
 }
 
 const CERCEVE = { sol: 20, ust: 10, sag: 10, alt: 10 }; // ISO 5457
-export const ANTET = { w: 180, h: 42 };                  // ISO 7200: en fazla 180 mm
+export const ANTET = { w: 180, h: 52 };                  // ISO 7200: en fazla 180 mm; yazılar okunsun diye 52 mm yüksek
 
 /**
  * @param {object} o

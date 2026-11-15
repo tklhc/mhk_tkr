@@ -128,3 +128,38 @@ describe("Kesit A-A", () => {
     expect(svg).toMatch(/DETAY A/);
   });
 });
+
+import { sigdir } from "../src/drawing/Antet.jsx";
+
+describe("Antet okunabilirliği", () => {
+  it("sigdir: kısa metin azami boyutta, uzun metin küçülür ama asgarinin altına inmez", () => {
+    expect(sigdir("MHK", 60, 9)).toBe(9);
+    expect(sigdir("A".repeat(40), 70, 9)).toBeCloseTo(3.5, 6);
+    expect(sigdir("A".repeat(400), 70, 9)).toBe(2.6);
+  });
+  it("antette tekrar yok: Malzeme ve Kaplama yalnız teknik veri tablosunda", () => {
+    const svg = render({ ...DEFAULT_PARAMS });
+    expect(svg).not.toContain(">MALZEME<");
+    expect(svg).not.toContain(">KAPLAMA<");
+    expect(svg).toContain(">Malzeme<");
+    expect(svg).toContain(">Kaplama<");
+  });
+  it("antet alanları: ölçek, kağıt, tarih, çizen, onaylayan, genel tolerans, çizim no, rev", () => {
+    const svg = render({ ...DEFAULT_PARAMS, drawingNo: "MHK-TR-1", revision: "A" });
+    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "ÖLÇEK", "KAĞIT", "TARİH", "ÇİZEN", "ONAYLAYAN", "GENEL TOLERANS"]) expect(svg).toContain(`>${e}<`);
+    expect(svg).toContain(">MHK-TR-1<");
+  });
+  it("yazı boyutları: antette hiçbir yazı 2,4 mm'den küçük değil", () => {
+    const svg = render({ ...DEFAULT_PARAMS, customerName: "X", orderNo: "1", deliveryDate: "2026-11-20" });
+    const antet = svg.slice(svg.indexOf("TEKNİK VERİ") - 400);
+    const boyutlar = [...antet.matchAll(/font-size="([0-9.]+)"/g)].map((m) => +m[1]);
+    expect(boyutlar.length).toBeGreaterThan(20);
+    expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
+  });
+  it("müşteri modunda iletişim bilgisi gizlenir, müşteri satırları kalır", () => {
+    const svg = render({ ...DEFAULT_PARAMS, customerMode: true, customerName: "ABC Makina", orderNo: "S-1" });
+    expect(svg).not.toContain("0507");
+    expect(svg).toContain("Müşteri: ABC Makina");
+    expect(svg).toContain("Sipariş: S-1");
+  });
+});
