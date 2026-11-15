@@ -10,13 +10,6 @@ const TOOL_TYPES = {
   tslot: "T-Freze (T-Slot)",
 };
 
-// Takım tipine geçilirken uygulanan başlangıç değerleri (düzenlenebilir; standart değil)
-export const TIP_VARSAYILAN = {
-  reamer: (p) => ({ z: 6, helix: 0, chamferSize: p.chamferSize > 0 ? p.chamferSize : 0.5, l2: 0 }),
-  taperreamer: (p) => ({ z: 6, helix: 0, l2: 0, tipD: Math.max(0.1, Math.round((p.D - p.l1 / 50) * 100) / 100) }), // 1:50 konik
-  tslot: (p) => ({ z: Math.max(p.z || 0, 4), helix: 0, l1: 3, l2: 10, neckDia: Math.round(p.D * 0.5 * 10) / 10, neckAngle: 45 }),
-};
-
 const DEFAULT_PARAMS = {
   toolType: "flat",
   D: 10, tolD: "h6",
@@ -61,7 +54,7 @@ const DEFAULT_PARAMS = {
   showDimNeck: true,
   showDimHelix: true,
   showDimAngles: true,
-  kesitAA: true,        // kesit görünüşü A-A
+  kesitAA: false,       // kesit görünüşü A-A (şematik; açık değilse çizilmez)
   detayA: true,         // büyütülmüş uç detayı
   // Sayfa
   kagit: "A4",           // A4 | A3

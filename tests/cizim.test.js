@@ -100,24 +100,31 @@ import { kesitVarMi } from "../src/drawing/Kesit.jsx";
 
 describe("Kesit A-A", () => {
   const dene = (ek) => { const p = { ...DEFAULT_PARAMS, ...ek }; return kesitVarMi(p, takimProfili(p)); };
-  it("çekirdeği tanımlı kanallı takımda var, çekirdek 0 ise yok", () => {
-    expect(dene({})).toBe(true);
-    expect(dene({ dCore: 0 })).toBe(false);
+  it("açıksa ve çekirdek tanımlıysa var; çekirdek 0 ya da kapalıysa yok", () => {
+    expect(dene({ kesitAA: true })).toBe(true);
+    expect(dene({ kesitAA: true, dCore: 0 })).toBe(false);
     expect(dene({ kesitAA: false })).toBe(false);
+    expect(dene({})).toBe(false); // varsayılan: kapalı
   });
-  it("sayfada kesme düzlemi ve taralı kesit çizilir", () => {
-    const svg = render({ ...DEFAULT_PARAMS });
-    expect(svg).toMatch(/KESİT A-A \(\d+:1\)/);
+  it("sayfada kesme düzlemi, taralı kesit ve 'şematik' notu çizilir", () => {
+    const svg = render({ ...DEFAULT_PARAMS, kesitAA: true });
     expect(svg).toContain("kesit-tarama");
+    expect(svg).toContain("şematik");
+    expect(svg).toContain("A-A");
   });
   it("kesit varken detay harfi B olur", () => {
-    const svg = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
-    expect(svg).toContain("KESİT A-A");
+    const svg = render({ ...DEFAULT_PARAMS, kesitAA: true, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
+    expect(svg).toContain("kesit-tarama");
     expect(svg).toMatch(/DETAY B/);
   });
+  it("kesit kapalıyken detay A olur ve taralı kesit çizilmez", () => {
+    const svg = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
+    expect(svg).not.toContain("kesit-tarama");
+    expect(svg).toMatch(/DETAY A/);
+  });
   it("çekirdek yoksa kesit yok ve detay A kalır", () => {
-    const svg = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1, dCore: 0 });
-    expect(svg).not.toContain("KESİT");
+    const svg = render({ ...DEFAULT_PARAMS, kesitAA: true, toolType: "bullnose", D: 12, d: 12, rCorner: 1, dCore: 0 });
+    expect(svg).not.toContain("kesit-tarama");
     expect(svg).toMatch(/DETAY A/);
   });
 });

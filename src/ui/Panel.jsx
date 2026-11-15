@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import { TOOL_TYPES, TIP_VARSAYILAN } from "../constants";
+import { TOOL_TYPES } from "../constants";
+import { tipDegistir } from "../geometry/tipler";
 import { takimProfili } from "../geometry/profil";
 import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
 import { pngBlobu } from "../io/export";
@@ -76,7 +77,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
           )}
 
           <select className="secim tip-secici" aria-label="Takım tipi" value={tip}
-            onChange={(e) => { const v = e.target.value; setParams((p) => ({ ...p, toolType: v, ...(TIP_VARSAYILAN[v] ? TIP_VARSAYILAN[v](p) : {}) })); }}>
+            onChange={(e) => { const v = e.target.value; setParams((p) => tipDegistir(p, v)); }}>
             {Object.entries(TOOL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
 
@@ -162,10 +163,11 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
           <Grup baslik="Resimde göster" sag="aç / kapat">
             <div className="cipler">
               {GOSTER.map(([k, ad]) => {
-                const acik = params[k] !== false;
+                const acik = k === "kesitAA" ? params.kesitAA === true : params[k] !== false;
                 return <Cip key={k} acik={acik} onClick={() => u(k, !acik)}>{ad}</Cip>;
               })}
             </div>
+            <div className="ipucu"><b>Kesit A-A:</b> kanallı bölümün enine kesiti. Diş sayısı (z), çekirdek çapı (dc) ve kesim yönü <i>Takım</i> sekmesinden gelir. Kanal profili şematiktir; gerçek taşlama profilini göstermez, bu yüzden varsayılan kapalıdır.</div>
             <div className="ipucu">Ölçüleri ve etiketleri çizim üzerinde sürükleyerek kaydırabilirsiniz; araç çubuğundaki ↺ konumları sıfırlar.</div>
           </Grup>
 

@@ -7,7 +7,7 @@ const n = (v) => +v.toFixed(3);
 
 /** Kanallı bölümde kesit alınabilir mi (çekirdek tanımlı, kesici bölüm var)? */
 export function kesitVarMi(params, g) {
-  return params.kesitAA !== false && params.dCore > 0 && params.dCore < g.D && params.z >= 1 && g.L - g.x.boyunSonu > 1;
+  return params.kesitAA === true && params.dCore > 0 && params.dCore < g.D && params.z >= 1 && g.L - g.x.boyunSonu > 1;
 }
 
 /**
@@ -61,6 +61,9 @@ export function Kesit({ params, yan, uc, dimOff, setDimOff }) {
           offsets={dimOff} setOffsets={setDimOff} />
         <text x={n(cx)} y={n(cy + Rk + 16)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
           KESİT {harf}-{harf} ({olcekYaz(sk)})
+        </text>
+        <text x={n(cx)} y={n(cy + Rk + 20)} textAnchor="middle" fontSize={2.3} fontFamily={YAZI.font} fill="#666">
+          şematik kanal profili
         </text>
       </g>
     );
