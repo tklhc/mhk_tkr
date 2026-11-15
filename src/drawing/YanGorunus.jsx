@@ -238,7 +238,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
       e.push(<Kilavuz key="aR" id="aR" hedef={[hx, hy]} dirsek={[X(g.L) + 12, ust - 6]} metin={`R${fmt(r)}`} {...ek} />);
     }
     // Pah
-    if ((g.tip === "chamfer" || g.tip === "reamer") && params.chamferSize > 0) {
+    if ((g.tip === "chamfer" || g.tip === "reamer" || g.tip === "flat") && params.chamferSize > 0) {
       const c = params.chamferSize;
       const hx = X(g.L - c / 2), hy = Y(hD - c / 2);
       e.push(<Kilavuz key="aC" id="aC" hedef={[hx, hy]} dirsek={[X(g.L) + 12, ust - 6]} metin={`${fmt(c)}×45°`} {...ek} />);

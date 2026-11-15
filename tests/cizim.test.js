@@ -189,3 +189,35 @@ describe("Ölçü yazısı toleransı", () => {
     expect(svg).toContain("h6");
   });
 });
+
+import { uretimYerlesimi } from "../src/drawing/UretimTablosu.jsx";
+import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
+
+describe("Üretim özellikleri tablosu", () => {
+  const ek = [["Kesme Açısı", "8 °"], ["Kısa Diş Genişliği", "4.65 mm"], ["Yüzey Tipi", "Serbest Yüzey"], ["Alın Açısı", "1.5 °"]];
+  it("özellik yoksa ya da kapalıysa çizilmez", () => {
+    expect(render({ ...DEFAULT_PARAMS })).not.toContain("uretim-tablosu");
+    expect(render({ ...DEFAULT_PARAMS, ekOzellikler: ek, ekGoster: false })).not.toContain("uretim-tablosu");
+  });
+  it("özellikler varken tablo ve değerleri çizilir", () => {
+    const svg = render({ ...DEFAULT_PARAMS, ekOzellikler: ek });
+    expect(svg).toContain("uretim-tablosu");
+    expect(svg).toContain("ÜRETİM ÖZELLİKLERİ");
+    expect(svg).toContain(">Serbest Yüzey<");
+    expect(svg).not.toMatch(/NaN|undefined/);
+  });
+  it("tablo yan görünüş bölgesinin içinde ve ölçü satırlarının altında kalır", () => {
+    const p = { ...DEFAULT_PARAMS, ekOzellikler: ek };
+    const yan = duzenHesapla(p).yan;
+    const y = uretimYerlesimi(p, yan);
+    expect(y).not.toBeNull();
+    expect(y.x).toBeGreaterThanOrEqual(yan.bolge.x);
+    expect(y.x + y.w).toBeLessThanOrEqual(yan.bolge.x + yan.bolge.w);
+    expect(y.y + y.h).toBeLessThanOrEqual(yan.bolge.y + yan.bolge.h);
+    expect(y.y).toBeGreaterThan(yan.oy + 5 * yan.olcek);
+  });
+  it("çok fazla özellik sığmazsa tablo atlanır, çökmez", () => {
+    const cok = Array.from({ length: 60 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
+    expect(() => render({ ...DEFAULT_PARAMS, ekOzellikler: cok })).not.toThrow();
+  });
+});

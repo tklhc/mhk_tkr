@@ -7,6 +7,7 @@ import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
+import { UretimTablosu, uretimYerlesimi } from "./UretimTablosu";
 import { YAZI } from "./iso";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
@@ -36,7 +37,8 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
       <Cerceve kagit={kagit} cerceve={c} />
 
       <YanGorunus params={params} yerlesim={yan} {...ek} />
-      <DetayA params={params} yerlesim={yan} harf={kesitVarMi(params, takimProfili(params)) ? "B" : "A"} {...ek} />
+      <UretimTablosu params={params} yan={yan} />
+      <DetayA params={params} yerlesim={yan} sagaYasla={!!uretimYerlesimi(params, yan)} harf={kesitVarMi(params, takimProfili(params)) ? "B" : "A"} {...ek} />
       <Kesit params={params} yan={yan} uc={uc} {...ek} />
       <UcGorunus params={params} yerlesim={uc} {...ek} />
       <Antet params={params} sayfa={duzen} />

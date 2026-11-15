@@ -210,3 +210,18 @@ describe("sap detayı (DIN 6535)", () => {
     expect(g.hatalar.map((h) => h.alan)).toContain("sapDuzUzunluk");
   });
 });
+
+describe("düz frezede köşe pahı", () => {
+  it("köşe pahı ucu 45° keser, kontur kapalı, detay çıkar", () => {
+    const g = takimProfili(p({ toolType: "flat", D: 15.5, d: 16, L: 100, l1: 45, chamferSize: 0.264 }));
+    expect(yaricapAt(g, 100)).toBeCloseTo(15.5 / 2 - 0.264, 9);
+    expect(yaricapAt(g, 99.5)).toBeCloseTo(15.5 / 2, 9);            // pahın dışında tam çap
+    expect(yaricapAt(g, 100 - 0.132)).toBeCloseTo(15.5 / 2 - 0.132, 6); // pah ortasında 45°
+    expect(kesintisizVeKapali(tamKontur(g))).toBe(true);
+    expect(g.hatalar).toEqual([]);
+  });
+  it("pah yoksa düz uç", () => {
+    const g = takimProfili(p({ toolType: "flat", chamferSize: 0 }));
+    expect(yaricapAt(g, 75)).toBe(5);
+  });
+});

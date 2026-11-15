@@ -99,7 +99,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
             <Sayi label="Çekirdek  dc" value={params.dCore} onChange={(v) => u("dCore", v)} step={0.1} hata={hata.dCore} />
             {tip === "drill" && <Sayi label="Uç açısı" value={params.pointAngle} onChange={(v) => u("pointAngle", v)} unit="°" hata={hata.pointAngle} />}
             {tip === "bullnose" && <Sayi label="Köşe radyüsü  R" value={params.rCorner} onChange={(v) => u("rCorner", v)} step={0.1} hata={hata.rCorner} />}
-            {(tip === "chamfer" || tip === "reamer") && <Sayi label={tip === "reamer" ? "Giriş pahı" : "Pah boyu"} value={params.chamferSize} onChange={(v) => u("chamferSize", v)} step={0.1} hata={hata.chamferSize} />}
+            {(tip === "chamfer" || tip === "reamer" || tip === "flat") && <Sayi label={tip === "reamer" ? "Giriş pahı" : tip === "flat" ? "Köşe pahı" : "Pah boyu"} value={params.chamferSize} onChange={(v) => u("chamferSize", v)} step={0.1} hata={hata.chamferSize} />}
             <div className="iki" style={{ marginTop: 8 }}>
               <Secim label="Helis yönü" value={params.helixHand} onChange={(v) => u("helixHand", v)} secenekler={[["Sağ", "Sağ"], ["Sol", "Sol"]]} />
               <Secim label="Kesim yönü" value={params.cutDir} onChange={(v) => u("cutDir", v)} secenekler={[["Sağ", "Sağ"], ["Sol", "Sol"]]} />
@@ -226,10 +226,25 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
             <Anahtar acik={params.customerMode} onChange={(v) => u("customerMode", v)} altMetin="Antette telefon, e-posta ve web adresini gizler">Müşteri modu</Anahtar>
             <Metin label="Müşteri adı" value={params.customerName} onChange={(v) => u("customerName", v)} placeholder="ör. ABC Makina" />
             <div className="iki">
-              <Metin label="Sipariş no" value={params.orderNo} onChange={(v) => u("orderNo", v)} placeholder="SIP-2026-001" />
+              <Metin label="İE / sipariş no" value={params.orderNo} onChange={(v) => u("orderNo", v)} placeholder="SIP-2026-001" />
               <Metin label="Teslim tarihi" type="date" value={params.deliveryDate} onChange={(v) => u("deliveryDate", v)} />
             </div>
           </Grup>
+
+          {(params.ekOzellikler || []).length > 0 && (
+            <Grup baslik="Üretim özellikleri" sag={`${params.ekOzellikler.length} kayıt · iş emrinden`}>
+              <Anahtar acik={params.ekGoster !== false} onChange={(v) => u("ekGoster", v)} altMetin="Çizilmeyen taşlama/üretim verileri sayfada tablo olarak görünür">Resimde göster</Anahtar>
+              <div className="liste" style={{ marginTop: 8, marginBottom: 8 }}>
+                {params.ekOzellikler.map(([ad, deger], i) => (
+                  <div key={i} className="liste-oge" style={{ cursor: "default", padding: "6px 10px" }}>
+                    <div className="govde"><div className="ad" style={{ fontWeight: 500, fontSize: 13 }}>{ad}</div></div>
+                    <span className="alt" style={{ color: "var(--text-hi)" }}>{deger}</span>
+                  </div>
+                ))}
+              </div>
+              <button className="btn tam hayalet" onClick={() => u("ekOzellikler", [])}>Tabloyu temizle</button>
+            </Grup>
+          )}
 
           <Grup baslik="Paylaş">
             <div className="btn-satir">

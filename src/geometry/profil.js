@@ -98,7 +98,7 @@ export function takimProfili(params) {
   if (l2 > 0 && d > nD && !(neckAngle > 0 && neckAngle < 90)) hata("neckAngle", "Geçiş açısı 0° ile 90° arasında olmalı.");
   if (dCore > 0 && dCore >= D) hata("dCore", `Çekirdek çapı (${dCore}) kesici çaptan (${D}) küçük olmalı.`);
   if (tip === "bullnose" && rCorner > D / 2) hata("rCorner", `Köşe radyüsü (${rCorner}) çapın yarısından (${D / 2}) büyük olamaz.`);
-  if ((tip === "chamfer" || tip === "reamer") && chamferSize > D / 2) hata("chamferSize", `Pah boyu (${chamferSize}) çapın yarısından (${D / 2}) büyük olamaz.`);
+  if ((tip === "chamfer" || tip === "reamer" || tip === "flat") && chamferSize > D / 2) hata("chamferSize", `Pah boyu (${chamferSize}) çapın yarısından (${D / 2}) büyük olamaz.`);
   if (tip === "taperreamer") {
     if (!(tipD > 0)) hata("tipD", "Konik rayba için uç çapı (tipD) girilmeli.");
     else if (tipD >= D) hata("tipD", `Uç çapı (${tipD}) büyük uç çapından (${D}) küçük olmalı.`);
@@ -212,7 +212,7 @@ export function takimProfili(params) {
     ust.push(cizgi(L, tipD / 2, L, 0));
     kenar(k0, hD);
     konikOran = l1 > 0 ? (D - tipD) / l1 : 0;
-  } else if ((tip === "chamfer" || tip === "reamer") && chamferSize > 0) {
+  } else if ((tip === "chamfer" || tip === "reamer" || tip === "flat") && chamferSize > 0) {
     ust.push(cizgi(k0, hD, L - chamferSize, hD));
     ust.push(cizgi(L - chamferSize, hD, L, hD - chamferSize));
     ust.push(cizgi(L, hD - chamferSize, L, 0));

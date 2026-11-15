@@ -6,6 +6,7 @@ import { Panel } from "./ui/Panel";
 import { Menu, MenuOge, MenuAyrac } from "./ui/Menu";
 import { csvOku, csvMetniOku, getInitialBatch } from "./io/csv";
 import { ThreeDView } from "./view3d/ThreeDView";
+import { IsEmriPenceresi } from "./ui/IsEmriPenceresi";
 import { downloadExcel, generateTemplateExcel, generateExcelReport } from "./io/excel";
 import { generateDXF } from "./io/dxf";
 import { svgIndir, pngIndir, pdfYazdir, dosyaIndir } from "./io/export";
@@ -36,6 +37,7 @@ function App() {
   const [batch, setBatch] = useState([]);
   const [batchIdx, setBatchIdx] = useState(0);
   const csvGirdi = useRef(null);
+  const [ieAcik, setIeAcik] = useState(false);
 
   // ── Taslak otomatik kaydı ──
   useEffect(() => {
@@ -143,6 +145,10 @@ function App() {
     <div className="uygulama">
       <Panel params={params} setParams={setParams} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
+      {ieAcik && (
+        <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
+          uygula={(yeniParams) => { setParams(yeniParams); setDimOff({}); setBatch([]); setBatchIdx(0); setView("all"); resetZoom(); setIeAcik(false); }} />
+      )}
 
       <main className="ana">
         {/* ── Araç çubuğu ── */}
@@ -163,6 +169,8 @@ function App() {
           <button className="btn ikon hayalet" title="Ölçü ve etiket konumlarını sıfırla" aria-label="Ölçü konumlarını sıfırla" onClick={() => setDimOff({})}>↺</button>
 
           <Menu etiket="Veri" ikon="⇅ ">
+            <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
+            <MenuAyrac />
             <MenuOge onClick={() => csvGirdi.current?.click()} altMetin="UTF-8 ya da Excel (Windows-1254) CSV">CSV içe aktar…</MenuOge>
             <MenuOge onClick={() => downloadExcel(generateTemplateExcel(), "mihenk-takim-sablonu.xls")} altMetin="Doldurup CSV olarak kaydedin">Şablon indir (.xls)</MenuOge>
             <MenuOge onClick={() => {

@@ -49,7 +49,13 @@ const TIP_ON_AYAR = {
  * Aynı tipe geçiş parametreleri değiştirmez.
  */
 export function tipDegistir(p, yeniTip) {
-  if (p.toolType === yeniTip || !TIP_ON_AYAR[yeniTip]) return { ...p, toolType: yeniTip };
+  if (p.toolType === yeniTip) return p;
+  return tipUygula(p, yeniTip);
+}
+
+/** Aynı tip olsa bile ön ayarı zorla uygular (iş emri içe aktarmada temiz başlangıç için). */
+export function tipUygula(p, yeniTip) {
+  if (!TIP_ON_AYAR[yeniTip]) return { ...p, toolType: yeniTip };
   const D = Number(p.D) > 0 ? Number(p.D) : 10;
   const d = Number(p.d) > 0 ? Number(p.d) : D;
   const L = Number(p.L) > 0 ? Number(p.L) : 75;

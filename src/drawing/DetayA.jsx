@@ -16,7 +16,7 @@ export function detayOzelligi(params, g) {
     const r = params.rCorner;
     return { cx: g.L - r, cr: hD - r, yaricap: r * 1.6, hedef: [g.L - r + r * Math.SQRT1_2, hD - r + r * Math.SQRT1_2], metin: `R${fmt(r)}` };
   }
-  if ((g.tip === "chamfer" || g.tip === "reamer") && params.chamferSize > 0) {
+  if ((g.tip === "chamfer" || g.tip === "reamer" || g.tip === "flat") && params.chamferSize > 0) {
     const c = params.chamferSize;
     return { cx: g.L - c / 2, cr: hD - c / 2, yaricap: c * 1.6, hedef: [g.L - c / 2, hD - c / 2], metin: `${fmt(c)}×45°` };
   }
@@ -29,7 +29,7 @@ export function detayOzelligi(params, g) {
 }
 
 /** Yan görünüşte ucun üzerine ince daire + "A", sayfada büyütülmüş detay. */
-export function DetayA({ params, yerlesim, harf = "A", dimOff, setDimOff }) {
+export function DetayA({ params, yerlesim, harf = "A", sagaYasla = false, dimOff, setDimOff }) {
   const g = takimProfili(params);
   if (!(g.D > 0) || !(g.L > 0) || params.detayA === false) return null;
   const f = detayOzelligi(params, g);
@@ -49,7 +49,8 @@ export function DetayA({ params, yerlesim, harf = "A", dimOff, setDimOff }) {
   const rReal = Math.max(f.yaricap, 0.4);
   const s2 = olcekSec([[rReal, rr]]);
   if (s2 <= s) return null;                       // büyütme yok: detay gereksiz
-  const px = Math.min(bolge.x + bolge.w - rr - 4, X(g.L));
+  const sagKenar = bolge.x + bolge.w - rr - 4;
+  const px = sagaYasla ? sagKenar : Math.min(sagKenar, X(g.L)); // üretim tablosu solda varsa detay sağ kenarda
   const py = bolge.y + bolge.h - rr - 6;
   const P = (x, r) => [px + (x - f.cx) * s2, py - (r - f.cr) * s2];
 

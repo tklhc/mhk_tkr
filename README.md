@@ -45,3 +45,13 @@ Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D öl
 - Üstte **Veri** (CSV içe aktar, şablon, Excel raporu, örnek takımlar) ve **Dışa aktar** (PDF, PNG, SVG, DXF) menüleri.
 - Çalışma **otomatik kaydedilir** (bu tarayıcıda); sayfa yenilenince kaldığınız yerden devam edersiniz. **+ Yeni** boş resim açar.
 - Yakınlaştırma: sağ alttaki düğmeler, Ctrl + tekerlek ya da iki parmak; yakınlaştırınca fareyle sürükleyerek kaydırılır.
+
+## İş emrinden resim çizme
+
+**Veri → İş emrinden resim çiz…** ÜTS iş emrinin PDF'ini (ÜTS'de Yazdır → PDF olarak kaydet) ya da yazısını alır, takım tipini ve üretim ölçülerini okur, onay penceresinde ne okunduğunu gösterir; "Resmi çiz" ile resmi kurar.
+
+- Okunanlar: takım tipi ve kodu, İE no, Takım/Çap, Şaft Çapı, Takım Boyu, Helis Boyu / Kesici Boy, Ağız Sayısı, Helis Açısı, Çekirdek Çapı, Köşe Pahı / Köşe Radyusu, Uç Açısı, rayba pah genişliği, müşteri, teslim, kalite, kaplama. Alan adları ÜTS takım tipi şablonlarıyla (`takim-tipleri-defaults.js`) aynıdır.
+- Çizilmeyen taşlama verileri (kesme açısı, yüzey genişlikleri, alın açıları…) sayfada **Üretim özellikleri** tablosu olarak yer alır.
+- **Uydurma yok:** iş emrinde olmayan değer (tolerans, helis/kesim yönü, kademe ve konik rayba ölçüleri, T-freze boğazı) varsayılan/boş bırakılır ve onay penceresinde uyarı olarak yazılır.
+- Resim dosyaları (PNG/JPG) okunmaz: OCR ile sayı okumak yanlış ölçü riski taşır. Taranmış (metin katmanı olmayan) PDF'ler de okunamaz.
+- Dosya yalnız tarayıcıda işlenir, hiçbir yere gönderilmez.

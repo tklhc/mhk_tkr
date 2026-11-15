@@ -56,6 +56,8 @@ const DEFAULT_PARAMS = {
   showDimAngles: true,
   kesitAA: false,       // kesit görünüşü A-A (şematik; açık değilse çizilmez)
   detayA: true,         // büyütülmüş uç detayı
+  ekOzellikler: [],     // iş emrinden gelen çizilmeyen üretim özellikleri: [[ad, değer], ...]
+  ekGoster: true,       // üretim özellikleri tablosu resimde görünsün
   sunum: true,          // sunum stili: gölgeli gövde + kaplama rengi (false: yalnız çizgi)
   // Sayfa
   kagit: "A4",           // A4 | A3
