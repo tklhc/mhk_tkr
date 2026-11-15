@@ -19,27 +19,27 @@ describe("ölçek", () => {
 });
 
 describe("sayfa düzeni", () => {
-  it("A4 yatay: çerçeve ISO 5457, antet 200 mm sağ altta", () => {
+  it("A4 yatay: çerçeve ISO 5457, antet 140 mm sağ altta", () => {
     const s = sayfaDuzeni({ kagit: "A4", L: 75, D: 10 });
     expect(s.cerceve).toEqual({ x: 20, y: 10, w: 267, h: 190 });
     expect(s.antet.x + s.antet.w).toBe(287);
     expect(s.antet.y + s.antet.h).toBe(200);
-    expect(s.antet.w).toBe(200);
-    expect(s.veriTablosu.w).toBe(67); // teknik veri tablosu dar
+    expect(s.antet.w).toBe(140);
+    expect(s.veriTablosu.w).toBe(0);  // tablo satırı verilmezse yok
   });
 
-  it("iş emri çizimi: antet dar, solunda üretim özellikleri şeridi bitişik; görünüş bölgeleri değişmez", () => {
-    const m = sayfaDuzeni({ kagit: "A4", L: 75, D: 10 });
-    const ie = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tur: "ie", uretimSayisi: 10 });
+  it("iki çizim türünde antet ve bilgi tablosu aynı ölçüde; tablo antete bitişik ve altı hizalı", () => {
+    const m = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tabloSayisi: 8 });
+    const ie = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tur: "ie", tabloSayisi: 8 });
     expect(ie.tur).toBe("ie");
-    expect(ie.antet.w).toBeLessThan(m.antet.w);
-    expect(ie.veriTablosu.w).toBeLessThan(m.veriTablosu.w);
+    expect(m.tur).toBe("musteri");
+    expect(ie.antet).toEqual(m.antet);
+    expect(ie.veriTablosu).toEqual(m.veriTablosu);
     expect(ie.antet.x + ie.antet.w).toBe(287);
-    expect(ie.veriTablosu.x + ie.veriTablosu.w).toBe(ie.antet.x);      // bitişik
+    expect(ie.veriTablosu.x + ie.veriTablosu.w).toBe(ie.antet.x);
     expect(ie.veriTablosu.x).toBeGreaterThan(ie.cerceve.x + 60);        // sol alt serbest kalır
     expect(ie.alan).toEqual(m.alan);
     expect(ie.yan.olcek).toBe(m.yan.olcek);
-    expect(m.tur).toBe("musteri");
   });
 
   it("A4'te 75 mm freze 2:1, 150 mm 1:1, 300 mm 1:2", () => {

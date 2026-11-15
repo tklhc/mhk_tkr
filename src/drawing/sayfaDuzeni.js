@@ -32,27 +32,28 @@ export function olcekSec(sigdirmalar) {
   return OLCEKLER[OLCEKLER.length - 1];
 }
 
-// İş emri çiziminde teknik veri tablosunun yerine konan üretim özellikleri tablosu
-export const URETIM = { baslikH: 6, satirMin: 3.9, satirAzami: 4.6, sutunW: 54 };
+// Antetin solundaki bilgi tablosu (müşteri çiziminde TEKNİK VERİ, iş emri çiziminde ÜRETİM ÖZELLİKLERİ):
+// iki türde de aynı genişlik, başlık ve satır ölçüleri.
+export const TABLO = { baslikH: 6, satirMin: 3.9, satirAzami: 5.7, sutunW: 54 };
 
 /**
- * n özellik, antet yüksekliğindeki şeride kaç sütunla sığar? Satır yüksekliği
- * 3,9 mm'nin altına inmez; sığmayan fazlalık atılır (en çok 3 sütun).
- * @returns {null | {sutun:number, satir:number, satirH:number, w:number, adet:number}}
+ * n satır, antet yüksekliğindeki şeride kaç sütunla sığar? Satır yüksekliği 3,9 mm'nin
+ * altına inmez; sığmayan fazlalık atılır (en çok 3 sütun). Satır yüksekliği en çok 5,7 mm.
+ * @returns {null | {sutun:number, satir:number, satirH:number, w:number, h:number, adet:number}}
  */
-export function uretimSutunlari(n, h = 52) {
+export function tabloSutunlari(n, h = 52) {
   if (!(n > 0)) return null;
-  const mesaj = h - URETIM.baslikH - 1;
-  const azami = Math.max(1, Math.floor(mesaj / URETIM.satirMin));
+  const mesaj = h - TABLO.baslikH - 1;
+  const azami = Math.max(1, Math.floor(mesaj / TABLO.satirMin));
   const sutun = Math.min(3, Math.ceil(n / azami));
   const adet = Math.min(n, sutun * azami);
   const satir = Math.ceil(adet / sutun);
-  return { sutun, satir, satirH: Math.min(URETIM.satirAzami, mesaj / satir), w: sutun * URETIM.sutunW, adet };
+  const satirH = Math.min(TABLO.satirAzami, mesaj / satir);
+  return { sutun, satir, satirH, w: sutun * TABLO.sutunW, h: TABLO.baslikH + 1 + satir * satirH, adet };
 }
 
-const CERCEVE ={ sol: 20, ust: 10, sag: 10, alt: 10 }; // ISO 5457
-export const ANTET = { w: 200, h: 52 };                  // müşteri çizimi: ISO 7200 önerisi en çok 180 mm; logo bölümü geniş olsun diye 200 mm
-export const ANTET_IE = { w: 140, h: 52 };               // iş emri çizimi: dar antet (solunda üretim özellikleri tablosu)
+const CERCEVE = { sol: 20, ust: 10, sag: 10, alt: 10 }; // ISO 5457
+export const ANTET = { w: 140, h: 52 };                  // iki çizim türünde de aynı (ISO 7200 önerisi en çok 180 mm)
 
 /**
  * @param {object} o
@@ -61,20 +62,17 @@ export const ANTET_IE = { w: 140, h: 52 };               // iş emri çizimi: da
  * @param {number} o.D       en büyük çap (mm)
  * @param {number} [o.kademeSayisi]  üstte ek ölçü satırı için
  * @param {string} [o.olcek]  "otomatik" ya da "2:1" gibi
- * @param {"musteri"|"ie"} [o.tur]  çizim türü: müşteri çizimi (geniş antet + teknik veri) ya da iş emri çizimi (dar antet + üretim özellikleri)
- * @param {number} [o.uretimSayisi]  iş emri çiziminde şeritte gösterilecek üretim özelliği sayısı
+ * @param {"musteri"|"ie"} [o.tur]  çizim türü (antet ve tablo ölçüleri aynı; yalnız tablonun içeriği değişir)
+ * @param {number} [o.tabloSayisi]  antetin solundaki bilgi tablosunun satır sayısı (0: tablo yok)
  */
-export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", uretimSayisi = 0 }) {
+export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0 }) {
   const k = KAGITLAR[kagit] || KAGITLAR.A4;
   const ie = tur === "ie";
   const cerceve = { x: CERCEVE.sol, y: CERCEVE.ust, w: k.w - CERCEVE.sol - CERCEVE.sag, h: k.h - CERCEVE.ust - CERCEVE.alt };
-  const aw = ie ? ANTET_IE.w : ANTET.w;
-  const antet = { x: cerceve.x + cerceve.w - aw, y: cerceve.y + cerceve.h - ANTET.h, w: aw, h: ANTET.h };
-  // Müşteri çiziminde teknik veri tablosu antetin soluna kadar uzanır. İş emri çiziminde teknik veri yoktur:
-  // o yere (antete bitişik) üretim özellikleri tablosu gelir; özellik yoksa şerit yalnız antettir.
-  const uretim = ie ? uretimSutunlari(uretimSayisi, ANTET.h) : null;
-  const veriW = ie ? (uretim ? uretim.w : 0) : antet.x - cerceve.x;
-  const veriTablosu = { x: antet.x - veriW, y: antet.y, w: veriW, h: ANTET.h };
+  const antet = { x: cerceve.x + cerceve.w - ANTET.w, y: cerceve.y + cerceve.h - ANTET.h, w: ANTET.w, h: ANTET.h };
+  // Bilgi tablosu antete bitişik, antetin altıyla hizalı; satır azsa kısalır (üstü boş kalır)
+  const tablo = tabloSutunlari(tabloSayisi, ANTET.h);
+  const veriTablosu = tablo ? { x: antet.x - tablo.w, y: antet.y + ANTET.h - tablo.h, w: tablo.w, h: tablo.h } : { x: antet.x, y: antet.y, w: 0, h: 0 };
   const alan = { x: cerceve.x, y: cerceve.y, w: cerceve.w, h: antet.y - cerceve.y };
 
   // Uç görünüş sağda, yan görünüş solda
@@ -104,5 +102,5 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
     cx: ucBolge.x + ucBolge.w / 2,
     cy: yan.oy,
   };
-  return { kagit: { ad: KAGITLAR[kagit] ? kagit : "A4", ...k }, tur: ie ? "ie" : "musteri", uretim, cerceve, antet, veriTablosu, alan, yan, uc };
+  return { kagit: { ad: KAGITLAR[kagit] ? kagit : "A4", ...k }, tur: ie ? "ie" : "musteri", tablo, cerceve, antet, veriTablosu, alan, yan, uc };
 }

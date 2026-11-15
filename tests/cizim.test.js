@@ -144,9 +144,12 @@ describe("Antet okunabilirliği", () => {
     expect(svg).toContain(">Malzeme<");
     expect(svg).toContain(">Kaplama<");
   });
-  it("antet alanları: çizim no, rev, tarih, teslim, müşteri, İE no, çizen, onaylayan, genel tolerans", () => {
+  it("antet alanları: çizim no, rev, tarih, müşteri, İE no, çizen, onaylayan (Teslim ve Genel tolerans yok)", () => {
     const svg = render({ ...DEFAULT_PARAMS, drawingNo: "MHK-TR-1", revision: "A" });
-    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "TESLİM", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN", "GENEL TOLERANS"]) expect(svg).toContain(`>${e}<`);
+    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN"]) expect(svg).toContain(`>${e}<`);
+    expect(svg).not.toContain(">TESLİM<");
+    expect(svg).not.toContain(">GENEL TOLERANS<");
+    expect(svg).not.toContain("0507");
     expect(svg).toContain(">MHK-TR-1<");
   });
   it("antette Ölçek ve Kağıt hücresi yok", () => {
@@ -161,24 +164,22 @@ describe("Antet okunabilirliği", () => {
     expect(boyutlar.length).toBeGreaterThan(20);
     expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
   });
-  it("müşteri çiziminde iletişim, teslim ve genel tolerans var; müşteri ve İE no antet hücresinde", () => {
-    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "musteri", customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
-    expect(svg).toContain("0507");
-    expect(svg).toContain(">ABC Makina<");
-    expect(svg).toContain(">İE-818<");
-    expect(svg).toContain(">20.11.2026<");
-    expect(svg).toContain(">TESLİM<");
-    expect(svg).toContain(">GENEL TOLERANS<");
+  it("müşteri ve İE no antet hücresinde, iki çizim türünde de", () => {
+    for (const cizimTuru of ["musteri", "ie"]) {
+      const svg = render({ ...DEFAULT_PARAMS, cizimTuru, customerName: "ABC Makina", orderNo: "İE-818" });
+      expect(svg).toContain(">ABC Makina<");
+      expect(svg).toContain(">İE-818<");
+    }
   });
-  it("iş emri çiziminde Teslim ve Genel tolerans hücresi ile iletişim satırları yok; diğer alanlar durur", () => {
-    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
-    expect(svg).not.toContain(">TESLİM<");
-    expect(svg).not.toContain(">GENEL TOLERANS<");
-    expect(svg).not.toContain("0507");
-    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN"]) expect(svg).toContain(`>${e}<`);
-    expect(svg).toContain(">ABC Makina<");
+  it("antet ve alt tablo ölçüleri iki çizim türünde aynı", () => {
+    const ek = Array.from({ length: 8 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
+    const m = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "musteri" });
+    const ie = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
+    expect(ie.antet).toEqual(m.antet);
+    expect(ie.veriTablosu).toEqual(m.veriTablosu);   // 8 satır: aynı genişlik, yükseklik, yer
+    expect(ie.yan.olcek).toBe(m.yan.olcek);
   });
-  it("iş emri çiziminde teknik veri tablosu yok (yerinde üretim özellikleri var); müşteri çiziminde teknik veri var", () => {
+  it("iş emri çiziminde teknik veri tablosu yok (yerinde üretim özellikleri); müşteri çiziminde teknik veri var, üretim yok", () => {
     const ek = [["Kesme Açısı", "8 °"], ["Alın Açısı", "1.5 °"]];
     const ie = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
     expect(ie).not.toContain(">TEKNİK VERİ<");
@@ -216,7 +217,7 @@ describe("Ölçü yazısı toleransı", () => {
   });
 });
 
-import { uretimSutunlari } from "../src/drawing/sayfaDuzeni.js";
+import { tabloSutunlari } from "../src/drawing/sayfaDuzeni.js";
 import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
 
 describe("Üretim özellikleri tablosu", () => {
@@ -239,27 +240,28 @@ describe("Üretim özellikleri tablosu", () => {
     expect(svg).toContain(">Serbest Yüzey<");
     expect(svg).not.toMatch(/NaN|undefined/);
   });
-  it("tablo teknik veri tablosunun yerinde: antete bitişik, antetle aynı yükseklikte, çerçevenin içinde", () => {
+  it("tablo antete bitişik, antetin altıyla hizalı ve çerçevenin içinde", () => {
     const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
-    expect(d.uretim).not.toBeNull();
-    expect(d.veriTablosu.w).toBe(d.uretim.w);
+    expect(d.tablo).not.toBeNull();
+    expect(d.veriTablosu.w).toBe(d.tablo.w);
     expect(d.veriTablosu.x + d.veriTablosu.w).toBe(d.antet.x);
-    expect(d.veriTablosu.y).toBe(d.antet.y);
-    expect(d.veriTablosu.h).toBe(d.antet.h);
+    expect(d.veriTablosu.y + d.veriTablosu.h).toBeCloseTo(d.antet.y + d.antet.h, 6);
+    expect(d.veriTablosu.h).toBeLessThanOrEqual(d.antet.h);
     expect(d.veriTablosu.x).toBeGreaterThanOrEqual(d.cerceve.x);
   });
-  it("sütun sayısı özellik sayısına uyar: satırlar 3,9 mm'den sıkışmaz, sığmayan atılır", () => {
-    expect(uretimSutunlari(0)).toBeNull();
-    const on = uretimSutunlari(10);           // İE-818: 10 özellik tek sütun
+  it("sütun sayısı satır sayısına uyar: satırlar 3,9 mm'den sıkışmaz, sığmayan atılır", () => {
+    expect(tabloSutunlari(0)).toBeNull();
+    const on = tabloSutunlari(10);           // İE-818: 10 özellik tek sütun
     expect(on.sutun).toBe(1);
     expect(on.satirH).toBeGreaterThanOrEqual(3.9);
-    expect(uretimSutunlari(14).sutun).toBe(2);
-    expect(uretimSutunlari(200)).toMatchObject({ sutun: 3 });
-    expect(uretimSutunlari(200).adet).toBeLessThan(200);
+    expect(tabloSutunlari(14).sutun).toBe(2);
+    expect(tabloSutunlari(200)).toMatchObject({ sutun: 3 });
+    expect(tabloSutunlari(200).adet).toBeLessThan(200);
+    expect(tabloSutunlari(8).h).toBeCloseTo(52, 6);   // müşteri çiziminin 8 satırlık teknik verisi şeridi doldurur
   });
-  it("özellik yoksa iş emri şeridi yalnız antettir", () => {
-    const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie" });
-    expect(d.veriTablosu.w).toBe(0);
+  it("özellik yoksa iş emri şeridi yalnız antettir; müşteri çiziminde teknik veri her zaman var", () => {
+    expect(duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie" }).veriTablosu.w).toBe(0);
+    expect(duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "musteri" }).veriTablosu.w).toBeGreaterThan(0);
   });
   it("çok fazla özellik sığmazsa fazlası atılır, çökmez", () => {
     const cok = Array.from({ length: 60 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);

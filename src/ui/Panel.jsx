@@ -208,7 +208,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
               <Cip acik={params.cizimTuru !== "ie"} onClick={() => u("cizimTuru", "musteri")}>Müşteri çizimi</Cip>
               <Cip acik={params.cizimTuru === "ie"} onClick={() => u("cizimTuru", "ie")}>İş emri çizimi</Cip>
             </div>
-            <div className="ipucu"><b>Müşteri çizimi:</b> geniş antet (logo, iletişim, teslim, genel tolerans); üretim özellikleri yok. <b>İş emri çizimi:</b> dar antet (teslim ve genel tolerans yok) ve varsa üretim özellikleri tablosu.</div>
+            <div className="ipucu">Antet ve alt kutuların ölçüleri iki türde de aynıdır. <b>Müşteri çizimi:</b> antetin solunda Teknik veri tablosu. <b>İş emri çizimi:</b> aynı yerde, varsa, Üretim özellikleri tablosu.</div>
           </Grup>
 
           <Grup baslik="Takım">

@@ -7,7 +7,7 @@ import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
-import { UretimTablosu, uretimVarMi } from "./UretimTablosu";
+import { BilgiTablosu, tabloIcerigi } from "./BilgiTablosu";
 import { YAZI } from "./iso";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
@@ -19,7 +19,7 @@ export function duzenHesapla(params) {
     D: Math.max(g.D, g.d, 1),
     olcek: params.olcek,
     tur: params.cizimTuru === "ie" ? "ie" : "musteri",
-    uretimSayisi: uretimVarMi(params) ? params.ekOzellikler.length : 0,
+    tabloSayisi: tabloIcerigi(params, g)?.ogeler.length ?? 0,
   });
 }
 
@@ -51,7 +51,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
       <Surukle id="g-uc" offsets={dimOff} setOffsets={setDimOff}>
         <UcGorunus params={params} yerlesim={uc} {...ek} />
       </Surukle>
-      <UretimTablosu params={params} sayfa={duzen} />
+      <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
       <Antet params={params} sayfa={duzen} />
 
       {yan.tasiyor && (
