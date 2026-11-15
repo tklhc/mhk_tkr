@@ -5,8 +5,7 @@ import { IMG_FREZE, IMG_MATKAP, IMG_ALU3Z, IMG_RADIUS, IMG_KURE } from "../asset
 // ─── END VIEW (bigger, bolder) ──────────────────────────
 
 function EndView({ params, cx, cy, R }) {
-  const { D, dCore, z, coolantHole, coolantCount, cutDir, toolType } = params;
-  const coreR = (dCore / D) * R;
+  const { D, z, coolantHole, coolantCount, cutDir, toolType } = params;
   const dirMul = cutDir === "Sol" ? -1 : 1;
   const e = [];
 

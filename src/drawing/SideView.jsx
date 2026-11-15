@@ -56,7 +56,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     e.push(
       <path key="ang-arc" d={`M ${sRight + 0.5} ${oy + hd - 0.5} L ${sRight + transDx * 0.35} ${oy + hd - (hd - hN) * 0.35}`}
         fill="none" stroke="#e65100" strokeWidth={0.3} />,
-      <Draggable id="ang-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="ang-lbl" x={angLblX + 1} y={oy + hd + 5}
+      <Draggable key="ang-lbl" id="ang-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="ang-lbl" x={angLblX + 1} y={oy + hd + 5}
         fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700" textAnchor="middle">
         {neckAngle}°
       </text></Draggable>
@@ -79,7 +79,6 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
   // ── Cutting section ──
   const cLeft = nRight;
-  const isDrill = toolType === "drill" || toolType === "stepdrill";
 
   if (toolType === "stepdrill") {
     // ── Step Drill: Step 1 (smallest) at TIP (right), larger steps toward SHANK (left) ──
@@ -106,7 +105,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       // Point angle annotation — below tool
       if (params.showDimAngles) {
         e.push(
-          <Draggable id="stp-pa0" offsets={dimOff} setOffsets={setDimOff}><text key="stp-pa0" x={curX - tipDx0 * 0.5} y={oy + hr0 + 5}
+          <Draggable key="stp-pa0" id="stp-pa0" offsets={dimOff} setOffsets={setDimOff}><text key="stp-pa0" x={curX - tipDx0 * 0.5} y={oy + hr0 + 5}
             fontSize={3.2} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st0.angle}°</text></Draggable>
         );
       }
@@ -149,7 +148,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         // Angle annotation — below tool
         if (params.showDimAngles) {
           e.push(
-            <Draggable id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff}><text key={`spa-${si}`} x={curX - transDx * 0.5} y={oy + hr + 5}
+            <Draggable key={`spa-${si}`} id={`spa-${si}`} offsets={dimOff} setOffsets={setDimOff}><text key={`spa-${si}`} x={curX - transDx * 0.5} y={oy + hr + 5}
               fontSize={3.0} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">{st.angle}°</text></Draggable>
           );
         }
@@ -211,7 +210,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
     // Point angle annotation — below tool
     if (params.showDimAngles) {
       e.push(
-        <Draggable id="pt-ang" offsets={dimOff} setOffsets={setDimOff}><text key="pt-ang" x={tipR - tipDx * 0.6} y={oy + hD + 5}
+        <Draggable key="pt-ang" id="pt-ang" offsets={dimOff} setOffsets={setDimOff}><text key="pt-ang" x={tipR - tipDx * 0.6} y={oy + hD + 5}
           fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#e65100" fontWeight="700">
           {params.pointAngle}°
         </text></Draggable>
@@ -305,7 +304,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
         <path key="hx-arc"
           d={`M ${arcStartX} ${arcStartY} A ${angArcR} ${angArcR} 0 0 1 ${arcEndX} ${arcEndY}`}
           fill="none" stroke="#2e7d32" strokeWidth={0.3} />,
-        <Draggable id="hx-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="hx-lbl" x={angX + angArcR * 0.7 + 1} y={angY - angArcR * 0.3}
+        <Draggable key="hx-lbl" id="hx-lbl" offsets={dimOff} setOffsets={setDimOff}><text key="hx-lbl" x={angX + angArcR * 0.7 + 1} y={angY - angArcR * 0.3}
           fontSize={3.4} fontFamily="'IBM Plex Mono', monospace" fill="#2e7d32" fontWeight="700">
           {helix}° {isLeftHand ? "L" : "R"}
         </text></Draggable>
@@ -354,7 +353,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   }
   // Corner R
   if (toolType === "bullnose" && rCorner > 0 && params.showDimAngles) {
-    e.push(<Draggable id="dR" offsets={dimOff} setOffsets={setDimOff}><text key="dR" x={tipR - coR * 0.3} y={oy + hD + 5} fontSize={3.6} fontFamily="'IBM Plex Mono', monospace" fill={DC} fontWeight="600">R{rCorner}</text></Draggable>);
+    e.push(<Draggable key="dR" id="dR" offsets={dimOff} setOffsets={setDimOff}><text key="dR" x={tipR - coR * 0.3} y={oy + hD + 5} fontSize={3.6} fontFamily="'IBM Plex Mono', monospace" fill={DC} fontWeight="600">R{rCorner}</text></Draggable>);
   }
 
 

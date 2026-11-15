@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 // ─── DRAGGABLE LABEL SYSTEM ─────────────────────────────
 
@@ -10,7 +10,7 @@ function svgPoint(svgEl, clientX, clientY) {
 
 function Draggable({ id, offsets, setOffsets, axis, children }) {
   const off = offsets[id] || { dx: 0, dy: 0 };
-  const dragRef = React.useRef(null);
+  const dragRef = useRef(null);
 
   const onStart = useCallback((clientX, clientY) => {
     const svg = document.getElementById("teknik-svg");
