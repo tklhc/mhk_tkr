@@ -100,3 +100,43 @@ describe("doğrulama", () => {
     expect(mesajlar({ toolType: "stepdrill", steps: [{ dia: 14, len: 15, angle: 140 }, { dia: 10, len: 15, angle: 90 }] })).toContain("steps.1.dia");
   });
 });
+
+import { yaricapAt, parcaNoktalari } from "../src/geometry/profil.js";
+
+describe("yaricapAt", () => {
+  it("düz freze: sapta d/2, kesicide D/2, dışarıda 0", () => {
+    const g = takimProfili(p({ D: 8, d: 10, L: 60, l1: 20 }));
+    expect(yaricapAt(g, 10)).toBe(5);
+    expect(yaricapAt(g, 50)).toBe(4);
+    expect(yaricapAt(g, 40)).toBe(5); // basamakta büyük değer
+    expect(yaricapAt(g, 61)).toBe(0);
+  });
+  it("küre freze: uçta 0, kürenin başında D/2", () => {
+    const g = takimProfili(p({ toolType: "ballnose", D: 8, d: 8, L: 60, l1: 20 }));
+    expect(yaricapAt(g, 56)).toBeCloseTo(4, 9);
+    expect(yaricapAt(g, 60)).toBeCloseTo(0, 6);
+    expect(yaricapAt(g, 58)).toBeCloseTo(Math.sqrt(16 - 4), 9);
+  });
+  it("radyüs freze: uçta D/2 - R", () => {
+    const g = takimProfili(p({ toolType: "bullnose", D: 12, d: 12, L: 75, rCorner: 2 }));
+    expect(yaricapAt(g, 75)).toBeCloseTo(4, 9);
+    expect(yaricapAt(g, 72)).toBeCloseTo(6, 9);
+  });
+  it("matkap ucu doğrusal azalır", () => {
+    const g = takimProfili(p({ toolType: "drill", D: 8, d: 8, L: 80, l1: 50, pointAngle: 140 }));
+    expect(yaricapAt(g, 80)).toBeCloseTo(0, 9);
+    const ucBoyu = 4 / Math.tan(70 * Math.PI / 180);
+    expect(yaricapAt(g, 80 - ucBoyu)).toBeCloseTo(4, 9);
+    expect(yaricapAt(g, 80 - ucBoyu / 2)).toBeCloseTo(2, 9);
+  });
+  it("kademeli matkap: her kademede kendi çapı", () => {
+    const g = takimProfili(p({ toolType: "stepdrill", d: 12, L: 90, steps: [{ dia: 10, len: 15, angle: 140 }, { dia: 14, len: 15, angle: 90 }] }));
+    expect(yaricapAt(g, 80)).toBe(5);
+    expect(yaricapAt(g, 65)).toBe(7);
+  });
+  it("parcaNoktalari: yay uçları doğru", () => {
+    const pts = parcaNoktalari({ t: "A", cx: 10, cy: 0, r: 4, a1: 90, a2: 0 });
+    expect(pts[0][0]).toBeCloseTo(10, 9); expect(pts[0][1]).toBeCloseTo(4, 9);
+    expect(pts[pts.length - 1][0]).toBeCloseTo(14, 9); expect(pts[pts.length - 1][1]).toBeCloseTo(0, 9);
+  });
+});

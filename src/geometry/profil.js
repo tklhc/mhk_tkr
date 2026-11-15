@@ -229,3 +229,35 @@ export function svgYolu(parcalar, donustur) {
   }
   return d.trim();
 }
+
+/**
+ * Takım eksenindeki x konumunda (mm) dış yarıçap. Basamak (dikey kenar) konumunda
+ * büyük olan değeri verir. Konturun dışında 0.
+ */
+export function yaricapAt(profil, x) {
+  let m = 0;
+  for (const s of profil.ust) {
+    const u = parcaUclari(s);
+    const lo = Math.min(u.x1, u.x2), hi = Math.max(u.x1, u.x2);
+    if (x < lo - EPS || x > hi + EPS) continue;
+    if (s.t === "A") {
+      m = Math.max(m, s.cy + Math.sqrt(Math.max(0, s.r * s.r - (x - s.cx) ** 2)));
+    } else if (hi - lo < EPS) {
+      m = Math.max(m, u.y1, u.y2);
+    } else {
+      m = Math.max(m, u.y1 + ((x - u.x1) / (u.x2 - u.x1)) * (u.y2 - u.y1));
+    }
+  }
+  return m;
+}
+
+/** Yayı, 3D ve benzeri çıktılar için (x, r) noktalarına böler; doğru parçası 2 nokta verir. */
+export function parcaNoktalari(s, adim = 12) {
+  if (s.t !== "A") return [[s.x1, s.y1], [s.x2, s.y2]];
+  const pts = [];
+  for (let i = 0; i <= adim; i++) {
+    const a = (s.a1 + ((s.a2 - s.a1) * i) / adim) * DEG;
+    pts.push([s.cx + s.r * Math.cos(a), s.cy + s.r * Math.sin(a)]);
+  }
+  return pts;
+}

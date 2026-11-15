@@ -33,7 +33,7 @@ function oluklar(g, params) {
   if (!(z >= 1) || !(helix >= 0) || g.tip === "stepdrill" || !(hD > 0)) return { yollar: [], k: 0 };
   const x0 = g.x.boyunSonu;
   const k = helix > 0 ? (2 * Math.tan(helix * DEG)) / g.D : 0; // rad / mm
-  const yon = helixHand === "Sol" ? -1 : 1;
+  const yon = helixHand === "Sol" ? 1 : -1; // sağ helis: ucu sağa bakan takımda görünen yüzde "\" (vida kuralı)
   const yollar = [];
   for (let i = 0; i < z; i++) {
     const phi0 = (2 * Math.PI * i) / z;
@@ -194,7 +194,8 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   // Helis açısı (olukların üzerinden)
   if (params.showDimHelix && yollar.length && params.helix > 0) {
     const xh = k > 0 ? Math.min(g.x.boyunSonu + 0.45 / k, g.L - 0.1) : g.x.boyunSonu + 0.3 * g.l1;
-    const yh = hD * Math.sin(k > 0 ? 0.45 : 0.3);
+    const yonH = params.helixHand === "Sol" ? 1 : -1;
+    const yh = hD * Math.sin(yonH * 0.45); // oluk 0: φ = yon·k·(x−x0) → bu x'te φ = yon·0,45
     const hx = X(xh), hy = Y(k > 0 ? yh : hD * Math.sin(Math.PI / 12));
     e.push(<Kilavuz key="aHelix" id="aHelix" hedef={[hx, hy]} dirsek={[hx, ust - 5]}
       metin={`${fmt(params.helix)}° ${params.helixHand === "Sol" ? "Sol" : "Sağ"}`} {...ek} />);

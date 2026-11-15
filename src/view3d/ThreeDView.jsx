@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { TOOL_TYPES } from "../constants";
-import { takimProfili } from "../geometry/profil";
+import { takimProfili, yaricapAt, parcaNoktalari } from "../geometry/profil";
 
 // ─── 3D PREVIEW — Gerçekçi Freze Geometrisi ─────────────
 function ThreeDView({ params }) {
@@ -57,164 +57,131 @@ function ThreeDView({ params }) {
   useEffect(() => {
     const { toolGroup, T } = stateRef.current;
     if (!toolGroup || !T) return;
-    while(toolGroup.children.length){const c=toolGroup.children[0];if(c.geometry)c.geometry.dispose();if(c.material){if(Array.isArray(c.material))c.material.forEach(m=>m.dispose());else c.material.dispose();}toolGroup.remove(c);}
+    toolGroup.traverse((c) => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => m.dispose());
+    });
+    while (toolGroup.children.length) toolGroup.remove(toolGroup.children[0]);
 
-    // Ölçüler geometri modelinden (src/geometry/profil.js)
+    // Tüm ölçüler geometri modelinden (src/geometry/profil.js); eksen = 3B'de +Y
     const g = takimProfili(params);
-    const { D, d, L, l1, l2 } = g;
-    const { z, helix, toolType, dCore, rCorner, chamferSize, pointAngle } = params;
-    const sc = 3/L;
-    const hD=D/2*sc, hd=d/2*sc, tL=L*sc, cL=l1*sc, nL=l2*sc;
-    const hN=g.nD/2*sc;
-    const cR=Math.min(dCore/2*sc, hD*0.65);
-    const transDx=g.gecisBoyu*sc;
-    const sL=g.sapBoyu*sc;
-    const hRad=(helix||30)*Math.PI/180;
-    const nF=z||4;
-    const aSeg=96;
+    if (!(g.D > 0) || !(g.d > 0) || !(g.L > 0)) return;
+    const { z, helix, helixHand, dCore } = params;
+    const TL = 3;                       // takım boyu, 3B birim
+    const sc = TL / g.L;                // mm → 3B birim
+    const aSeg = 96;
+    const nF = Math.max(1, Math.round(z || 4));
+    const x0 = g.x.boyunSonu;           // kanallı bölümün başı (mm)
+    const hRad = (helix || 0) * Math.PI / 180;
+    // Helis: tan(β) = π·D / hatve → dönüş açısı = x · tan β / R (β eksenle yapılan açı)
+    const k = hRad > 0 ? Math.tan(hRad) / (g.D / 2) : 0;
+    const yon = helixHand === "Sol" ? 1 : -1; // sağ helis: ucu sağa bakan takımda görünen yüzde "\" (vida kuralı)
 
-    const hC=(hex)=>new T.Color(hex);
-    const matS=new T.MeshStandardMaterial({color:hC(params.colShank),metalness:0.75,roughness:0.22});
-    const matN=new T.MeshStandardMaterial({color:hC(params.colNeck),metalness:0.7,roughness:0.28});
-    const matC=new T.MeshStandardMaterial({color:hC(params.colCut),metalness:0.82,roughness:0.18,side:T.DoubleSide});
-    const matT=new T.MeshStandardMaterial({color:hC(params.colTip),metalness:0.85,roughness:0.15,side:T.DoubleSide});
+    const hC = (hex) => new T.Color(hex);
+    const mat = (renk, metal, pürüz) => new T.MeshStandardMaterial({ color: hC(renk), metalness: metal, roughness: pürüz, side: T.DoubleSide });
+    const matS = mat(params.colShank, 0.75, 0.22);
+    const matN = mat(params.colNeck, 0.7, 0.28);
+    const matC = mat(params.colCut, 0.82, 0.18);
+    const matT = mat(params.colTip, 0.85, 0.15);
 
-    // Gerçekçi kesit profili — her diş için:
-    // Kesici kenar → birincil margin → birincil relief → kanal dibi → arka duvar → topuk
+    // Kesit profili — her diş: kesici kenar → margin → relief → kanal dibi → arka duvar → topuk
     function profileR(angle, oR, iR, numF) {
-      const tooth = (Math.PI*2)/numF;
-      let a = ((angle % tooth) + tooth) % tooth;
+      const tooth = (Math.PI * 2) / numF;
+      const a = ((angle % tooth) + tooth) % tooth;
       const n = a / tooth;
       if (n < 0.04) return oR;
       if (n < 0.14) return oR * 0.998;
-      if (n < 0.20) { const t=(n-0.14)/0.06; return oR*(0.998 - t*0.12); }
-      if (n < 0.28) { const t=(n-0.20)/0.08; return oR*0.878 + (iR - oR*0.878)*t; }
-      if (n < 0.75) { const t=(n-0.28)/0.47; return iR*(1 - 0.08*Math.sin(t*Math.PI)); }
-      if (n < 0.92) { const t=(n-0.75)/0.17; const e=t*t*(3-2*t); return iR + (oR*0.96-iR)*e; }
-      const t=(n-0.92)/0.08; return oR*(0.96 + 0.04*t);
+      if (n < 0.20) { const t = (n - 0.14) / 0.06; return oR * (0.998 - t * 0.12); }
+      if (n < 0.28) { const t = (n - 0.20) / 0.08; return oR * 0.878 + (iR - oR * 0.878) * t; }
+      if (n < 0.75) { const t = (n - 0.28) / 0.47; return iR * (1 - 0.08 * Math.sin(t * Math.PI)); }
+      if (n < 0.92) { const t = (n - 0.75) / 0.17; const e = t * t * (3 - 2 * t); return iR + (oR * 0.96 - iR) * e; }
+      const t = (n - 0.92) / 0.08; return oR * (0.96 + 0.04 * t);
+    }
+    const capRadius = (R) => (dCore > 0 ? Math.min((dCore / 2) * sc, R * 0.65) : R * 0.5);
+
+    const govde = new T.Group();       // eksen boyunca ortalanır
+    govde.position.y = -TL / 2;
+    toolGroup.add(govde);
+
+    // 1) Dönel parçalar: sap, geçiş, boğaz, basamak yüzleri. Her kontur parçası ayrı lathe,
+    //    böylece keskin kenarlarda gölgeleme yumuşamaz.
+    for (const s of g.ust) {
+      const pts = parcaNoktalari(s);
+      if (Math.max(...pts.map((q) => q[0])) > x0 + 1e-9) continue; // kanallı bölgeye girenler aşağıda
+      if (pts.length === 2 && Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]) < 1e-9) continue;
+      const sapMi = Math.max(...pts.map((q) => q[0])) <= g.x.sapSonu + 1e-9;
+      const geo = new T.LatheGeometry(pts.map(([x, r]) => new T.Vector2(Math.max(r, 0) * sc, x * sc)), aSeg);
+      govde.add(new T.Mesh(geo, sapMi ? matS : matN));
     }
 
-    // Helisel kanallı gövde mesh
-    function buildFluted(oR, iR, len, numF, hAng, yS) {
-      const axS = Math.max(Math.round(len*120/tL), 40);
-      const verts=[], norms=[], uvs=[], idx=[];
-      for (let yi=0; yi<=axS; yi++) {
-        const t=yi/axS, y=yS+t*len;
-        const ho = hAng>0 ? (t*len)/Math.tan(hAng)/oR : 0;
-        for (let ai=0; ai<aSeg; ai++) {
-          const ba=(ai/aSeg)*Math.PI*2;
-          const a = ba + ho;
-          const r = profileR(a, oR, iR, numF);
-          verts.push(r*Math.cos(ba+ho), y, r*Math.sin(ba+ho));
-          norms.push(Math.cos(ba+ho), 0, Math.sin(ba+ho));
-          uvs.push(ai/aSeg, t);
+    // 2) Kanallı bölüm: dış yarıçap konturu izler (düz, küre, radyüs, pah, matkap ucu, kademeler)
+    const len = g.L - x0;
+    if (len > 1e-6) {
+      const axS = Math.min(420, Math.max(90, Math.round(len * 6)));
+      const verts = [], idx = [];
+      for (let yi = 0; yi <= axS; yi++) {
+        const t = yi / axS;
+        const xm = x0 + len * (1 - (1 - t) * (1 - t));        // uca doğru sıklaşan örnekleme
+        const R = yaricapAt(g, xm) * sc;
+        const iR = capRadius(R);
+        const ho = yon * k * (xm - x0);
+        for (let ai = 0; ai < aSeg; ai++) {
+          const ba = (ai / aSeg) * Math.PI * 2;
+          const r = profileR(ba - ho, R, iR, nF);              // profil eksen boyunca döner
+          verts.push(r * Math.cos(ba), xm * sc, r * Math.sin(ba));
         }
       }
-      for (let yi=0; yi<axS; yi++) {
-        for (let ai=0; ai<aSeg; ai++) {
-          const c=yi*aSeg+ai, n2=yi*aSeg+(ai+1)%aSeg;
-          const cu=(yi+1)*aSeg+ai, nu=(yi+1)*aSeg+(ai+1)%aSeg;
-          idx.push(c,n2,cu, n2,nu,cu);
+      for (let yi = 0; yi < axS; yi++) {
+        for (let ai = 0; ai < aSeg; ai++) {
+          const c = yi * aSeg + ai, n2 = yi * aSeg + ((ai + 1) % aSeg);
+          const cu = (yi + 1) * aSeg + ai, nu = (yi + 1) * aSeg + ((ai + 1) % aSeg);
+          idx.push(c, n2, cu, n2, nu, cu);
         }
       }
       const geo = new T.BufferGeometry();
-      geo.setAttribute("position", new T.Float32BufferAttribute(verts,3));
-      geo.setAttribute("normal", new T.Float32BufferAttribute(norms,3));
-      geo.setAttribute("uv", new T.Float32BufferAttribute(uvs,2));
+      geo.setAttribute("position", new T.Float32BufferAttribute(verts, 3));
       geo.setIndex(idx);
       geo.computeVertexNormals();
-      return geo;
-    }
+      govde.add(new T.Mesh(geo, matC));
 
-    // Uç alın yüzeyi — gash ve kesici kenarlarla
-    function buildEndFace(oR, iR, numF, yP, hAng, bLen) {
-      const g = new T.Group();
-      const ho = hAng>0 ? bLen/Math.tan(hAng)/oR : 0;
-      const pts=180;
-      const sh = new T.Shape();
-      for (let i=0; i<=pts; i++) {
-        const ba=(i/pts)*Math.PI*2, a=ba+ho;
-        const r = profileR(a, oR, iR, numF);
-        const x=r*Math.cos(ba+ho), zz=r*Math.sin(ba+ho);
-        if(i===0) sh.moveTo(x,zz); else sh.lineTo(x,zz);
-      }
-      const fm = new T.Mesh(new T.ShapeGeometry(sh), matT);
-      fm.rotation.x=-Math.PI/2; fm.position.y=yP; g.add(fm);
+      // Alın yüzü: ucun yarıçapı sıfırdan büyükse (düz, radyüs, pah)
+      const RL = yaricapAt(g, g.L) * sc;
+      if (RL > 0.002) {
+        const iR = capRadius(RL);
+        const ho = yon * k * len;
+        const sh = new T.Shape();
+        const pts = 180;
+        for (let i = 0; i <= pts; i++) {
+          const ba = (i / pts) * Math.PI * 2;
+          const r = profileR(ba - ho, RL, iR, nF);
+          const px = r * Math.cos(ba), pz = r * Math.sin(ba);
+          // Shape +Y'si, X ekseni etrafında -90° dönünce -Z olur: gövdeyle aynı yöne getirmek için -pz
+          if (i === 0) sh.moveTo(px, -pz); else sh.lineTo(px, -pz);
+        }
+        const yP = g.L * sc;
+        const yuz = new T.Mesh(new T.ShapeGeometry(sh), matT);
+        yuz.rotation.x = -Math.PI / 2; yuz.position.y = yP;
+        govde.add(yuz);
 
-      const gM = new T.LineBasicMaterial({color:0x1a1a1a});
-      for (let fi=0; fi<numF; fi++) {
-        const a=(fi/numF)*Math.PI*2+ho;
-        const p1=[new T.Vector3(iR*0.15*Math.cos(a+0.15),yP+0.003,iR*0.15*Math.sin(a+0.15)),
-          new T.Vector3(oR*0.98*Math.cos(a),yP+0.003,oR*0.98*Math.sin(a))];
-        g.add(new T.Line(new T.BufferGeometry().setFromPoints(p1),gM));
-        const ga=a+Math.PI*2/numF*0.12;
-        const p2=[new T.Vector3(iR*0.1*Math.cos(a+0.3),yP+0.003,iR*0.1*Math.sin(a+0.3)),
-          new T.Vector3(oR*0.55*Math.cos(ga),yP+0.003,oR*0.55*Math.sin(ga))];
-        g.add(new T.Line(new T.BufferGeometry().setFromPoints(p2),new T.LineBasicMaterial({color:0x444444})));
-      }
-      const wm=new T.Mesh(new T.RingGeometry(0,iR*0.2,24),new T.MeshStandardMaterial({color:hC(params.colFlute),metalness:0.5,roughness:0.6,side:T.DoubleSide}));
-      wm.rotation.x=-Math.PI/2; wm.position.y=yP+0.002; g.add(wm);
-      return g;
-    }
-
-    let curY = 0;
-
-    // Sap
-    if (sL>0.002) {
-      toolGroup.add(new T.Mesh(new T.CylinderGeometry(hd,hd,sL,aSeg),matS)).position.y=curY+sL/2;
-      const cap=new T.Mesh(new T.CircleGeometry(hd,aSeg),matS); cap.rotation.x=Math.PI/2; cap.position.y=curY; toolGroup.add(cap);
-      curY+=sL;
-    }
-    // Geçiş
-    if (transDx>0.002) { toolGroup.add(new T.Mesh(new T.CylinderGeometry(hN,hd,transDx,aSeg),matN)).position.y=curY+transDx/2; curY+=transDx; }
-    // Boyun
-    if (nL>0.002) { toolGroup.add(new T.Mesh(new T.CylinderGeometry(hN,hN,nL,aSeg),matN)).position.y=curY+nL/2; curY+=nL; }
-
-    const cutStart = curY;
-
-    if (toolType === "stepdrill") {
-      const stps=params.steps||[];
-      let cy=cutStart;
-      for (let i=stps.length-1; i>=0; i--) {
-        const st=stps[i], hr=st.dia/2*sc, cr=Math.min(cR,hr*0.6), stepLen=st.len*sc;
-        toolGroup.add(new T.Mesh(buildFluted(hr,cr,stepLen,nF,hRad,cy), i===0?matT:matC));
-        cy+=stepLen;
-      }
-      if (stps.length>0) { const st0=stps[0],hr0=st0.dia/2*sc,ptA=(st0.angle||140)*Math.PI/180,tipH=hr0/Math.tan(ptA/2);
-        toolGroup.add(new T.Mesh(new T.ConeGeometry(hr0,tipH,aSeg),matT)).position.y=cy+tipH/2; }
-    } else if (toolType === "drill") {
-      const ptA=(pointAngle||140)*Math.PI/180, tipH=hD/Math.tan(ptA/2), bodyLen=Math.max(cL-tipH,0.01);
-      toolGroup.add(new T.Mesh(buildFluted(hD,cR,bodyLen,nF,hRad,cutStart),matC));
-      toolGroup.add(new T.Mesh(new T.ConeGeometry(hD,tipH,aSeg),matT)).position.y=cutStart+bodyLen+tipH/2;
-    } else if (toolType === "ballnose") {
-      const bodyLen=Math.max(cL-hD,0.01);
-      toolGroup.add(new T.Mesh(buildFluted(hD,cR,bodyLen,nF,hRad,cutStart),matC));
-      const sm=new T.Mesh(new T.SphereGeometry(hD,aSeg,aSeg/2,0,Math.PI*2,0,Math.PI/2),matT);
-      sm.position.y=cutStart+bodyLen; toolGroup.add(sm);
-    } else {
-      let tipH=0;
-      if (toolType==="chamfer"&&chamferSize>0) tipH=chamferSize*sc;
-      else if (toolType==="bullnose"&&rCorner>0) tipH=rCorner*sc;
-      const bodyLen=Math.max(cL-tipH,0.01);
-      toolGroup.add(new T.Mesh(buildFluted(hD,cR,bodyLen,nF,hRad,cutStart),matC));
-      toolGroup.add(buildEndFace(hD,cR,nF,cutStart+bodyLen,hRad,bodyLen));
-      if (toolType==="chamfer"&&chamferSize>0) {
-        const cs=chamferSize*sc;
-        toolGroup.add(new T.Mesh(new T.CylinderGeometry(hD-cs,hD,cs,aSeg),matT)).position.y=cutStart+bodyLen+cs/2;
-        const cap=new T.Mesh(new T.CircleGeometry(hD-cs,aSeg),matT); cap.rotation.x=-Math.PI/2; cap.position.y=cutStart+bodyLen+cs; toolGroup.add(cap);
-      } else if (toolType==="bullnose"&&rCorner>0) {
-        const rC=rCorner*sc;
-        toolGroup.add(new T.Mesh(new T.CylinderGeometry(hD-rC,hD,rC*2,aSeg),matT)).position.y=cutStart+bodyLen+rC;
-        const cap=new T.Mesh(new T.CircleGeometry(hD-rC,aSeg),matT); cap.rotation.x=-Math.PI/2; cap.position.y=cutStart+bodyLen+rC*2; toolGroup.add(cap);
+        const cizgiMat = new T.LineBasicMaterial({ color: 0x1a1a1a });
+        for (let fi = 0; fi < nF; fi++) {
+          const a = (fi / nF) * Math.PI * 2 + ho;
+          const p1 = [new T.Vector3(iR * 0.15 * Math.cos(a + 0.15), yP + 0.003, iR * 0.15 * Math.sin(a + 0.15)),
+            new T.Vector3(RL * 0.98 * Math.cos(a), yP + 0.003, RL * 0.98 * Math.sin(a))];
+          govde.add(new T.Line(new T.BufferGeometry().setFromPoints(p1), cizgiMat));
+        }
+        const merkez = new T.Mesh(new T.RingGeometry(0, iR * 0.2, 24), new T.MeshStandardMaterial({ color: hC(params.colFlute), metalness: 0.5, roughness: 0.6, side: T.DoubleSide }));
+        merkez.rotation.x = -Math.PI / 2; merkez.position.y = yP + 0.002;
+        govde.add(merkez);
       }
     }
 
-    // Merkez + Konum
-    const cOff=tL/2;
-    toolGroup.children.forEach(c=>{c.position.y-=cOff;});
-    toolGroup.rotation.z=-Math.PI/2;
-    toolGroup.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0,-cOff-0.15,0),new T.Vector3(0,cOff+0.15,0)]),new T.LineBasicMaterial({color:0xcc2222})));
-
+    // Merkez ekseni (kırmızı) ve yön: eksen +X'e bakar
+    toolGroup.add(new T.Line(
+      new T.BufferGeometry().setFromPoints([new T.Vector3(0, -TL / 2 - 0.15, 0), new T.Vector3(0, TL / 2 + 0.15, 0)]),
+      new T.LineBasicMaterial({ color: 0xcc2222 })
+    ));
+    toolGroup.rotation.z = -Math.PI / 2;
   }, [params]);
 
   return (
