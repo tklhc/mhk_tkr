@@ -3,7 +3,7 @@ import { DEFAULT_PARAMS } from "./constants";
 import { Sayfa, duzenHesapla } from "./drawing/Sayfa";
 import { olcekYaz } from "./drawing/sayfaDuzeni";
 import { Panel } from "./ui/Panel";
-import { parseCSV, getInitialBatch } from "./io/csv";
+import { csvOku, csvMetniOku, getInitialBatch } from "./io/csv";
 import { ThreeDView } from "./view3d/ThreeDView";
 import { downloadExcel, generateTemplateExcel, generateExcelReport } from "./io/excel";
 import { generateDXF } from "./io/dxf";
@@ -188,11 +188,12 @@ function App() {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
-              const items = parseCSV(ev.target.result);
-              if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); }
-              else alert("CSV dosyası okunamadı veya boş.");
+              const { items, uyarilar } = csvOku(csvMetniOku(ev.target.result));
+              if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); setDimOff({}); }
+              if (items.length === 0) alert("CSV dosyası okunamadı veya boş.");
+              else if (uyarilar.length > 0) alert(`${items.length} takım okundu. ${uyarilar.length} uyarı:\n\n` + uyarilar.slice(0, 8).join("\n") + (uyarilar.length > 8 ? `\n… (+${uyarilar.length - 8})` : ""));
             };
-            reader.readAsText(file, "UTF-8");
+            reader.readAsArrayBuffer(file);
             e.target.value = "";
           }} />
 

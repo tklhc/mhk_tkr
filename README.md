@@ -1,7 +1,7 @@
 # MİHENK Teknik Resim
 
 Kesici takımlar (freze, matkap, kademeli matkap…) için parametrik teknik resim uygulaması.
-Parametrelerden yan görünüş, uç görünüş, antet, DXF, PDF/SVG/PNG ve Excel rapor üretir.
+Parametrelerden ISO çizgi/ölçü kurallarına uygun yan görünüş, uç görünüş, ISO 7200 antet, DXF, PDF/SVG/PNG ve Excel rapor üretir. Sayfa gerçek mm ölçeğindedir (A4/A3); çıktılar kağıtta ölçek yazdığı gibi çıkar.
 
 Canlı: https://tklhc.github.io/mhk_tkr/
 
@@ -22,11 +22,13 @@ npm run build      # dist/index.html: tek dosya, internetsiz de açılır
 | Klasör | İçerik |
 |---|---|
 | `src/geometry/profil.js` | **Takım geometrisinin tek kaynağı.** İstasyonlar (sap, geçiş, boğaz, kesici), kademeler, kontur (doğru + yay), görünür kenarlar ve girdi doğrulaması. mm cinsinden; x ekseni sap ucundan takım ucuna. |
-| `src/drawing/` | SVG çizim bileşenleri: yan görünüş, uç görünüş, antet, ölçü yardımcıları |
+| `src/drawing/` | SVG çizim: `Sayfa` (kağıt, çerçeve), `YanGorunus`, `UcGorunus`, `Antet` (ISO 7200 + veri tablosu + QR), `iso.jsx` (çizgi, ok, ölçü, kılavuz), `sayfaDuzeni.js` (kağıt/ölçek) |
+| `src/geometry/tolerans.js` | ISO 286 tolerans tabloları (h6, js7, e8, H7 … → sayısal sapma) |
+| `src/config.js` | Firma bilgileri (antette görünür) |
 | `src/ui/` | Parametre paneli, takım kütüphanesi, girdi bileşenleri |
-| `src/io/` | DXF, CSV içe aktarma, Excel çıktı |
+| `src/io/` | DXF, CSV içe aktarma (UTF-8 ve Windows-1254, tırnak/ondalık virgül), Excel çıktı, `export.js` (SVG/PNG/PDF) |
 | `src/view3d/` | 3D önizleme (Three.js) |
-| `src/assets/` | Logo, filigran, uç görünüş görselleri |
+| `src/assets/` | Logo |
 | `tests/` | Geometri ve DXF testleri |
 
 Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D ölçüleri oradan alır.
