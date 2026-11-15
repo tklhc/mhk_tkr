@@ -255,5 +255,6 @@ export function isEmriParametreleri(sonuc, mevcut) {
   p.coating = b.kaplama || "";
   p.ekOzellikler = sonuc.ekOzellikler;
   p.ekGoster = true;
+  p.cizimTuru = "ie";   // iş emrinden gelen resim iş emri çizimidir (müşteriye vermek için türü değiştirin)
   return { params: p, uyarilar };
 }

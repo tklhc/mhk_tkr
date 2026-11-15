@@ -203,6 +203,14 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
 
         {/* ═════════ BELGE ═════════ */}
         {sekme === "belge" && <>
+          <Grup baslik="Çizim türü">
+            <div className="cipler">
+              <Cip acik={params.cizimTuru !== "ie"} onClick={() => u("cizimTuru", "musteri")}>Müşteri çizimi</Cip>
+              <Cip acik={params.cizimTuru === "ie"} onClick={() => u("cizimTuru", "ie")}>İş emri çizimi</Cip>
+            </div>
+            <div className="ipucu"><b>Müşteri çizimi:</b> geniş antet (logo, iletişim, teslim, genel tolerans); üretim özellikleri yok. <b>İş emri çizimi:</b> dar antet (teslim ve genel tolerans yok) ve varsa üretim özellikleri tablosu.</div>
+          </Grup>
+
           <Grup baslik="Takım">
             <Metin label="Alet adı" value={params.toolName} onChange={(v) => u("toolName", v)} />
             <div className="iki">
@@ -223,7 +231,6 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
           </Grup>
 
           <Grup baslik="Müşteri ve sipariş">
-            <Anahtar acik={params.customerMode} onChange={(v) => u("customerMode", v)} altMetin="Antette telefon, e-posta ve web adresini gizler">Müşteri modu</Anahtar>
             <Metin label="Müşteri adı" value={params.customerName} onChange={(v) => u("customerName", v)} placeholder="ör. ABC Makina" />
             <div className="iki">
               <Metin label="İE / sipariş no" value={params.orderNo} onChange={(v) => u("orderNo", v)} placeholder="SIP-2026-001" />
@@ -233,7 +240,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
 
           {(params.ekOzellikler || []).length > 0 && (
             <Grup baslik="Üretim özellikleri" sag={`${params.ekOzellikler.length} kayıt · iş emrinden`}>
-              <Anahtar acik={params.ekGoster !== false} onChange={(v) => u("ekGoster", v)} altMetin="Çizilmeyen taşlama/üretim verileri sayfada tablo olarak görünür">Resimde göster</Anahtar>
+              <Anahtar acik={params.ekGoster !== false} onChange={(v) => u("ekGoster", v)} altMetin={params.cizimTuru === "ie" ? "Çizilmeyen taşlama/üretim verileri sayfada tablo olarak görünür" : "Yalnız İş emri çiziminde görünür; Çizim türü şu an Müşteri çizimi"}>Resimde göster</Anahtar>
               <div className="liste" style={{ marginTop: 8, marginBottom: 8 }}>
                 {params.ekOzellikler.map(([ad, deger], i) => (
                   <div key={i} className="liste-oge" style={{ cursor: "default", padding: "6px 10px" }}>

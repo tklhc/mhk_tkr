@@ -18,6 +18,7 @@ export function duzenHesapla(params) {
     L: Math.max(g.L, 1),
     D: Math.max(g.D, g.d, 1),
     olcek: params.olcek,
+    tur: params.cizimTuru === "ie" ? "ie" : "musteri",
   });
 }
 

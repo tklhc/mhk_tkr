@@ -64,8 +64,8 @@ const DEFAULT_PARAMS = {
   olcek: "otomatik",     // otomatik | 2:1 | 1:1 | 1:2 ...
   genelTolerans: "ISO 2768-m",
   tarih: "",             // boşsa bugün
-  // Müşteri modu & Onay damgası
-  customerMode: false,  // müşteri modunda iç detaylar gizlenir
+  // Çizim türü & Onay damgası
+  cizimTuru: "musteri", // "musteri": geniş antet, üretim verisi yok · "ie": dar antet + üretim özellikleri tablosu
   stamp: "",            // "": yok, "ONAYLANDI", "TASLAK", "REVİZYON", "İPTAL"
   stampDate: "",        // damga tarihi
   // Notlar (baloncuk)

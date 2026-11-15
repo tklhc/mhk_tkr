@@ -161,6 +161,16 @@ function App() {
             ))}
           </div>
 
+          {!isMobile && view !== "3d" && (
+            <div className="segment" role="tablist" aria-label="Çizim türü">
+              {[["musteri", "Müşteri"], ["ie", "İş emri"]].map(([v, ad]) => (
+                <button key={v} role="tab" aria-selected={(params.cizimTuru === "ie" ? "ie" : "musteri") === v}
+                  className={(params.cizimTuru === "ie" ? "ie" : "musteri") === v ? "acik" : ""}
+                  onClick={() => setParams((p) => ({ ...p, cizimTuru: v }))}>{ad}</button>
+              ))}
+            </div>
+          )}
+
           <div className="durum">
             <b>{olcekYaz(duzen.yan.olcek)}</b> · {duzen.kagit.ad} · ⌀{params.D}×{params.L} mm · {params.z}Z
           </div>

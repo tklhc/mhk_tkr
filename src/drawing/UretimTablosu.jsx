@@ -4,9 +4,9 @@ import { sigdir } from "./Antet";
 
 const SATIR_H = 4.6, BASLIK_H = 6;
 
-/** Üretim özelliği tablosu gösterilecek mi? (iş emrinden gelen çizilmeyen özellikler) */
+/** Üretim özelliği tablosu gösterilecek mi? Yalnız iş emri çiziminde (müşteri çiziminde üretim verisi yok). */
 export function uretimVarMi(params) {
-  return Array.isArray(params.ekOzellikler) && params.ekOzellikler.length > 0 && params.ekGoster !== false;
+  return params.cizimTuru === "ie" && Array.isArray(params.ekOzellikler) && params.ekOzellikler.length > 0 && params.ekGoster !== false;
 }
 
 /**

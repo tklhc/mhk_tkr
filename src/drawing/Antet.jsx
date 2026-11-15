@@ -59,17 +59,19 @@ function Hucre({ x, y, w, h, etiket, deger, boyut = 4.6, kalinYazi = false }) {
 export function Antet({ params, sayfa }) {
   const { antet: a, veriTablosu: v } = sayfa;
   const g = takimProfili(params);
-  const kalan = params.customerMode;
-  const sol = 62;                      // sol sütun: logo, firma, iletişim (geniş)
+  const ie = sayfa.tur === "ie";       // iş emri çizimi: dar antet, Teslim ve Genel tolerans yok, iletişim yok
+  const sol = ie ? 44 : 62;            // sol sütun: logo, firma, (müşteri çiziminde) iletişim
   const rx = a.x + sol, rw = a.w - sol;
   const h1 = 17, h2 = (a.h - h1) / 2;  // 3 satır: ad satırı biraz yüksek
-  const qrW = 26;
+  const qrW = ie ? 24 : 26, qrBoyut = ie ? 21 : 23;
   const ad = params.toolName || "";
   const qrMetin = `MHK|${ad}|${params.drawingNo || "-"}|${params.revision || "-"}`;
   const sagGenislik = rw - qrW;        // 2. ve 3. satırlarda QR hücresi sağda
   const teslim = params.deliveryDate ? tarihYaz(params.deliveryDate) : "-";
 
-  const iletisim = kalan ? [] : [FIRMA.tel, FIRMA.eposta, FIRMA.web];
+  const iletisim = ie ? [] : [FIRMA.tel, FIRMA.eposta, FIRMA.web];
+  const logoW = sol - (ie ? 8 : 10), logoH = ie ? 19 : 21;
+  const firmaFs = ie ? sigdir(FIRMA.ad, sol - 6, 3.5, 2.4) * 0.86 : 3.5; // dar sütunda firma adı sığsın
 
   // Teknik veri tablosu (Malzeme/Kaplama yalnız burada; antette tekrar edilmez)
   const satirlar = [
@@ -110,30 +112,44 @@ export function Antet({ params, sayfa }) {
       <line x1={rx} y1={a.y} x2={rx} y2={a.y + a.h} stroke="#000" strokeWidth={kalin * 0.7} />
 
       {/* Sol sütun: büyük logo, firma, iletişim */}
-      <image href={LOGO_IMG} x={a.x + 5} y={a.y + 4} width={sol - 10} height={21} preserveAspectRatio="xMidYMid meet" />
-      <text x={a.x + sol / 2} y={a.y + 31.5} fontSize={3.5} fontWeight={700} textAnchor="middle" fill="#000" letterSpacing="0.3">{FIRMA.ad}</text>
-      <line x1={a.x + 4} y1={a.y + 34.5} x2={a.x + sol - 4} y2={a.y + 34.5} stroke="#9aa3ae" strokeWidth={0.2} />
+      <image href={LOGO_IMG} x={a.x + (sol - logoW) / 2} y={a.y + (ie ? 7 : 4)} width={logoW} height={logoH} preserveAspectRatio="xMidYMid meet" />
+      <text x={a.x + sol / 2} y={a.y + (ie ? 35 : 31.5)} fontSize={firmaFs} fontWeight={700} textAnchor="middle" fill="#000" letterSpacing="0.3">{FIRMA.ad}</text>
+      {!ie && <line x1={a.x + 4} y1={a.y + 34.5} x2={a.x + sol - 4} y2={a.y + 34.5} stroke="#9aa3ae" strokeWidth={0.2} />}
       {iletisim.map((t, i) => (
         <text key={t} x={a.x + sol / 2} y={a.y + 39.6 + i * 4.3} fontSize={3} textAnchor="middle" fill="#222">{t}</text>
       ))}
 
       {/* Sağ alan */}
-      <Hucre x={rx} y={a.y} w={82} h={h1} etiket="ALET ADI" deger={ad} boyut={9} kalinYazi />
-      <Hucre x={rx + 82} y={a.y} w={34} h={h1} etiket="ÇİZİM NO" deger={params.drawingNo || "-"} boyut={6} kalinYazi />
-      <Hucre x={rx + 116} y={a.y} w={rw - 116} h={h1} etiket="REV." deger={params.revision || "-"} boyut={6} kalinYazi />
+      {ie ? (<>
+        {/* İş emri: ALET ADI / ÇİZİM NO / REV; TARİH / MÜŞTERİ / İE NO; ÇİZEN / ONAYLAYAN (Teslim ve Genel tolerans yok) */}
+        <Hucre x={rx} y={a.y} w={60} h={h1} etiket="ALET ADI" deger={ad} boyut={9} kalinYazi />
+        <Hucre x={rx + 60} y={a.y} w={20} h={h1} etiket="ÇİZİM NO" deger={params.drawingNo || "-"} boyut={6} kalinYazi />
+        <Hucre x={rx + 80} y={a.y} w={rw - 80} h={h1} etiket="REV." deger={params.revision || "-"} boyut={6} kalinYazi />
 
-      <Hucre x={rx} y={a.y + h1} w={27} h={h2} etiket="TARİH" deger={tarihYaz(params.tarih)} boyut={4.6} />
-      <Hucre x={rx + 27} y={a.y + h1} w={27} h={h2} etiket="TESLİM" deger={teslim} boyut={4.6} />
-      <Hucre x={rx + 54} y={a.y + h1} w={36} h={h2} etiket="MÜŞTERİ" deger={params.customerName || "-"} boyut={4.6} />
-      <Hucre x={rx + 90} y={a.y + h1} w={sagGenislik - 90} h={h2} etiket="İE / SİP. NO" deger={params.orderNo || "-"} boyut={4.6} />
+        <Hucre x={rx} y={a.y + h1} w={23} h={h2} etiket="TARİH" deger={tarihYaz(params.tarih)} boyut={4.6} />
+        <Hucre x={rx + 23} y={a.y + h1} w={sagGenislik - 23 - 21} h={h2} etiket="MÜŞTERİ" deger={params.customerName || "-"} boyut={4.6} />
+        <Hucre x={rx + sagGenislik - 21} y={a.y + h1} w={21} h={h2} etiket="İE / SİP. NO" deger={params.orderNo || "-"} boyut={4.6} />
 
-      <Hucre x={rx} y={a.y + h1 + h2} w={38} h={h2} etiket="ÇİZEN" deger={params.createdBy || FIRMA.cizen} boyut={4.6} />
-      <Hucre x={rx + 38} y={a.y + h1 + h2} w={38} h={h2} etiket="ONAYLAYAN" deger={params.approvedBy || ""} boyut={4.6} />
-      <Hucre x={rx + 76} y={a.y + h1 + h2} w={sagGenislik - 76} h={h2} etiket="GENEL TOLERANS" deger={params.genelTolerans || ""} boyut={4.6} />
+        <Hucre x={rx} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket="ÇİZEN" deger={params.createdBy || FIRMA.cizen} boyut={4.6} />
+        <Hucre x={rx + sagGenislik / 2} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket="ONAYLAYAN" deger={params.approvedBy || ""} boyut={4.6} />
+      </>) : (<>
+        <Hucre x={rx} y={a.y} w={82} h={h1} etiket="ALET ADI" deger={ad} boyut={9} kalinYazi />
+        <Hucre x={rx + 82} y={a.y} w={34} h={h1} etiket="ÇİZİM NO" deger={params.drawingNo || "-"} boyut={6} kalinYazi />
+        <Hucre x={rx + 116} y={a.y} w={rw - 116} h={h1} etiket="REV." deger={params.revision || "-"} boyut={6} kalinYazi />
+
+        <Hucre x={rx} y={a.y + h1} w={27} h={h2} etiket="TARİH" deger={tarihYaz(params.tarih)} boyut={4.6} />
+        <Hucre x={rx + 27} y={a.y + h1} w={27} h={h2} etiket="TESLİM" deger={teslim} boyut={4.6} />
+        <Hucre x={rx + 54} y={a.y + h1} w={36} h={h2} etiket="MÜŞTERİ" deger={params.customerName || "-"} boyut={4.6} />
+        <Hucre x={rx + 90} y={a.y + h1} w={sagGenislik - 90} h={h2} etiket="İE / SİP. NO" deger={params.orderNo || "-"} boyut={4.6} />
+
+        <Hucre x={rx} y={a.y + h1 + h2} w={38} h={h2} etiket="ÇİZEN" deger={params.createdBy || FIRMA.cizen} boyut={4.6} />
+        <Hucre x={rx + 38} y={a.y + h1 + h2} w={38} h={h2} etiket="ONAYLAYAN" deger={params.approvedBy || ""} boyut={4.6} />
+        <Hucre x={rx + 76} y={a.y + h1 + h2} w={sagGenislik - 76} h={h2} etiket="GENEL TOLERANS" deger={params.genelTolerans || ""} boyut={4.6} />
+      </>)}
 
       {/* QR: 2. ve 3. satırı kaplar */}
       <rect x={rx + sagGenislik} y={a.y + h1} width={qrW} height={2 * h2} fill="none" stroke="#000" strokeWidth={ince} />
-      <QR x={rx + sagGenislik + (qrW - 23) / 2} y={a.y + h1 + (2 * h2 - 23) / 2} boyut={23} metin={qrMetin} />
+      <QR x={rx + sagGenislik + (qrW - qrBoyut) / 2} y={a.y + h1 + (2 * h2 - qrBoyut) / 2} boyut={qrBoyut} metin={qrMetin} />
     </g>
   );
 }

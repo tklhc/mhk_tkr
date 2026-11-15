@@ -161,12 +161,29 @@ describe("Antet okunabilirliği", () => {
     expect(boyutlar.length).toBeGreaterThan(20);
     expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
   });
-  it("müşteri modunda iletişim bilgisi gizlenir; müşteri ve İE no antet hücresinde", () => {
-    const svg = render({ ...DEFAULT_PARAMS, customerMode: true, customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
-    expect(svg).not.toContain("0507");
+  it("müşteri çiziminde iletişim, teslim ve genel tolerans var; müşteri ve İE no antet hücresinde", () => {
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "musteri", customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
+    expect(svg).toContain("0507");
     expect(svg).toContain(">ABC Makina<");
     expect(svg).toContain(">İE-818<");
     expect(svg).toContain(">20.11.2026<");
+    expect(svg).toContain(">TESLİM<");
+    expect(svg).toContain(">GENEL TOLERANS<");
+  });
+  it("iş emri çiziminde Teslim ve Genel tolerans hücresi ile iletişim satırları yok; diğer alanlar durur", () => {
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", customerName: "ABC Makina", orderNo: "İE-818", deliveryDate: "2026-11-20" });
+    expect(svg).not.toContain(">TESLİM<");
+    expect(svg).not.toContain(">GENEL TOLERANS<");
+    expect(svg).not.toContain("0507");
+    for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN"]) expect(svg).toContain(`>${e}<`);
+    expect(svg).toContain(">TEKNİK VERİ<");
+    expect(svg).toContain(">ABC Makina<");
+  });
+  it("iş emri çiziminde de antetteki hiçbir yazı 2,4 mm'den küçük değil", () => {
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", toolName: "Std. Freze 114x15,5x45x16x100", customerName: "ABC Makina Sanayi", orderNo: "İE-818" });
+    const antet = svg.slice(svg.indexOf("TEKNİK VERİ") - 400);
+    const boyutlar = [...antet.matchAll(/font-size="([0-9.]+)"/g)].map((m) => +m[1]);
+    expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
   });
 });
 
@@ -196,18 +213,25 @@ import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
 describe("Üretim özellikleri tablosu", () => {
   const ek = [["Kesme Açısı", "8 °"], ["Kısa Diş Genişliği", "4.65 mm"], ["Yüzey Tipi", "Serbest Yüzey"], ["Alın Açısı", "1.5 °"]];
   it("özellik yoksa ya da kapalıysa çizilmez", () => {
-    expect(render({ ...DEFAULT_PARAMS })).not.toContain("uretim-tablosu");
-    expect(render({ ...DEFAULT_PARAMS, ekOzellikler: ek, ekGoster: false })).not.toContain("uretim-tablosu");
+    expect(render({ ...DEFAULT_PARAMS, cizimTuru: "ie" })).not.toContain("uretim-tablosu");
+    expect(render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek, ekGoster: false })).not.toContain("uretim-tablosu");
+  });
+  it("müşteri çiziminde üretim özellikleri hiç çizilmez (veri durur, tür değişince geri gelir)", () => {
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "musteri", ekOzellikler: ek });
+    expect(svg).not.toContain("uretim-tablosu");
+    expect(svg).not.toContain("ÜRETİM ÖZELLİKLERİ");
+    expect(svg).not.toContain(">Serbest Yüzey<");
+    expect(render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek })).toContain("uretim-tablosu");
   });
   it("özellikler varken tablo ve değerleri çizilir", () => {
-    const svg = render({ ...DEFAULT_PARAMS, ekOzellikler: ek });
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
     expect(svg).toContain("uretim-tablosu");
     expect(svg).toContain("ÜRETİM ÖZELLİKLERİ");
     expect(svg).toContain(">Serbest Yüzey<");
     expect(svg).not.toMatch(/NaN|undefined/);
   });
   it("tablo yan görünüş bölgesinin içinde ve ölçü satırlarının altında kalır", () => {
-    const p = { ...DEFAULT_PARAMS, ekOzellikler: ek };
+    const p = { ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek };
     const yan = duzenHesapla(p).yan;
     const y = uretimYerlesimi(p, yan);
     expect(y).not.toBeNull();
@@ -218,6 +242,6 @@ describe("Üretim özellikleri tablosu", () => {
   });
   it("çok fazla özellik sığmazsa tablo atlanır, çökmez", () => {
     const cok = Array.from({ length: 60 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
-    expect(() => render({ ...DEFAULT_PARAMS, ekOzellikler: cok })).not.toThrow();
+    expect(() => render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: cok })).not.toThrow();
   });
 });

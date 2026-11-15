@@ -89,7 +89,7 @@ describe("İE-818 (Std. Freze)", () => {
     expect(p).toMatchObject({
       toolType: "flat", D: 15.5, d: 16, L: 100, l1: 45, z: 4, helix: 35, dCore: 8.525, chamferSize: 0.264, l2: 0,
       toolName: "Std. Freze 114x15,5x45x16x100", orderNo: "İE-818", material: "Karbür (BM-1)", coating: "",
-      tolD: "", told: "", tolL: "", toll1: "", sapTipi: "HA", coolantHole: false,
+      tolD: "", told: "", tolL: "", toll1: "", sapTipi: "HA", coolantHole: false, cizimTuru: "ie",
       drawingNo: "", revision: "", approvedBy: "", notes: [], stamp: "",
     });
     expect(p.ekOzellikler).toHaveLength(10);

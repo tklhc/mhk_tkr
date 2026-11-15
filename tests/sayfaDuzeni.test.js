@@ -28,6 +28,20 @@ describe("sayfa düzeni", () => {
     expect(s.veriTablosu.w).toBe(67); // teknik veri tablosu dar
   });
 
+  it("iş emri çizimi: antet ve veri tablosu dar, sağ altta bitişik; görünüş bölgeleri değişmez", () => {
+    const m = sayfaDuzeni({ kagit: "A4", L: 75, D: 10 });
+    const ie = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tur: "ie" });
+    expect(ie.tur).toBe("ie");
+    expect(ie.antet.w).toBeLessThan(m.antet.w);
+    expect(ie.veriTablosu.w).toBeLessThan(m.veriTablosu.w);
+    expect(ie.antet.x + ie.antet.w).toBe(287);
+    expect(ie.veriTablosu.x + ie.veriTablosu.w).toBe(ie.antet.x);      // bitişik
+    expect(ie.veriTablosu.x).toBeGreaterThan(ie.cerceve.x + 60);        // sol alt serbest kalır
+    expect(ie.alan).toEqual(m.alan);
+    expect(ie.yan.olcek).toBe(m.yan.olcek);
+    expect(m.tur).toBe("musteri");
+  });
+
   it("A4'te 75 mm freze 2:1, 150 mm 1:1, 300 mm 1:2", () => {
     expect(sayfaDuzeni({ kagit: "A4", L: 75, D: 10 }).yan.olcek).toBe(2);
     expect(sayfaDuzeni({ kagit: "A4", L: 150, D: 16 }).yan.olcek).toBe(1);

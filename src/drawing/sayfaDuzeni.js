@@ -33,7 +33,8 @@ export function olcekSec(sigdirmalar) {
 }
 
 const CERCEVE = { sol: 20, ust: 10, sag: 10, alt: 10 }; // ISO 5457
-export const ANTET = { w: 200, h: 52 };                  // ISO 7200 önerisi en çok 180 mm; logo bölümü geniş olsun diye 200 mm
+export const ANTET = { w: 200, h: 52 };                  // müşteri çizimi: ISO 7200 önerisi en çok 180 mm; logo bölümü geniş olsun diye 200 mm
+export const ANTET_IE = { w: 140, h: 52, veriW: 58 };    // iş emri çizimi: dar antet + dar teknik veri tablosu (sağ altta bitişik)
 
 /**
  * @param {object} o
@@ -42,12 +43,17 @@ export const ANTET = { w: 200, h: 52 };                  // ISO 7200 önerisi en
  * @param {number} o.D       en büyük çap (mm)
  * @param {number} [o.kademeSayisi]  üstte ek ölçü satırı için
  * @param {string} [o.olcek]  "otomatik" ya da "2:1" gibi
+ * @param {"musteri"|"ie"} [o.tur]  çizim türü: müşteri çizimi (geniş antet) ya da iş emri çizimi (dar antet)
  */
-export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik" }) {
+export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri" }) {
   const k = KAGITLAR[kagit] || KAGITLAR.A4;
+  const ie = tur === "ie";
   const cerceve = { x: CERCEVE.sol, y: CERCEVE.ust, w: k.w - CERCEVE.sol - CERCEVE.sag, h: k.h - CERCEVE.ust - CERCEVE.alt };
-  const antet = { x: cerceve.x + cerceve.w - ANTET.w, y: cerceve.y + cerceve.h - ANTET.h, w: ANTET.w, h: ANTET.h };
-  const veriTablosu = { x: cerceve.x, y: antet.y, w: antet.x - cerceve.x, h: ANTET.h };
+  const aw = ie ? ANTET_IE.w : ANTET.w;
+  const antet = { x: cerceve.x + cerceve.w - aw, y: cerceve.y + cerceve.h - ANTET.h, w: aw, h: ANTET.h };
+  // Müşteri çiziminde veri tablosu antetin soluna kadar uzanır; iş emrinde dar ve antete bitişik
+  const veriW = ie ? ANTET_IE.veriW : antet.x - cerceve.x;
+  const veriTablosu = { x: antet.x - veriW, y: antet.y, w: veriW, h: ANTET.h };
   const alan = { x: cerceve.x, y: cerceve.y, w: cerceve.w, h: antet.y - cerceve.y };
 
   // Uç görünüş sağda, yan görünüş solda
@@ -77,5 +83,5 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
     cx: ucBolge.x + ucBolge.w / 2,
     cy: yan.oy,
   };
-  return { kagit: { ad: KAGITLAR[kagit] ? kagit : "A4", ...k }, cerceve, antet, veriTablosu, alan, yan, uc };
+  return { kagit: { ad: KAGITLAR[kagit] ? kagit : "A4", ...k }, tur: ie ? "ie" : "musteri", cerceve, antet, veriTablosu, alan, yan, uc };
 }
