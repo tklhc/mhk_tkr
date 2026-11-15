@@ -1,6 +1,8 @@
 import { useCallback, useRef } from "react";
 
-// ─── DRAGGABLE LABEL SYSTEM ─────────────────────────────
+// ─── SÜRÜKLEME ──────────────────────────────────────────
+// Ölçü ve etiketlerin yerini elle ince ayarlamak için. Kaydırma miktarları
+// SVG kullanıcı biriminde (mm) offsets[id] = { dx, dy } olarak tutulur.
 
 function svgPoint(svgEl, clientX, clientY) {
   const pt = svgEl.createSVGPoint();
@@ -8,11 +10,13 @@ function svgPoint(svgEl, clientX, clientY) {
   return pt.matrixTransform(svgEl.getScreenCTM().inverse());
 }
 
-function Draggable({ id, offsets, setOffsets, axis, children }) {
-  const off = offsets[id] || { dx: 0, dy: 0 };
+/** Sürükleme kancası: kaydırma değeri ve fare/dokunma olayları. */
+function useSurukle(id, offsets, setOffsets, axis) {
+  const off = (id && offsets && offsets[id]) || { dx: 0, dy: 0 };
   const dragRef = useRef(null);
 
   const onStart = useCallback((clientX, clientY) => {
+    if (!id || !setOffsets) return;
     const svg = document.getElementById("teknik-svg");
     if (!svg) return;
     const p = svgPoint(svg, clientX, clientY);
@@ -45,14 +49,22 @@ function Draggable({ id, offsets, setOffsets, axis, children }) {
     document.addEventListener("touchend", teH);
   }, [id, off, setOffsets, axis]);
 
-  const cursor = axis === "y" ? "ns-resize" : axis === "x" ? "ew-resize" : "move";
+  const olaylar = id && setOffsets ? {
+    style: { cursor: axis === "y" ? "ns-resize" : axis === "x" ? "ew-resize" : "move" },
+    onMouseDown: (e) => { e.stopPropagation(); onStart(e.clientX, e.clientY); },
+    onTouchStart: (e) => { e.stopPropagation(); onStart(e.touches[0].clientX, e.touches[0].clientY); },
+  } : {};
+  return { off, olaylar };
+}
+
+/** Çocuklarını bütün olarak kaydıran sürüklenebilir grup (etiketler, notlar). */
+function Draggable({ id, offsets, setOffsets, axis, children }) {
+  const { off, olaylar } = useSurukle(id, offsets, setOffsets, axis);
   return (
-    <g transform={`translate(${off.dx},${off.dy})`} style={{ cursor }}
-      onMouseDown={(e) => { e.stopPropagation(); onStart(e.clientX, e.clientY); }}
-      onTouchStart={(e) => { e.stopPropagation(); onStart(e.touches[0].clientX, e.touches[0].clientY); }}>
+    <g transform={`translate(${off.dx},${off.dy})`} {...olaylar}>
       {children}
     </g>
   );
 }
 
-export { svgPoint, Draggable };
+export { svgPoint, Draggable, useSurukle };
