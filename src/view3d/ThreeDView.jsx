@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { TOOL_TYPES } from "../constants";
 import { takimProfili, yaricapAt, parcaNoktalari } from "../geometry/profil";
+import { kaplamaRengi, ton } from "../drawing/stil";
 
 // ─── 3D PREVIEW — Gerçekçi Freze Geometrisi ─────────────
 function ThreeDView({ params }) {
@@ -13,7 +14,7 @@ function ThreeDView({ params }) {
     if (!el) return;
     const T = THREE;
     const scene = new T.Scene();
-    scene.background = new T.Color("#dde2e8");
+    scene.background = new T.Color("#1b2128");
     const camera = new T.PerspectiveCamera(32, el.clientWidth / el.clientHeight, 0.01, 100);
     const renderer = new T.WebGLRenderer({ antialias: true });
     renderer.setSize(el.clientWidth, el.clientHeight);
@@ -22,12 +23,12 @@ function ThreeDView({ params }) {
     renderer.shadowMap.type = T.PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
 
-    scene.add(new T.AmbientLight("#e8ecf0", 0.5));
+    scene.add(new T.AmbientLight("#e8ecf0", 0.85));
     const dl1 = new T.DirectionalLight("#fff", 0.9); dl1.position.set(4,6,5); dl1.castShadow = true; scene.add(dl1);
     const dl2 = new T.DirectionalLight("#b0c8e0", 0.4); dl2.position.set(-3,-2,5); scene.add(dl2);
     const dl3 = new T.DirectionalLight("#e0d0b0", 0.3); dl3.position.set(0,-5,-3); scene.add(dl3);
 
-    const grid = new T.GridHelper(8, 40, "#a0a8b0", "#c8ced4");
+    const grid = new T.GridHelper(8, 40, "#46515f", "#2b333d");
     grid.rotation.x = Math.PI / 2; grid.position.z = -1.2; scene.add(grid);
 
     const toolGroup = new T.Group(); scene.add(toolGroup);
@@ -79,10 +80,11 @@ function ThreeDView({ params }) {
 
     const hC = (hex) => new T.Color(hex);
     const mat = (renk, metal, pürüz) => new T.MeshStandardMaterial({ color: hC(renk), metalness: metal, roughness: pürüz, side: T.DoubleSide });
-    const matS = mat(params.colShank, 0.75, 0.22);
-    const matN = mat(params.colNeck, 0.7, 0.28);
-    const matC = mat(params.colCut, 0.82, 0.18);
-    const matT = mat(params.colTip, 0.85, 0.15);
+    const renkK = kaplamaRengi(params.coating, params.colCut); // çizimdeki kaplama rengiyle aynı
+    const matS = mat(ton(params.colShank, 10), 0.6, 0.3);
+    const matN = mat(ton(params.colNeck, 10), 0.6, 0.32);
+    const matC = mat(ton(renkK, 12), 0.55, 0.32);
+    const matT = mat(ton(renkK, 42), 0.6, 0.28);
 
     // Kesit profili — her diş: kesici kenar → margin → relief → kanal dibi → arka duvar → topuk
     function profileR(angle, oR, iR, numF) {
@@ -186,10 +188,10 @@ function ThreeDView({ params }) {
 
   return (
     <div ref={mountRef} style={{width:"100%",height:"100%",borderRadius:4,overflow:"hidden",position:"relative",cursor:"grab"}}>
-      <div style={{position:"absolute",top:8,left:8,fontSize:10,color:"#4a5a6a",fontFamily:"'IBM Plex Mono',monospace",background:"rgba(255,255,255,0.88)",padding:"4px 10px",borderRadius:3,pointerEvents:"none",fontWeight:600}}>
+      <div style={{position:"absolute",top:8,left:8,fontSize:10,color:"#c4cfdd",fontFamily:"'IBM Plex Mono',monospace",background:"rgba(14,19,27,0.82)",padding:"4px 10px",borderRadius:3,pointerEvents:"none",fontWeight:600}}>
         ⌀{params.D}×{params.L}mm · {params.z}Z · {TOOL_TYPES[params.toolType]}
       </div>
-      <div style={{position:"absolute",bottom:8,left:8,fontSize:9,color:"#8a9aaa",fontFamily:"'IBM Plex Mono',monospace",background:"rgba(255,255,255,0.7)",padding:"2px 7px",borderRadius:3,pointerEvents:"none"}}>
+      <div style={{position:"absolute",bottom:8,left:8,fontSize:9,color:"#8d9bb0",fontFamily:"'IBM Plex Mono',monospace",background:"rgba(14,19,27,0.7)",padding:"2px 7px",borderRadius:3,pointerEvents:"none"}}>
         Sürükle: Döndür · Scroll: Yakınlaştır
       </div>
     </div>

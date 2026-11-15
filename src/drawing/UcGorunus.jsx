@@ -1,6 +1,7 @@
 import { takimProfili } from "../geometry/profil";
 import { CIZGI, Eksen, Olcu, DESEN, YAZI, fmt } from "./iso";
 import { olcekYaz } from "./sayfaDuzeni";
+import { kaplamaRengi, ton } from "./stil";
 import { kanalYolu } from "./kanalYolu";
 
 const n = (v) => +v.toFixed(3);
@@ -23,14 +24,26 @@ export function UcGorunus({ params, yerlesim, dimOff, setDimOff }) {
   const rc = (dCore / 2) * s;
   const yon = params.cutDir === "Sol" ? -1 : 1;
   const e = [];
+  const sunum = params.sunum !== false;
+  const dolgu = sunum ? "url(#ys-uc)" : "none";
+  if (sunum) {
+    const renk = kaplamaRengi(params.coating, params.colCut);
+    e.push(
+      <defs key="ys-uc-defs">
+        <radialGradient id="ys-uc" cx="38%" cy="32%" r="75%">
+          <stop offset="0%" stopColor={ton(renk, 62)} /><stop offset="55%" stopColor={ton(renk, 6)} /><stop offset="100%" stopColor={ton(renk, -52)} />
+        </radialGradient>
+      </defs>
+    );
+  }
 
   // Kanallı kontur: bkz. kanalYolu.js
   if (dCore > 0) {
     const d = kanalYolu({ cx, cy, R, rc, z, yon });
-    e.push(<path key="dis" d={d} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />);
+    e.push(<path key="dis" d={d} fill={dolgu} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />);
     e.push(<circle key="core" cx={cx} cy={cy} r={n(rc)} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} strokeDasharray={DESEN.gizli} />);
   } else {
-    e.push(<circle key="dis" cx={cx} cy={cy} r={n(R)} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />);
+    e.push(<circle key="dis" cx={cx} cy={cy} r={n(R)} fill={dolgu} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />);
   }
 
   // Matkapta keski kenarı

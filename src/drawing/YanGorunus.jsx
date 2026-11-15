@@ -1,5 +1,6 @@
 import { takimProfili, tamKontur, svgYolu, parcaUclari } from "../geometry/profil";
 import { CIZGI, Eksen, Olcu, Kilavuz, fmt } from "./iso";
+import { kaplamaRengi, silindirDuraklari } from "./stil";
 
 const DEG = Math.PI / 180;
 const n = (v) => +v.toFixed(3);
@@ -70,6 +71,37 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   const ek = { offsets: dimOff, setOffsets: setDimOff };
 
   const e = [];
+
+  // ── Sunum stili: bölge başına silindirik gölge (kontura kırpılır) ──
+  if (params.sunum !== false) {
+    const renkK = kaplamaRengi(params.coating, params.colCut);
+    const bolgeler = [{ id: "S", x0: 0, x1: g.x.sapSonu, r: hd, renk: params.colShank }];
+    if (g.x.boyunSonu > g.x.sapSonu + 1e-9) bolgeler.push({ id: "N", x0: g.x.sapSonu, x1: g.x.boyunSonu, r: Math.max(hd, hN), renk: params.colNeck });
+    if (stepdrill) g.kademeler.forEach((kd, i) => bolgeler.push({ id: `K${i}`, x0: kd.sol, x1: kd.sag, r: kd.dia / 2, renk: renkK }));
+    else bolgeler.push({ id: "K", x0: g.x.boyunSonu, x1: g.L, r: hD, renk: renkK });
+    e.push(
+      <defs key="ys-defs">
+        <clipPath id="yan-dolgu-klip"><path d={yol} /></clipPath>
+        <filter id="yan-golge" x="-3%" y="-8%" width="106%" height="122%">
+          <feDropShadow dx="0.5" dy="1.1" stdDeviation="0.9" floodColor="#000" floodOpacity="0.28" />
+        </filter>
+        {bolgeler.map((b) => (
+          <linearGradient key={b.id} id={`ys-${b.id}`} x1="0" y1="0" x2="0" y2="1">
+            {silindirDuraklari(b.renk).map(([p, c]) => <stop key={p} offset={`${p}%`} stopColor={c} />)}
+          </linearGradient>
+        ))}
+      </defs>
+    );
+    e.push(
+      <g key="ys-dolgu" filter="url(#yan-golge)">
+        <g clipPath="url(#yan-dolgu-klip)">
+          {bolgeler.filter((b) => b.x1 - b.x0 > 1e-6).map((b) => (
+            <rect key={b.id} x={n(X(b.x0) - 0.05)} y={n(Y(b.r))} width={n((b.x1 - b.x0) * s + 0.1)} height={n(2 * b.r * s)} fill={`url(#ys-${b.id})`} />
+          ))}
+        </g>
+      </g>
+    );
+  }
 
   // ── Olukları (kontur içine kırp) ──
   const { yollar, k } = oluklar(g, params);

@@ -32,14 +32,14 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 :focus-visible { outline: 2px solid var(--accent2); outline-offset: 1px; }
 
 .cad-area {
-  background-color: #f1f4f8;
+  /* tasarım masası: koyu grafit, ortada hafif ışık, ince nokta ızgara */
+  background-color: #1a1f26;
   background-image:
-    linear-gradient(rgba(150,172,196,0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(150,172,196,0.28) 1px, transparent 1px),
-    linear-gradient(rgba(150,172,196,0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(150,172,196,0.10) 1px, transparent 1px);
-  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    radial-gradient(ellipse 75% 65% at 50% 42%, rgba(80,96,120,0.30), rgba(26,31,38,0) 70%),
+    radial-gradient(rgba(255,255,255,0.075) 1px, transparent 1.4px);
+  background-size: 100% 100%, 22px 22px;
 }
+.cad-area svg#teknik-svg { box-shadow: 0 0 0 1px rgba(255,255,255,0.06); }
 
 /* ─── Yerleşim ─────────────────────────────────────────── */
 .uygulama { display: flex; height: 100%; }

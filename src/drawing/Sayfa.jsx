@@ -6,7 +6,8 @@ import { DetayA } from "./DetayA";
 import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
-import { CIZGI, YAZI } from "./iso";
+import { Cerceve } from "./Cerceve";
+import { YAZI } from "./iso";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
 export function duzenHesapla(params) {
@@ -32,7 +33,7 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
   return (
     <svg id="teknik-svg" viewBox={`0 0 ${kagit.w} ${kagit.h}`} preserveAspectRatio="xMidYMid meet" style={style}>
       <rect x={0} y={0} width={kagit.w} height={kagit.h} fill="#fff" />
-      <rect x={c.x} y={c.y} width={c.w} height={c.h} fill="none" stroke={CIZGI.renk} strokeWidth={0.7} />
+      <Cerceve kagit={kagit} cerceve={c} />
 
       <YanGorunus params={params} yerlesim={yan} {...ek} />
       <DetayA params={params} yerlesim={yan} harf={kesitVarMi(params, takimProfili(params)) ? "B" : "A"} {...ek} />

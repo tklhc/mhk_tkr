@@ -56,6 +56,7 @@ const DEFAULT_PARAMS = {
   showDimAngles: true,
   kesitAA: false,       // kesit görünüşü A-A (şematik; açık değilse çizilmez)
   detayA: true,         // büyütülmüş uç detayı
+  sunum: true,          // sunum stili: gölgeli gövde + kaplama rengi (false: yalnız çizgi)
   // Sayfa
   kagit: "A4",           // A4 | A3
   olcek: "otomatik",     // otomatik | 2:1 | 1:1 | 1:2 ...

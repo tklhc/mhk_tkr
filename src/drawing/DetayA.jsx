@@ -1,6 +1,7 @@
 import { takimProfili, tamKontur, svgYolu } from "../geometry/profil";
 import { olcekSec, olcekYaz } from "./sayfaDuzeni";
 import { CIZGI, YAZI, Kilavuz, fmt } from "./iso";
+import { kaplamaRengi, ton } from "./stil";
 
 const n = (v) => +v.toFixed(3);
 
@@ -67,7 +68,7 @@ export function DetayA({ params, yerlesim, harf = "A", dimOff, setDimOff }) {
       {/* Detay */}
       <defs><clipPath id={klip}><circle cx={px} cy={py} r={rr} /></clipPath></defs>
       <circle cx={px} cy={py} r={rr} fill="#fff" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <path d={yol} clipPath={`url(#${klip})`} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />
+      <path d={yol} clipPath={`url(#${klip})`} fill={params.sunum !== false ? ton(kaplamaRengi(params.coating, params.colCut), 38) : "none"} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />
       <Kilavuz id="aDetay" hedef={[n(hx), n(hy)]} dirsek={[n(px + (sol ? -rr * 0.75 : rr * 0.75)), n(py - rr * 0.75)]} metin={f.metin} {...ek} />
       <text x={px} y={n(py + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
         DETAY {harf} ({olcekYaz(s2)})

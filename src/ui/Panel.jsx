@@ -160,6 +160,14 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
             <div className="ipucu">Tarih boşsa bugünün tarihi yazılır.</div>
           </Grup>
 
+          <Grup baslik="Resim stili">
+            <div className="cipler">
+              <Cip acik={params.sunum !== false} onClick={() => u("sunum", true)}>Sunum · renkli</Cip>
+              <Cip acik={params.sunum === false} onClick={() => u("sunum", false)}>Teknik · yalnız çizgi</Cip>
+            </div>
+            <div className="ipucu">Sunum stilinde gövde gölgeli, kesici bölüm kaplama renginde çizilir (müşteri ve kataloğa uygun). Üretim çizimi için Teknik stili seçin; ölçüler ve DXF her iki stilde aynıdır.</div>
+          </Grup>
+
           <Grup baslik="Resimde göster" sag="aç / kapat">
             <div className="cipler">
               {GOSTER.map(([k, ad]) => {
