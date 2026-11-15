@@ -1,17 +1,14 @@
 import { DC, DS } from "./styles";
 import { Draggable } from "./Draggable";
 import { DimH, DimV, CL } from "./dimensions";
+import { takimProfili } from "../geometry/profil";
 
 function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
-  let { D, d, L, l1, l2, z, helix, toolType, rCorner, chamferSize, dCore, neckDia, neckAngle } = params;
+  const { z, helix, toolType, rCorner, chamferSize, dCore, neckAngle } = params;
 
-  // For stepdrill: override l1 from steps, disable neck
-  if (toolType === "stepdrill") {
-    const stps = params.steps || [];
-    l1 = stps.reduce((sum, st) => sum + (st.len || 0), 0);
-    l2 = 0;
-    D = stps.length > 0 ? Math.max(...stps.map(s => s.dia)) : D;
-  }
+  // Ölçüler ve istasyonlar geometri modelinden (kademeli matkapta l1/D kademelerden gelir)
+  const g = takimProfili(params);
+  const { D, d, L, l1, l2, nD } = g;
 
   const s = scale;
   const hD = (D / 2) * s;
@@ -21,21 +18,17 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
   const nL = l2 * s;
   const cR = (dCore / 2) * s;
   const coR = rCorner * s;
-
-  // Neck diameter from user param
-  const nD = l2 > 0 ? neckDia : D;
   const hN = (nD / 2) * s;
 
-  // Transition zone: angled taper from shank to neck — NOT part of l2
-  const aRad = (neckAngle * Math.PI) / 180;
-  const transDx = (l2 > 0 && d > nD) ? ((d - nD) / 2) / Math.tan(aRad) * s : 0;
+  // Geçiş konisi: sapla boğaz arasında, l2'ye dahil değil
+  const transDx = g.gecisBoyu * s;
 
-  // Layout: sLeft──[shank]──sRight──[transition tDx]──tRight──[neck l2]──nRight──[cutting l1]──tipR
-  const sL = tL - cL - nL - transDx;
+  // Yerleşim: sLeft──[sap]──sRight──[geçiş]──tRight──[boğaz l2]──nRight──[kesici l1]──tipR
+  const sL = g.sapBoyu * s;
   const sLeft = ox - tL / 2;
-  const sRight = sLeft + Math.max(sL, 0);
-  const tRight = sRight + transDx;  // end of transition
-  const nRight = tRight + nL;       // end of neck = start of cutting
+  const sRight = sLeft + g.x.sapSonu * s;
+  const tRight = sLeft + g.x.gecisSonu * s;
+  const nRight = sLeft + g.x.boyunSonu * s;
   const tipR = sLeft + tL;
 
   const e = [];
@@ -90,9 +83,11 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
   if (toolType === "stepdrill") {
     // ── Step Drill: Step 1 (smallest) at TIP (right), larger steps toward SHANK (left) ──
-    const stps = params.steps || [];
+    // Kademe konumları ve açılı geçiş boyları geometri modelinden (g.kademeler)
+    const stps = g.kademeler;
     if (stps.length > 0) {
       const maxHR = (stps[stps.length - 1]?.dia || D) / 2 * s;
+      const X = (mm) => sLeft + mm * s;
 
       // Build from RIGHT to LEFT: tipR is the drill point
       let curX = tipR; // start at rightmost point
@@ -100,9 +95,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       // Step 0 = smallest = drill tip (rightmost)
       const st0 = stps[0];
       const hr0 = (st0.dia / 2) * s;
-      const stepL0 = st0.len * s;
-      const ptAng0 = (st0.angle || 140) * Math.PI / 180;
-      const tipDx0 = hr0 / Math.tan(ptAng0 / 2);
+      const tipDx0 = st0.gecisBoyu * s;
 
       // Drill tip V-point at right end — fill first
       const tipFill = `M ${curX - tipDx0} ${oy - hr0} L ${curX} ${oy} L ${curX - tipDx0} ${oy + hr0} Z`;
@@ -120,7 +113,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
       // Body of first step (leftward from tip) — fill + outline
       const body0Right = curX - tipDx0;
-      const body0Left = curX - stepL0;
+      const body0Left = X(st0.sol);
       if (body0Right > body0Left) {
         e.push(
           <rect key="stp0-fill" x={body0Left} y={oy - hr0} width={body0Right - body0Left} height={hr0 * 2} fill="url(#gCut)" stroke="none" filter="url(#shadow)" />,
@@ -140,10 +133,8 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
       for (let si = 1; si < stps.length; si++) {
         const st = stps[si];
         const hr = (st.dia / 2) * s;
-        const stepL = st.len * s;
-        const ptAng = (st.angle || 90) * Math.PI / 180;
-        const transH = (hr - prevHR);
-        const transDx = transH / Math.tan(ptAng / 2);
+        const transDx = st.gecisBoyu * s;
+        curX = X(st.sag);
 
         // Angled transition fill
         const transFillPath = `M ${curX} ${oy - prevHR} L ${curX - transDx} ${oy - hr} L ${curX - transDx} ${oy + hr} L ${curX} ${oy + prevHR} Z`;
@@ -165,7 +156,7 @@ function SideView({ params, ox, oy, scale, dimOff, setDimOff }) {
 
         // Step body fill + outline
         const bodyRight = curX - transDx;
-        const bodyLeft = curX - stepL;
+        const bodyLeft = X(st.sol);
         e.push(
           <rect key={`stpf-${si}`} x={bodyLeft} y={oy - hr} width={bodyRight - bodyLeft} height={hr * 2} fill="url(#gCut)" stroke="none" filter="url(#shadow)" />,
           <line key={`stp-t-${si}`} x1={bodyLeft} y1={oy - hr} x2={bodyRight} y2={oy - hr} stroke={DS.outline} strokeWidth={DS.oW} />,

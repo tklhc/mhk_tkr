@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { TOOL_TYPES } from "../constants";
+import { takimProfili } from "../geometry/profil";
 
 // ─── 3D PREVIEW — Gerçekçi Freze Geometrisi ─────────────
 function ThreeDView({ params }) {
@@ -58,15 +59,16 @@ function ThreeDView({ params }) {
     if (!toolGroup || !T) return;
     while(toolGroup.children.length){const c=toolGroup.children[0];if(c.geometry)c.geometry.dispose();if(c.material){if(Array.isArray(c.material))c.material.forEach(m=>m.dispose());else c.material.dispose();}toolGroup.remove(c);}
 
-    let { D, d, L, l1, l2, z, helix, toolType, neckDia, neckAngle, dCore, rCorner, chamferSize, pointAngle } = params;
-    if (toolType==="stepdrill"){const stps=params.steps||[];l1=stps.reduce((s,st)=>s+(st.len||0),0);l2=0;D=stps.length>0?Math.max(...stps.map(s=>s.dia)):D;}
+    // Ölçüler geometri modelinden (src/geometry/profil.js)
+    const g = takimProfili(params);
+    const { D, d, L, l1, l2 } = g;
+    const { z, helix, toolType, dCore, rCorner, chamferSize, pointAngle } = params;
     const sc = 3/L;
     const hD=D/2*sc, hd=d/2*sc, tL=L*sc, cL=l1*sc, nL=l2*sc;
-    const nDia=l2>0?neckDia:D, hN=nDia/2*sc;
+    const hN=g.nD/2*sc;
     const cR=Math.min(dCore/2*sc, hD*0.65);
-    const aRad=(neckAngle*Math.PI)/180;
-    const transDx=(l2>0&&d>nDia)?((d-nDia)/2)/Math.tan(aRad)*sc:0;
-    const sL=tL-cL-nL-transDx;
+    const transDx=g.gecisBoyu*sc;
+    const sL=g.sapBoyu*sc;
     const hRad=(helix||30)*Math.PI/180;
     const nF=z||4;
     const aSeg=96;
