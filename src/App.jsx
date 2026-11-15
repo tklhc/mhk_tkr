@@ -15,6 +15,7 @@ import { useCakisma } from "./ui/useCakisma";
 import { DurumCubugu } from "./ui/DurumCubugu";
 import { Ikon } from "./ui/Ikon";
 import { Yardim } from "./ui/Yardim";
+import { KatalogPenceresi } from "./ui/KatalogPenceresi";
 import { takimProfili } from "./geometry/profil";
 import { disProfiliHatalari } from "./geometry/disProfili";
 
@@ -49,6 +50,7 @@ function App() {
   const [odak, setOdak] = useState(null);
   const [isaretAcik, setIsaretAcik] = useState(true);
   const [yardimAcik, setYardimAcik] = useState(false);
+  const [katalogAcik, setKatalogAcik] = useState(false);
   const [tema, setTema] = useState(() => { try { return localStorage.getItem("mihenk-tema") === "acik" ? "acik" : "koyu"; } catch { return "koyu"; } });
 
   // Tema: <html data-tema> ile CSS değişkenleri değişir; tercih bu tarayıcıda saklanır
@@ -154,7 +156,8 @@ function App() {
   }, []);
 
   const duzen = useMemo(() => duzenHesapla(params), [params]);
-  const uyariSayisi = useMemo(() => { const g = takimProfili(params); return g.hatalar.length + disProfiliHatalari(params, g).length; }, [params]);
+  const profil = useMemo(() => takimProfili(params), [params]);
+  const uyariSayisi = useMemo(() => profil.hatalar.length + disProfiliHatalari(params, profil).length, [params, profil]);
   const cakisma = useCakisma(view !== "3d", params, dimOff);
   // Çizimde ölçüye çift tıklayınca ilgili alanı paneldeki girdide aç
   const olcuyeCiftTikla = (e) => {
@@ -216,6 +219,7 @@ function App() {
     <div className="uygulama">
       <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} odak={odak} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
+      {katalogAcik && <KatalogPenceresi mevcut={params} kapat={() => setKatalogAcik(false)} />}
       {yardimAcik && <Yardim kapat={() => setYardimAcik(false)} />}
       {ieAcik && (
         <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
@@ -265,6 +269,7 @@ function App() {
           <Menu etiket="Veri" ikon={<Ikon ad="veri" />}>
             <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>
             <MenuAyrac />
+            <MenuOge onClick={() => setKatalogAcik(true)} altMetin="Kütüphanedeki takımlardan katalog (PDF / PNG / SVG)">Katalog sayfası…</MenuOge>
             <MenuOge onClick={() => csvGirdi.current?.click()} altMetin="UTF-8 ya da Excel (Windows-1254) CSV">CSV içe aktar…</MenuOge>
             <MenuOge onClick={() => downloadExcel(generateTemplateExcel(), "mihenk-takim-sablonu.xls")} altMetin="Doldurup CSV olarak kaydedin">Şablon indir (.xls)</MenuOge>
             <MenuOge onClick={() => {
@@ -342,7 +347,7 @@ function App() {
             </>
           )}
         </div>
-        <DurumCubugu params={params} duzen={duzen} kayitZamani={kayitZamani} uyariSayisi={uyariSayisi} cakisma={cakisma} isaretAcik={isaretAcik} onIsaret={() => setIsaretAcik((a) => !a)} />
+        <DurumCubugu profil={profil} params={params} duzen={duzen} kayitZamani={kayitZamani} uyariSayisi={uyariSayisi} cakisma={cakisma} isaretAcik={isaretAcik} onIsaret={() => setIsaretAcik((a) => !a)} />
       </main>
     </div>
   );

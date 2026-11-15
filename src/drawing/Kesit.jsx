@@ -3,6 +3,7 @@ import { OLCEKLER, olcekYaz } from "./sayfaDuzeni";
 import { CIZGI, DESEN, YAZI, Ok, Olcu } from "./iso";
 import { kanalYolu } from "./kanalYolu";
 import { Surukle } from "./Draggable";
+import { mt } from "./metinler";
 
 const n = (v) => +v.toFixed(3);
 
@@ -62,10 +63,10 @@ export function Kesit({ params, yan, uc, bolum, dimOff, setDimOff }) {
         <Olcu id="kD" yon="yatay" p1={[cx - Rk, cy]} p2={[cx + Rk, cy]} konum={cy + Rk + 7} deger={Rmm * 2} onEk="⌀" anma={Rmm * 2}
           offsets={dimOff} setOffsets={setDimOff} />
         <text x={n(cx)} y={n(cy + Rk + 16)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
-          KESİT {harf}-{harf} ({olcekYaz(sk)})
+          {mt(params, "kesit")} {harf}-{harf} ({olcekYaz(sk)})
         </text>
         <text x={n(cx)} y={n(cy + Rk + 20)} textAnchor="middle" fontSize={2.3} fontFamily={YAZI.font} fill="#666">
-          şematik kanal profili
+          {mt(params, "sematik_kanal")}
         </text>
       </g>
     );

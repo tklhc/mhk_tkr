@@ -2,6 +2,7 @@ import qrcode from "qrcode-generator";
 import { FIRMA } from "../config";
 import { LOGO_IMG } from "../assets/images";
 import { CIZGI, YAZI } from "./iso";
+import { mt } from "./metinler";
 
 const ince = CIZGI.ince, kalin = CIZGI.kalin;
 
@@ -81,16 +82,16 @@ export function Antet({ params, sayfa }) {
       <text x={a.x + sol / 2} y={a.y + 35} fontSize={firmaFs} fontWeight={700} textAnchor="middle" fill="#000" letterSpacing="0.3">{FIRMA.ad}</text>
 
       {/* Sağ alan: ALET ADI / ÇİZİM NO / REV; TARİH / MÜŞTERİ / İE NO; ÇİZEN / ONAYLAYAN */}
-      <Hucre x={rx} y={a.y} w={60} h={h1} etiket="ALET ADI" deger={ad} boyut={9} kalinYazi />
-      <Hucre x={rx + 60} y={a.y} w={20} h={h1} etiket="ÇİZİM NO" deger={params.drawingNo || "-"} boyut={6} kalinYazi />
-      <Hucre x={rx + 80} y={a.y} w={rw - 80} h={h1} etiket="REV." deger={params.revision || "-"} boyut={6} kalinYazi />
+      <Hucre x={rx} y={a.y} w={60} h={h1} etiket={mt(params, "alet_adi")} deger={ad} boyut={9} kalinYazi />
+      <Hucre x={rx + 60} y={a.y} w={20} h={h1} etiket={mt(params, "cizim_no")} deger={params.drawingNo || "-"} boyut={6} kalinYazi />
+      <Hucre x={rx + 80} y={a.y} w={rw - 80} h={h1} etiket={mt(params, "rev")} deger={params.revision || "-"} boyut={6} kalinYazi />
 
-      <Hucre x={rx} y={a.y + h1} w={23} h={h2} etiket="TARİH" deger={tarihYaz(params.tarih)} boyut={4.6} />
-      <Hucre x={rx + 23} y={a.y + h1} w={sagGenislik - 23 - 21} h={h2} etiket="MÜŞTERİ" deger={params.customerName || "-"} boyut={4.6} />
-      <Hucre x={rx + sagGenislik - 21} y={a.y + h1} w={21} h={h2} etiket="İE / SİP. NO" deger={params.orderNo || "-"} boyut={4.6} />
+      <Hucre x={rx} y={a.y + h1} w={23} h={h2} etiket={mt(params, "tarih")} deger={tarihYaz(params.tarih)} boyut={4.6} />
+      <Hucre x={rx + 23} y={a.y + h1} w={sagGenislik - 23 - 21} h={h2} etiket={mt(params, "musteri")} deger={params.customerName || "-"} boyut={4.6} />
+      <Hucre x={rx + sagGenislik - 21} y={a.y + h1} w={21} h={h2} etiket={mt(params, "ie_sip")} deger={params.orderNo || "-"} boyut={4.6} />
 
-      <Hucre x={rx} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket="ÇİZEN" deger={params.createdBy || FIRMA.cizen} boyut={4.6} />
-      <Hucre x={rx + sagGenislik / 2} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket="ONAYLAYAN" deger={params.approvedBy || ""} boyut={4.6} />
+      <Hucre x={rx} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket={mt(params, "cizen")} deger={params.createdBy || FIRMA.cizen} boyut={4.6} />
+      <Hucre x={rx + sagGenislik / 2} y={a.y + h1 + h2} w={sagGenislik / 2} h={h2} etiket={mt(params, "onaylayan")} deger={params.approvedBy || ""} boyut={4.6} />
 
       {/* QR: 2. ve 3. satırı kaplar */}
       <rect x={rx + sagGenislik} y={a.y + h1} width={qrW} height={2 * h2} fill="none" stroke="#000" strokeWidth={ince} />

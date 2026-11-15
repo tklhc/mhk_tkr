@@ -1,6 +1,7 @@
 import { CIZGI, YAZI, fmt } from "./iso";
 import { sigdir } from "./Antet";
 import { TABLO, tabloSutunlari, olcekYaz } from "./sayfaDuzeni";
+import { mt, yonMetni } from "./metinler";
 
 /** Üretim özelliği tablosu gösterilecek mi? Yalnız iş emri çiziminde (müşteri çiziminde üretim verisi yok). */
 export function uretimVarMi(params) {
@@ -10,14 +11,14 @@ export function uretimVarMi(params) {
 /** Müşteri çiziminin teknik veri satırları: [ad, değer]. (Malzeme/Kaplama yalnız burada, antette tekrar edilmez.) */
 export function teknikVeriSatirlari(params, g) {
   return [
-    ["Malzeme", params.material || "-"],
-    ["Kaplama", params.coating || "-"],
-    ["Diş sayısı", `${params.z}`],
-    ["Helis", params.helix > 0 ? `${fmt(params.helix)}° ${params.helixHand || ""}` : "Düz"],
-    ["Kesim yönü", params.cutDir || "-"],
-    ["Kesici boy", `${fmt(g.l1)} mm`],
-    ["Çekirdek", params.dCore > 0 ? `⌀${fmt(params.dCore)} mm` : "-"],
-    ["Soğutma", params.coolantHole ? `Evet (${params.coolantCount})` : "Yok"],
+    [mt(params, "malzeme"), params.material || "-"],
+    [mt(params, "kaplama"), params.coating || "-"],
+    [mt(params, "dis_sayisi"), `${params.z}`],
+    [mt(params, "helis"), params.helix > 0 ? `${fmt(params.helix)}° ${params.helixHand ? yonMetni(params, params.helixHand) : ""}` : mt(params, "duz")],
+    [mt(params, "kesim_yonu"), params.cutDir ? yonMetni(params, params.cutDir) : "-"],
+    [mt(params, "kesici_boy"), `${fmt(g.l1)} mm`],
+    [mt(params, "cekirdek"), params.dCore > 0 ? `⌀${fmt(params.dCore)} mm` : "-"],
+    [mt(params, "sogutma"), params.coolantHole ? `${mt(params, "evet")} (${params.coolantCount})` : mt(params, "yok")],
   ];
 }
 
@@ -27,8 +28,8 @@ export function teknikVeriSatirlari(params, g) {
  * @returns {null | {id: string, baslik: string, ogeler: Array<[string,string]>}}
  */
 export function tabloIcerigi(params, g) {
-  if (params.cizimTuru === "ie") return uretimVarMi(params) ? { id: "uretim-tablosu", baslik: "ÜRETİM ÖZELLİKLERİ", ogeler: params.ekOzellikler } : null;
-  return { id: "teknik-veri", baslik: "TEKNİK VERİ", ogeler: teknikVeriSatirlari(params, g) };
+  if (params.cizimTuru === "ie") return uretimVarMi(params) ? { id: "uretim-tablosu", baslik: mt(params, "uretim"), ogeler: params.ekOzellikler } : null;
+  return { id: "teknik-veri", baslik: mt(params, "teknik_veri"), ogeler: teknikVeriSatirlari(params, g) };
 }
 
 /**
@@ -75,12 +76,12 @@ export function BilgiTablosu({ icerik, sayfa, kutu, yer }) {
  * @returns {null | {icerik: object, kutu: object, yer: object}}
  */
 export function sayfaNotlari(params, sayfa) {
-  const ogeler = [["Ölçek", olcekYaz(sayfa.yan.olcek)], ["Birim", "mm"]];
-  if (String(params.genelTolerans || "").trim()) ogeler.push(["Genel tol.", String(params.genelTolerans).trim()]);
+  const ogeler = [[mt(params, "olcek"), olcekYaz(sayfa.yan.olcek)], [mt(params, "birim"), "mm"]];
+  if (String(params.genelTolerans || "").trim()) ogeler.push([mt(params, "genel_tol"), String(params.genelTolerans).trim()]);
   const yer = tabloSutunlari(ogeler.length, sayfa.antet.h);
   const sagSinir = sayfa.veriTablosu.w > 0 ? sayfa.veriTablosu.x : sayfa.antet.x;
   const serbest = sagSinir - sayfa.cerceve.x;
   if (!yer || serbest < yer.w + 4) return null;
   const alt = sayfa.antet.y + sayfa.antet.h;
-  return { icerik: { id: "sayfa-notlari", baslik: "SAYFA", ogeler }, yer, kutu: { x: sayfa.cerceve.x, y: alt - yer.h, w: yer.w, h: yer.h } };
+  return { icerik: { id: "sayfa-notlari", baslik: mt(params, "sayfa"), ogeler }, yer, kutu: { x: sayfa.cerceve.x, y: alt - yer.h, w: yer.w, h: yer.h } };
 }

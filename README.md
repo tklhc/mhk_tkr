@@ -69,3 +69,9 @@ Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D öl
 - **Yardım:** `?` tuşu ya da araç çubuğundaki ? düğmesi kısayolları ve ipuçlarını açar.
 - **Yazı çakışması:** durum çubuğunda sayı olarak görünür, çizimde kırmızı kesikli kutuyla işaretlenir; işaretler çıktıya girmez.
 - **Telefon:** dar ekranda araç çubuğu kısalır (tema, yardım, yinele ve konum sıfırlama *Dosya* menüsüne taşınır); görünüşler parmakla sürüklenir.
+
+## Özel takım, çift dilli resim ve katalog
+
+- **Özel takım (serbest profil):** takım tipi *Özel Takım*; sap ucundan (x = 0) uca doğru noktalar (`x`, `⌀`) girilir, aralarında doğru çizilir. Aynı x'e iki nokta dikey basamak, son noktada ⌀ 0 sivri uç olur. D, d ve L noktalardan hesaplanır; yatay parçaların boyu ve çapı, eğimli parçaların eksenle açısı otomatik ölçülür. Kanallı bölümün başı otomatik (en büyük çapa ulaşılan yer) ya da elle verilir. Sap detayı (DIN 6535) bu tipte yoktur.
+- **Resim dili:** *Resim → Resim dili* Türkçe / English. Antet etiketleri, tablo başlıkları, görünüş başlıkları, damga ve diş profili yazıları çevrilir; kullanıcı metinleri (alet adı, notlar, malzeme, iş emrinden gelen özellik adları) ve firma adı çevrilmez. Arayüz Türkçe kalır.
+- **Katalog sayfası** (*Veri → Katalog sayfası…*): kütüphanedeki (ve isterseniz geçerli) takımlardan A4 katalog sayfaları; her hücrede küçük yan görünüş, ad, ⌀×L, diş/helis, malzeme/kaplama ve çizim no. Başlık, sütun sayısı (2–4) ve dil seçilir; PDF, PNG, SVG, çok sayfalıysa tüm sayfalar PDF olarak indirilir.

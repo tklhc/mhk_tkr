@@ -4,6 +4,7 @@ import { olcekSec, olcekYaz } from "./sayfaDuzeni";
 import { CIZGI, YAZI, DESEN, Kilavuz, fmt } from "./iso";
 import { kaplamaRengi, ton } from "./stil";
 import { Surukle } from "./Draggable";
+import { mt } from "./metinler";
 
 const n = (v) => +v.toFixed(3);
 
@@ -93,15 +94,15 @@ export function DisProfili({ params, yerlesim, dimOff, setDimOff }) {
       <path d={yay(Px, Py, Math.min(0.92 * boy1, 12), taban0, ekranAci(derece(a1)))} {...yayStil} />
       {ikinci && <path d={yay(Ax, Ay, Math.min(0.92 * boy2, 11), taban0, ekranAci(derece(a2)))} {...yayStil} />}
 
-      <Kilavuz id="dpGk" hedef={[n((Px + Fx) / 2), n((Py + Fy) / 2)]} dirsek={lbl(onX, 0.25).map(n)} metin={`Kesme açısı  ${fmt(derece(gamma))}°`} {...ek} />
-      <Kilavuz id="dpW1" hedef={[n((Px + Ax) / 2), n((Py + Ay) / 2)]} dirsek={lbl(arkaX, -0.7).map(n)} metin={`1. SY  ${fmt(w1)} mm / ${fmt(derece(a1))}°`} {...ek} />
-      {ikinci && <Kilavuz id="dpW2" hedef={[n((Ax + Bx) / 2), n((Ay + By) / 2)]} dirsek={lbl(arkaX, -0.3).map(n)} metin={`2. SY  ${fmt(w2)} mm / ${fmt(derece(a2))}°`} {...ek} />}
+      <Kilavuz id="dpGk" hedef={[n((Px + Fx) / 2), n((Py + Fy) / 2)]} dirsek={lbl(onX, 0.25).map(n)} metin={`${mt(params, "kesme_acisi")}  ${fmt(derece(gamma))}°`} {...ek} />
+      <Kilavuz id="dpW1" hedef={[n((Px + Ax) / 2), n((Py + Ay) / 2)]} dirsek={lbl(arkaX, -0.7).map(n)} metin={`${mt(params, "sy1")}  ${fmt(w1)} mm / ${fmt(derece(a1))}°`} {...ek} />
+      {ikinci && <Kilavuz id="dpW2" hedef={[n((Ax + Bx) / 2), n((Ay + By) / 2)]} dirsek={lbl(arkaX, -0.3).map(n)} metin={`${mt(params, "sy2")}  ${fmt(w2)} mm / ${fmt(derece(a2))}°`} {...ek} />}
 
       <text x={cx} y={n(cy + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
-        DİŞ PROFİLİ DETAYI ({olcekYaz(sc)})
+        {mt(params, "dis_profili")} ({olcekYaz(sc)})
       </text>
       <text x={cx} y={n(cy + rr + 8.2)} textAnchor="middle" fontSize={2.3} fontFamily={YAZI.font} fill="#666">
-        şematik · açı ve genişlik iş emrinden
+        {mt(params, "sematik_dis")}
       </text>
     </Surukle>
   );

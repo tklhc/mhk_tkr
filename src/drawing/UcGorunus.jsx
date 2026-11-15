@@ -3,6 +3,7 @@ import { CIZGI, Eksen, Olcu, DESEN, YAZI, fmt } from "./iso";
 import { olcekYaz } from "./sayfaDuzeni";
 import { kaplamaRengi, ton } from "./stil";
 import { kanalYolu } from "./kanalYolu";
+import { mt } from "./metinler";
 
 const n = (v) => +v.toFixed(3);
 
@@ -75,7 +76,7 @@ export function UcGorunus({ params, yerlesim, dimOff, setDimOff }) {
 
   e.push(
     <text key="et" x={cx} y={n(cy + R + 18)} textAnchor="middle" fontSize={YAZI.etiket} fontFamily={YAZI.font} fill={CIZGI.renk}>
-      UÇTAN GÖRÜNÜŞ ({olcekYaz(s)}){dCore > 0 ? `  ·  dc ${fmt(dCore)}` : ""}  ·  {z} Z
+      {mt(params, "uc_gorunus")} ({olcekYaz(s)}){dCore > 0 ? `  ·  dc ${fmt(dCore)}` : ""}  ·  {z} Z
     </text>
   );
   return <g>{e}</g>;

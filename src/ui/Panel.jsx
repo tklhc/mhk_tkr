@@ -10,6 +10,9 @@ import { Sayi, SayiKutu, Metin, Secim, Anahtar, Cip, Grup, Ek } from "./inputs";
 import { LibraryPanel } from "./LibraryPanel";
 import { TipSecici } from "./TipSecici";
 import { Ikon } from "./Ikon";
+import { DILLER } from "../drawing/metinler";
+
+const fmtSayi = (v) => String(Math.round((+v || 0) * 1000) / 1000).replace(".", ",");
 
 const SEKMELER = [["takim", "Takım"], ["resim", "Resim"], ["belge", "Belge"], ["kutuphane", "Kütüphane"]];
 
@@ -55,7 +58,8 @@ ${govde}`)}`
 function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPanel, onClose, onYeni }) {
   const [sekme, setSekme] = useState("takim");
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
-  const hatalar = useMemo(() => { const g = takimProfili(params); return [...g.hatalar, ...disProfiliHatalari(params, g)]; }, [params]);
+  const profil = useMemo(() => takimProfili(params), [params]);
+  const hatalar = useMemo(() => [...profil.hatalar, ...disProfiliHatalari(params, profil)], [params, profil]);
   const hata = useMemo(() => Object.fromEntries(hatalar.map((h) => [h.alan, h.mesaj])), [hatalar]);
   const tip = params.toolType;
   // Çizimde bir ölçüye çift tıklanınca: Takım sekmesi açılır, ilgili alan seçili gelir
@@ -69,6 +73,8 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
     return () => clearTimeout(t);
   }, [odak]);
   const kademeli = tip === "stepdrill";
+  const ozel = tip === "custom";
+  const noktaGuncelle = (i, alan, v) => setParams((p) => ({ ...p, profilNoktalari: (p.profilNoktalari || []).map((n, j) => (j === i ? { ...n, [alan]: v } : n)) }));
   const adimGuncelle = (i, alan, v) => setParams((p) => ({ ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, [alan]: v } : s)) }));
   const sapOzel = params.sapTipi && params.sapTipi !== "HA";
 
@@ -100,18 +106,51 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
           <TipSecici deger={tip} onSec={(v) => setParams((p) => tipDegistir(p, v))} />
 
           <Grup baslik="Ana ölçüler" sag="değer · tolerans">
-            {!kademeli && <Sayi alan="D" label="Kesici çap  D" value={params.D} onChange={(v) => u("D", v)} step={0.5} hata={hata.D} tol={params.tolD} onTol={(v) => u("tolD", v)} />}
-            <Sayi alan="d" label="Sap çapı  d" value={params.d} onChange={(v) => u("d", v)} step={0.5} hata={hata.d} tol={params.told} onTol={(v) => u("told", v)} />
-            <Sayi alan="L" label="Toplam boy  L" value={params.L} onChange={(v) => u("L", v)} hata={hata.L} tol={params.tolL} onTol={(v) => u("tolL", v)} />
-            {!kademeli && <Sayi alan="l1" label="Kesici boy  l₁" value={params.l1} onChange={(v) => u("l1", v)} step={0.5} hata={hata.l1} tol={params.toll1} onTol={(v) => u("toll1", v)} />}
-            {!kademeli && <Sayi alan="l2" label="Boğaz boyu  l₂" value={params.l2} onChange={(v) => u("l2", v)} step={0.5} tol={params.toll2} onTol={(v) => u("toll2", v)} />}
-            {!kademeli && params.l2 > 0 && <Sayi alan="neckDia" label="Boğaz çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} step={0.1} hata={hata.neckDia} tol={params.tolNeck} onTol={(v) => u("tolNeck", v)} />}
-            {!kademeli && params.l2 > 0 && <Sayi label="Geçiş açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} step={5} unit="°" hata={hata.neckAngle} />}
+            {!kademeli && !ozel && <Sayi alan="D" label="Kesici çap  D" value={params.D} onChange={(v) => u("D", v)} step={0.5} hata={hata.D} tol={params.tolD} onTol={(v) => u("tolD", v)} />}
+            {!ozel && <Sayi alan="d" label="Sap çapı  d" value={params.d} onChange={(v) => u("d", v)} step={0.5} hata={hata.d} tol={params.told} onTol={(v) => u("told", v)} />}
+            {!ozel && <Sayi alan="L" label="Toplam boy  L" value={params.L} onChange={(v) => u("L", v)} hata={hata.L} tol={params.tolL} onTol={(v) => u("tolL", v)} />}
+            {!kademeli && !ozel && <Sayi alan="l1" label="Kesici boy  l₁" value={params.l1} onChange={(v) => u("l1", v)} step={0.5} hata={hata.l1} tol={params.toll1} onTol={(v) => u("toll1", v)} />}
+            {!kademeli && !ozel && <Sayi alan="l2" label="Boğaz boyu  l₂" value={params.l2} onChange={(v) => u("l2", v)} step={0.5} tol={params.toll2} onTol={(v) => u("toll2", v)} />}
+            {!kademeli && !ozel && params.l2 > 0 && <Sayi alan="neckDia" label="Boğaz çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} step={0.1} hata={hata.neckDia} tol={params.tolNeck} onTol={(v) => u("tolNeck", v)} />}
+            {!kademeli && !ozel && params.l2 > 0 && <Sayi label="Geçiş açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} step={5} unit="°" hata={hata.neckAngle} />}
             {tip === "taperreamer" && <Sayi alan="tipD" label="Uç çapı" value={params.tipD} onChange={(v) => u("tipD", v)} step={0.01} hata={hata.tipD} tol={params.tolTip} onTol={(v) => u("tolTip", v)} />}
             {kademeli && <div className="ipucu">Kesici boy ve çaplar kademelerden hesaplanır.</div>}
+            {ozel && (<>
+              <div className="uc">
+                <Metin label="Tol. ⌀D" value={params.tolD} onChange={(v) => u("tolD", v)} placeholder="h6" />
+                <Metin label="Tol. ⌀d" value={params.told} onChange={(v) => u("told", v)} placeholder="h6" />
+                <Metin label="Tol. L" value={params.tolL} onChange={(v) => u("tolL", v)} placeholder="±0,1" />
+              </div>
+              <div className="ipucu">⌀D, ⌀d ve L profil noktalarından hesaplanır: D = {fmtSayi(profil.D)} · d = {fmtSayi(profil.d)} · L = {fmtSayi(profil.L)} mm.</div>
+            </>)}
           </Grup>
 
+          {ozel && (
+            <Grup baslik="Profil noktaları" sag="sap ucundan uca">
+              {(params.profilNoktalari || []).map((nk, i, liste) => (
+                <div key={i} className="nokta-satir">
+                  <span className="nokta-no">{i + 1}</span>
+                  <SayiKutu label={i === 0 ? "x (mm)" : ""} value={nk.x} hata={hata.profil && i === 0 ? hata.profil : undefined} onChange={(v) => noktaGuncelle(i, "x", v)} />
+                  <SayiKutu label={i === 0 ? "⌀ (mm)" : ""} value={nk.dia} onChange={(v) => noktaGuncelle(i, "dia", v)} />
+                  <button className="btn kucuk tehlike" disabled={liste.length <= 2} aria-label={`${i + 1}. noktayı sil`} onClick={() => setParams((p) => ({ ...p, profilNoktalari: p.profilNoktalari.filter((_, j) => j !== i) }))}><Ikon ad="kapat" boyut={14} /></button>
+                </div>
+              ))}
+              <div className="btn-satir" style={{ marginTop: 8 }}>
+                <button className="btn" onClick={() => setParams((p) => {
+                  const l = p.profilNoktalari || [];
+                  const son = l[l.length - 1] || { x: 0, dia: 10 }, onceki = l[l.length - 2] || son;
+                  const yeni = { x: +((onceki.x + son.x) / 2).toFixed(3), dia: +((onceki.dia + son.dia) / 2).toFixed(3) };
+                  return { ...p, profilNoktalari: [...l.slice(0, -1), yeni, son] };
+                })}>+ Nokta ekle</button>
+                <button className="btn hayalet" onClick={() => setParams((p) => ({ ...p, profilNoktalari: [...(p.profilNoktalari || [])].sort((a, b) => (+a.x || 0) - (+b.x || 0)) }))}>x'e göre sırala</button>
+              </div>
+              <div className="ipucu">Noktalar sap ucundan (x = 0) takım ucuna doğru, aralarında doğru çizgiyle birleşir. Aynı x'e iki nokta girerseniz dikey basamak olur. Son noktada ⌀ 0 sivri uç demektir.</div>
+            </Grup>
+          )}
+
           <Grup baslik="Kesici geometri">
+            {ozel && <Sayi label="Kesici bölüm başı  x" value={params.ozelKesiciBas} onChange={(v) => u("ozelKesiciBas", v)} step={0.5} hata={hata.ozelKesiciBas} />}
+            {ozel && <div className="ipucu" style={{ marginTop: -2, marginBottom: 6 }}>0 = otomatik (kanallı bölüm en büyük çapa ulaşılan yerden başlar).</div>}
             <Sayi label="Diş sayısı  z" value={params.z} onChange={(v) => u("z", Math.round(v))} unit="Z" min={1} />
             <Sayi label="Helis açısı" value={params.helix} onChange={(v) => u("helix", v)} unit="°" />
             <Sayi label="Çekirdek  dc" value={params.dCore} onChange={(v) => u("dCore", v)} step={0.1} hata={hata.dCore} />
@@ -164,7 +203,7 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
             <div className="ipucu">0 = girilmedi. Uçtan kesit detayı kesme açısı ve 1. serbest yüzey ile çizilir; 2. serbest yüzey isteğe bağlıdır. Yalnız <b>İş emri çiziminde</b> görünür. Şematiktir: açı ve genişlikler ölçeklidir, kanal tabanı gerçek profil değildir.</div>
           </Ek>
 
-          <Ek baslik="Sap detayı" rozet={params.sapTipi && params.sapTipi !== "HA" ? `DIN 6535 ${params.sapTipi}` : "Düz"} acik={sapOzel}>
+          {!ozel && (<Ek baslik="Sap detayı" rozet={params.sapTipi && params.sapTipi !== "HA" ? `DIN 6535 ${params.sapTipi}` : "Düz"} acik={sapOzel}>
             <Secim label="Sap tipi (DIN 6535)" value={params.sapTipi || "HA"} onChange={(v) => u("sapTipi", v)}
               secenekler={[["HA", "HA — Düz sap"], ["HB", "HB — Weldon düzlüğü"], ["HE", "HE — Whistle Notch"]]} />
             {sapOzel && <>
@@ -172,7 +211,7 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
               <Sayi label="Derinlik  t" value={params.sapDuzDerinlik || 0} onChange={(v) => u("sapDuzDerinlik", v)} step={0.1} hata={hata.sapDuzDerinlik} />
               <div className="ipucu">0 = otomatik (boy ≈ 2·d, derinlik ≈ 0,1·d). Otomatik değerler yaklaşıktır; standart tablosundan teyit edin.</div>
             </>}
-          </Ek>
+          </Ek>)}
 
           <Ek baslik="Soğutma deliği" rozet={params.coolantHole ? `${params.coolantCount} delik` : "Yok"} acik={params.coolantHole}>
             <Anahtar acik={params.coolantHole} onChange={(v) => u("coolantHole", v)}>İç soğutma deliği var</Anahtar>
@@ -187,6 +226,7 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
               <Secim label="Kağıt" value={params.kagit} onChange={(v) => u("kagit", v)} secenekler={[["A4", "A4 · 297×210"], ["A3", "A3 · 420×297"]]} />
               <Secim label="Ölçek" value={params.olcek} onChange={(v) => u("olcek", v)} secenekler={[["otomatik", "Otomatik"], ...OLCEKLER.map((o) => [olcekYaz(o), olcekYaz(o)])]} />
             </div>
+            <Secim label="Resim dili" value={params.dil || "tr"} onChange={(v) => u("dil", v)} secenekler={DILLER} />
             <Metin label="Genel tolerans" value={params.genelTolerans} onChange={(v) => u("genelTolerans", v)} />
             <Metin label="Tarih" type="date" value={params.tarih} onChange={(v) => u("tarih", v)} />
             <div className="ipucu">Tarih boşsa bugünün tarihi yazılır.</div>

@@ -9,6 +9,8 @@
 //   { t: "L", x1, y1, x2, y2 }                    doğru
 //   { t: "A", cx, cy, r, a1, a2 }                  yay (açılar derece; a1'den a2'ye)
 
+import { ozelProfil } from "./ozel";
+
 const DEG = Math.PI / 180;
 const EPS = 1e-9;
 
@@ -46,6 +48,7 @@ export function parcaUclari(s) {
  */
 export function takimProfili(params) {
   const tip = params.toolType || "flat";
+  if (tip === "custom") return ozelProfil(params);
   let D = sayi(params.D);
   const d = sayi(params.d);
   const L = sayi(params.L);

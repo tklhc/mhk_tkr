@@ -41,6 +41,15 @@ const TIP_ON_AYAR = {
     const l1 = kes(4);
     return { z: 6, helix: 0, dCore: r1(p.D * 0.7), l1, tipD: Math.max(0.1, r2(p.D - l1 / 50)) }; // 1:50
   },
+  // Özel takım: sap → kısa geçiş → kesici bölüm → pahlı uç. Noktalar kullanıcı tarafından düzenlenir.
+  custom: (p, kes) => {
+    const l1 = kes(2.5);
+    const sapSonu = Math.max(p.L - l1 - 3, 0);
+    const noktalar = p.D !== p.d && sapSonu > 0
+      ? [{ x: 0, dia: p.d }, { x: sapSonu, dia: p.d }, { x: sapSonu + 3, dia: p.D }, { x: p.L - 1, dia: p.D }, { x: p.L, dia: r1(p.D * 0.8) }]
+      : [{ x: 0, dia: p.d }, { x: p.L - 1, dia: p.D }, { x: p.L, dia: r1(p.D * 0.8) }];
+    return { z: 4, helix: 30, dCore: r1(p.D * 0.6), ozelKesiciBas: 0, profilNoktalari: noktalar };
+  },
   tslot: (p) => ({ z: 4, helix: 0, dCore: r1(p.D * 0.6), l1: 3, l2: 10, neckDia: r1(Math.min(p.D * 0.5, p.d * 0.8)), neckAngle: 45 }),
 };
 

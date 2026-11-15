@@ -1,6 +1,7 @@
 import { takimProfili, tamKontur, svgYolu, parcaUclari } from "../geometry/profil";
 import { CIZGI, Eksen, Olcu, Kilavuz, fmt } from "./iso";
 import { kaplamaRengi, silindirDuraklari } from "./stil";
+import { mt, yonMetni } from "./metinler";
 
 const DEG = Math.PI / 180;
 const n = (v) => +v.toFixed(3);
@@ -68,6 +69,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   const ust = Y(hmax), alt = oy + hmax * s;
   const hD = g.D / 2, hd = g.d / 2, hN = g.nD / 2;
   const stepdrill = g.tip === "stepdrill";
+  const ozel = g.tip === "custom";
   const ek = { offsets: dimOff, setOffsets: setDimOff };
 
   const e = [];
@@ -136,14 +138,14 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
 
   // Alt: kesici boy (l1) ve toplam boy (L)
   const altSatir = (i) => alt + 7 * i;
-  if (!stepdrill && params.showDiml1) {
+  if (!stepdrill && !ozel && params.showDiml1) {
     const xs = g.x.boyunSonu;
     e.push(<Olcu key="dl1" id="dl1" alan="l1" yon="yatay" p1={[X(xs), Y(-yaricapAt(g, xs))]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
       konum={altSatir(1)} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
   }
   if (params.showDimL) {
     e.push(<Olcu key="dL" id="dL" alan="L" yon="yatay" p1={[X(0), Y(-sapR)]} p2={[X(g.L), Y(-yaricapAt(g, g.L))]}
-      konum={altSatir(stepdrill ? 1 : 2)} deger={g.L} tol={params.tolL} anma={g.L} {...ek} />);
+      konum={altSatir(stepdrill || ozel ? 1 : 2)} deger={g.L} tol={params.tolL} anma={g.L} {...ek} />);
   }
 
   // Üst: boğaz boyu (l2) ya da kademe boyları
@@ -165,8 +167,31 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     });
   }
 
+  // Özel takım: her yatay parçanın boyu ve çapı, eğimli parçaların eksenle açısı
+  if (ozel) {
+    const nk = g.noktalar || [];
+    for (let i = 0; i < nk.length - 1; i++) {
+      const a = nk[i], b = nk[i + 1];
+      const dx = b.x - a.x, dr = b.r - a.r;
+      if (dx < 0.2) continue;
+      if (Math.abs(dr) < 1e-9 && a.r > 0) {
+        if (params.showDiml1 !== false) {
+          e.push(<Olcu key={`oy${i}`} id={`oy${i}`} yon="yatay" p1={[X(a.x), Y(a.r)]} p2={[X(b.x), Y(b.r)]} konum={ust - 7} deger={dx} {...ek} />);
+        }
+        if (params.showDimD && a.x > 1e-9) {   // ilk parça sap: çapı soldaki d ölçüsünde
+          const xm = (a.x + b.x) / 2;
+          e.push(<Olcu key={`od${i}`} id={`od${i}`} yon="dikey" p1={[X(xm), Y(a.r)]} p2={[X(xm), Y(-a.r)]} konum={X(xm)} deger={2 * a.r} onEk="⌀" {...ek} />);
+        }
+      } else if (Math.abs(dr) > 1e-9 && params.showDimAngles) {
+        const ac = (Math.atan2(Math.abs(dr), dx) * 180) / Math.PI;
+        const hx = X((a.x + b.x) / 2), hy = Y((a.r + b.r) / 2);
+        e.push(<Kilavuz key={`oa${i}`} id={`oa${i}`} hedef={[hx, hy]} dirsek={[hx + 8, ust - 12 - (i % 2) * 5]} metin={`${fmt(Math.round(ac * 10) / 10)}°`} {...ek} />);
+      }
+    }
+  }
+
   // Sağ: kesici çap (D) — kademelide kademelerde gösterilir
-  if (!stepdrill && params.showDimD) {
+  if (!stepdrill && !ozel && params.showDimD) {
     const xd = xCapta(g, hD);
     e.push(<Olcu key="dD" id="dD" alan="D" yon="dikey" p1={[X(xd), Y(hD)]} p2={[X(xd), Y(-hD)]}
       konum={X(g.L) + (g.konik ? 20 : 10)} deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
@@ -202,7 +227,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   if (g.konik && params.showDimAngles) {
     const xm = (g.x.boyunSonu + g.L) / 2;
     e.push(<Kilavuz key="aKonik" id="aKonik" hedef={[X(xm), Y((hD + params.tipD / 2) / 2)]} dirsek={[X(xm), ust - 6]}
-      metin={`Konik 1:${fmt(Math.round(g.konik.bolen * 100) / 100)}`} {...ek} />);
+      metin={`${mt(params, "konik")} 1:${fmt(Math.round(g.konik.bolen * 100) / 100)}`} {...ek} />);
   }
 
   // ── AÇILAR VE ÖZEL ÖLÇÜLER (kılavuz çizgili) ──
@@ -252,7 +277,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     const yh = hD * Math.sin(yonH * 0.45); // oluk 0: φ = yon·k·(x−x0) → bu x'te φ = yon·0,45
     const hx = X(xh), hy = Y(k > 0 ? yh : hD * Math.sin(Math.PI / 12));
     e.push(<Kilavuz key="aHelix" id="aHelix" hedef={[hx, hy]} dirsek={[hx, ust - 5]}
-      metin={`${fmt(params.helix)}° ${params.helixHand === "Sol" ? "Sol" : "Sağ"}`} {...ek} />);
+      metin={`${fmt(params.helix)}° ${yonMetni(params, params.helixHand)}`} {...ek} />);
   }
 
   return <g>{e}</g>;

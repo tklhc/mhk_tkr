@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Grup } from "./inputs";
 import { kutuphaneKaydi } from "../io/dosya";
+import { takimProfili } from "../geometry/profil";
 
 const ANAHTAR = "mihenk-lib";
 
@@ -55,7 +56,7 @@ export function LibraryPanel({ params, dimOff, yukle }) {
             <div key={t.toolName} className="liste-oge" onClick={() => yukle(t)} title="Yüklemek için tıklayın (geçerli resmin yerini alır)">
               <div className="govde">
                 <div className="ad">{t.toolName}</div>
-                <div className="alt">⌀{t.D}×{t.L} · {t.z}Z{t.material ? ` · ${t.material}` : ""}</div>
+                <div className="alt">⌀{+takimProfili(t).D.toFixed(3)}×{+takimProfili(t).L.toFixed(3)} · {t.z}Z{t.material ? ` · ${t.material}` : ""}</div>
               </div>
               <button className="btn kucuk tehlike" aria-label={`${t.toolName} kaydını sil`} onClick={(e) => {
                 e.stopPropagation();

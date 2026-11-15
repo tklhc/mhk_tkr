@@ -11,6 +11,7 @@ import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
 import { BilgiTablosu, tabloIcerigi, sayfaNotlari } from "./BilgiTablosu";
 import { YAZI } from "./iso";
+import { mt } from "./metinler";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
 export function duzenHesapla(params) {
@@ -74,7 +75,7 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
 
       {yan.tasiyor && (
         <text x={alan.x + 3} y={alan.y + 5} fontSize={3} fontFamily={YAZI.font} fill="#c62828">
-          ⚠ Seçilen ölçek ({olcekMetni}) takımı sayfaya sığdırmıyor
+          {mt(params, "sigmiyor", olcekMetni)}
         </text>
       )}
 
@@ -102,7 +103,7 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
           <g transform={`rotate(-12 ${cx} ${cy})`} opacity={0.8} fontFamily={YAZI.font}>
             <rect x={cx - 24} y={cy - 8} width={48} height={16} rx={1.5} fill="none" stroke={col} strokeWidth={0.7} strokeDasharray="1.8 0.8" />
             <rect x={cx - 22.8} y={cy - 6.8} width={45.6} height={13.6} rx={1} fill="none" stroke={col} strokeWidth={0.3} />
-            <text x={cx} y={cy + 1} textAnchor="middle" fontSize={5.2} fontWeight="800" fill={col} letterSpacing="0.6">{params.stamp}</text>
+            <text x={cx} y={cy + 1} textAnchor="middle" fontSize={5.2} fontWeight="800" fill={col} letterSpacing="0.6">{mt(params, params.stamp)}</text>
             <text x={cx} y={cy + 5.2} textAnchor="middle" fontSize={2.2} fill={col}>{tarih}</text>
           </g>
         );
