@@ -61,3 +61,11 @@ Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D öl
 - **Diş profili detayı** (yalnız *İş emri çizimi*): uçtan kesitte bir dişin kesici kenarı büyütülmüş çizilir. İş emrinden `Kesme Açısı`, `1./2. Serbest Yüzey Gen.` ve `1./2.Alın SY. Açısı` okunur; değerler *Takım → Diş profili detayı* alanlarından da elle girilir (0 = girilmedi). Kesme açısı ve 1. serbest yüzey (genişlik + açı) birlikte yoksa detay çizilmez, uydurma değer kullanılmaz. Açılar ve genişlikler ölçeklidir; kanal tabanı ve arka duvar şematiktir. Etiketlerin yorumu (kesme açısı = talaş açısı γ, Alın SY açısı = serbest yüzey açısı) içe aktarırken uyarı olarak yazılır.
 - **Salgı** (*Takım → Salgı toleransı*): girilen salgı toleransı için sap üstüne A datumu ve kesici kısma tolerans çerçevesi konur. Değeri kullanıcı yazar.
 - Yan görünüş, detaylar, uçtan görünüş, kesit ve bu işaret çizim üzerinde tutulup **sürüklenebilir**; konumlar dosyayla birlikte kaydedilir.
+
+## Arayüz ek özellikleri
+
+- **Tema:** araç çubuğundaki güneş/ay düğmesiyle koyu ve açık tema (tercih bu tarayıcıda saklanır). 3B görünüm de temaya uyar.
+- **3B:** ortam yansıması (metal yüzeyler) ve yumuşak kenarlı zemin üzerinde gölge. Görsel dosya gerekmez, ortam kodla üretilir.
+- **Yardım:** `?` tuşu ya da araç çubuğundaki ? düğmesi kısayolları ve ipuçlarını açar.
+- **Yazı çakışması:** durum çubuğunda sayı olarak görünür, çizimde kırmızı kesikli kutuyla işaretlenir; işaretler çıktıya girmez.
+- **Telefon:** dar ekranda araç çubuğu kısalır (tema, yardım, yinele ve konum sıfırlama *Dosya* menüsüne taşınır); görünüşler parmakla sürüklenir.

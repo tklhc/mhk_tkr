@@ -14,6 +14,7 @@ import { useGecmis } from "./ui/useGecmis";
 import { useCakisma } from "./ui/useCakisma";
 import { DurumCubugu } from "./ui/DurumCubugu";
 import { Ikon } from "./ui/Ikon";
+import { Yardim } from "./ui/Yardim";
 import { takimProfili } from "./geometry/profil";
 import { disProfiliHatalari } from "./geometry/disProfili";
 
@@ -47,6 +48,26 @@ function App() {
   const [kayitZamani, setKayitZamani] = useState(null);
   const [odak, setOdak] = useState(null);
   const [isaretAcik, setIsaretAcik] = useState(true);
+  const [yardimAcik, setYardimAcik] = useState(false);
+  const [tema, setTema] = useState(() => { try { return localStorage.getItem("mihenk-tema") === "acik" ? "acik" : "koyu"; } catch { return "koyu"; } });
+
+  // Tema: <html data-tema> ile CSS değişkenleri değişir; tercih bu tarayıcıda saklanır
+  useEffect(() => {
+    document.documentElement.dataset.tema = tema;
+    try { localStorage.setItem("mihenk-tema", tema); } catch { /* depolama kapalı */ }
+  }, [tema]);
+
+  // "?" yardım penceresini açar (yazı alanında değilken)
+  useEffect(() => {
+    const tus = (e) => {
+      const t = e.target;
+      if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      setYardimAcik(true);
+    };
+    window.addEventListener("keydown", tus);
+    return () => window.removeEventListener("keydown", tus);
+  }, []);
 
   // ── Taslak otomatik kaydı ──
   useEffect(() => {
@@ -195,6 +216,7 @@ function App() {
     <div className="uygulama">
       <Panel params={params} setParams={setParams} dimOff={dimOff} kayitYukle={kayitYukle} odak={odak} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
       {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
+      {yardimAcik && <Yardim kapat={() => setYardimAcik(false)} />}
       {ieAcik && (
         <IsEmriPenceresi mevcut={params} kapat={() => setIeAcik(false)}
           uygula={(yeniParams) => { setParams(yeniParams); setDimOff({}); setBatch([]); setBatchIdx(0); setView("all"); resetZoom(); setIeAcik(false); }} />
@@ -223,14 +245,21 @@ function App() {
 
           <div className="bosluk" />
 
+          <button className="btn ikon hayalet mobil-gizli" title={tema === "koyu" ? "Açık tema" : "Koyu tema"} aria-label="Temayı değiştir" onClick={() => setTema((t) => (t === "koyu" ? "acik" : "koyu"))}><Ikon ad={tema === "koyu" ? "gunes" : "ay"} /></button>
+          <button className="btn ikon hayalet mobil-gizli" title="Kısayollar ve ipuçları (?)" aria-label="Yardım" onClick={() => setYardimAcik(true)}><Ikon ad="yardim" /></button>
           <button className="btn ikon hayalet" title="Geri al (Ctrl+Z)" aria-label="Geri al" disabled={!geriVar} onClick={geriAl}><Ikon ad="geriAl" /></button>
-          <button className="btn ikon hayalet" title="Yinele (Ctrl+Y)" aria-label="Yinele" disabled={!yineleVar} onClick={yinele}><Ikon ad="yinele" /></button>
-          <button className="btn ikon hayalet" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}><Ikon ad="sifirla" /></button>
+          <button className="btn ikon hayalet mobil-gizli" title="Yinele (Ctrl+Y)" aria-label="Yinele" disabled={!yineleVar} onClick={yinele}><Ikon ad="yinele" /></button>
+          <button className="btn ikon hayalet mobil-gizli" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}><Ikon ad="sifirla" /></button>
 
           <Menu etiket="Dosya" ikon={<Ikon ad="dosya" />}>
             <MenuOge onClick={yeni} altMetin="Boş takımla başla">Yeni resim</MenuOge>
             <MenuOge onClick={() => dosyaGirdi.current?.click()} altMetin="Ctrl+O · .mhk.json">Aç…</MenuOge>
             <MenuOge onClick={dosyaKaydet} altMetin="Ctrl+S · resim ve görünüş konumları">Dosya olarak kaydet</MenuOge>
+            <MenuAyrac />
+            <MenuOge onClick={yinele} altMetin="Ctrl+Y">Yinele</MenuOge>
+            <MenuOge onClick={() => setDimOff({})} altMetin="Ölçü, etiket ve görünüşleri yerine koyar">Konumları sıfırla</MenuOge>
+            <MenuOge onClick={() => setTema((t) => (t === "koyu" ? "acik" : "koyu"))} altMetin={tema === "koyu" ? "Açık temaya geç" : "Koyu temaya geç"}>Tema değiştir</MenuOge>
+            <MenuOge onClick={() => setYardimAcik(true)} altMetin="Kısayollar ve ipuçları">Yardım</MenuOge>
           </Menu>
 
           <Menu etiket="Veri" ikon={<Ikon ad="veri" />}>
@@ -293,7 +322,7 @@ function App() {
           onMouseLeave={cizimde ? onMouseUp : undefined}
           onDoubleClick={cizimde ? olcuyeCiftTikla : undefined}
         >
-          {!cizimde ? <ThreeDView params={params} /> : (
+          {!cizimde ? <ThreeDView params={params} tema={tema} /> : (
             <>
               <Sayfa params={params} dimOff={dimOff} setDimOff={setDimOff} cakisma={isaretAcik ? cakisma : []} style={{
                 flex: 1, display: "block", background: "transparent", borderRadius: 2, minWidth: 0,

@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { TOOL_TYPES } from "../constants";
 import { takimProfili, yaricapAt, parcaNoktalari } from "../geometry/profil";
 import { kaplamaRengi, ton } from "../drawing/stil";
 
 // ─── 3D PREVIEW — Gerçekçi Freze Geometrisi ─────────────
-function ThreeDView({ params }) {
+function ThreeDView({ params, tema = "koyu" }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
 
@@ -14,27 +15,37 @@ function ThreeDView({ params }) {
     if (!el) return;
     const T = THREE;
     const scene = new T.Scene();
-    scene.background = new T.Color("#1b2128");
+    const acik = tema === "acik";
+    scene.background = new T.Color(acik ? "#dfe5ec" : "#1b2128");
     const camera = new T.PerspectiveCamera(32, el.clientWidth / el.clientHeight, 0.01, 100);
     const renderer = new T.WebGLRenderer({ antialias: true });
     renderer.setSize(el.clientWidth, el.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
+    // Ortam yansıması: metal yüzeyler gerçekçi parlasın (üretilmiş stüdyo odası, görsel dosya gerekmez)
+    const pmrem = new T.PMREMGenerator(renderer);
+    const ortam = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = ortam.texture;
     el.appendChild(renderer.domElement);
 
-    scene.add(new T.AmbientLight("#e8ecf0", 0.85));
-    const dl1 = new T.DirectionalLight("#fff", 0.9); dl1.position.set(4,6,5); dl1.castShadow = true; scene.add(dl1);
+    scene.add(new T.AmbientLight("#e8ecf0", 0.3));
+    const dl1 = new T.DirectionalLight("#fff", 0.75); dl1.position.set(4,6,5); dl1.castShadow = true;
+    dl1.shadow.mapSize.set(2048, 2048);
+    Object.assign(dl1.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 20 });
+    dl1.shadow.bias = -0.0006;
+    dl1.shadow.radius = 4;
+    scene.add(dl1);
     const dl2 = new T.DirectionalLight("#b0c8e0", 0.4); dl2.position.set(-3,-2,5); scene.add(dl2);
     const dl3 = new T.DirectionalLight("#e0d0b0", 0.3); dl3.position.set(0,-5,-3); scene.add(dl3);
 
-    const grid = new T.GridHelper(8, 40, "#46515f", "#2b333d");
+    const grid = new T.GridHelper(8, 40, acik ? "#aab4c0" : "#46515f", acik ? "#c3cbd5" : "#2b333d");
     grid.rotation.x = Math.PI / 2; grid.position.z = -1.2; scene.add(grid);
 
     const toolGroup = new T.Group(); scene.add(toolGroup);
     stateRef.current = { scene, camera, renderer, toolGroup, el, T };
 
-    let isDrag=false, pX=0, pY=0, rX=-0.2, rY=0.45;
+    let isDrag=false, pX=0, pY=0, rX=0.3, rY=0.45;
     // Takım yatay yatar (boy 3): kadraj genişliğe göre; yakın uç perspektifle büyüdüğü için pay bırakılır
     const kadraj=()=>Math.max(4.8, 2.3/(Math.tan(16*Math.PI/180)*Math.max(0.6, el.clientWidth/Math.max(el.clientHeight,1))));
     let dist=kadraj();
@@ -55,8 +66,8 @@ function ThreeDView({ params }) {
     return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",onRz);
       cv.removeEventListener("mousedown",onD);cv.removeEventListener("mousemove",onM);cv.removeEventListener("mouseup",onU);cv.removeEventListener("mouseleave",onU);
       cv.removeEventListener("touchstart",onD);cv.removeEventListener("touchmove",onM);cv.removeEventListener("touchend",onU);cv.removeEventListener("wheel",onW);
-      renderer.dispose();if(el.contains(cv))el.removeChild(cv);};
-  }, []);
+      ortam.dispose();pmrem.dispose();renderer.dispose();if(el.contains(cv))el.removeChild(cv);};
+  }, [tema]);
 
   useEffect(() => {
     const { toolGroup, T } = stateRef.current;
@@ -82,7 +93,7 @@ function ThreeDView({ params }) {
     const yon = helixHand === "Sol" ? 1 : -1; // sağ helis: ucu sağa bakan takımda görünen yüzde "\" (vida kuralı)
 
     const hC = (hex) => new T.Color(hex);
-    const mat = (renk, metal, pürüz) => new T.MeshStandardMaterial({ color: hC(renk), metalness: metal, roughness: pürüz, side: T.DoubleSide });
+    const mat = (renk, metal, pürüz) => new T.MeshStandardMaterial({ color: hC(renk), metalness: metal, roughness: pürüz, side: T.DoubleSide, envMapIntensity: 0.55 });
     const renkK = kaplamaRengi(params.coating, params.colCut); // çizimdeki kaplama rengiyle aynı
     const matS = mat(ton(params.colShank, 10), 0.6, 0.3);
     const matN = mat(ton(params.colNeck, 10), 0.6, 0.32);
@@ -187,7 +198,29 @@ function ThreeDView({ params }) {
       new T.LineBasicMaterial({ color: 0xcc2222 })
     ));
     toolGroup.rotation.z = -Math.PI / 2;
-  }, [params]);
+
+    // Gölge: takım gölge düşürür, altındaki saydam zemin gölgeyi alır
+    toolGroup.traverse((c) => { if (c.isMesh) c.castShadow = true; });
+    const { scene } = stateRef.current;
+    const eski = scene.getObjectByName("zemin-golge");
+    if (eski) { scene.remove(eski); eski.geometry.dispose(); eski.material.alphaMap?.dispose(); eski.material.dispose(); }
+    // Kenarı yumuşakça sönen zemin (radyal alfa haritası): takım bir platform üzerinde değil, ışıkta duruyor gibi görünür
+    const kv = document.createElement("canvas");
+    kv.width = kv.height = 128;
+    const kx = kv.getContext("2d");
+    const gr = kx.createRadialGradient(64, 64, 6, 64, 64, 64);
+    gr.addColorStop(0, "#fff"); gr.addColorStop(0.55, "#aaa"); gr.addColorStop(1, "#000");
+    kx.fillStyle = gr; kx.fillRect(0, 0, 128, 128);
+    const zemin = new T.Mesh(new T.CircleGeometry(3.2, 64), new T.MeshStandardMaterial({
+      color: tema === "acik" ? "#b9c3d0" : "#313a47", roughness: 0.95, metalness: 0, envMapIntensity: 0.25,
+      transparent: true, alphaMap: new T.CanvasTexture(kv),
+    }));
+    zemin.name = "zemin-golge";
+    zemin.rotation.x = -Math.PI / 2;
+    zemin.position.y = -(Math.max(g.D, g.d) / 2) * sc - 0.12;
+    zemin.receiveShadow = true;
+    scene.add(zemin);
+  }, [params, tema]);
 
   return (
     <div ref={mountRef} style={{width:"100%",height:"100%",borderRadius:4,overflow:"hidden",position:"relative",cursor:"grab"}}>

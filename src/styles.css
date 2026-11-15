@@ -290,3 +290,57 @@ details.ek > .ek-ic { padding: 4px 12px 12px; }
 /* ─── Araç çubuğu: dar ekranda etiketler gizlenir ──────── */
 @media (max-width: 1240px) { .arac .menu > .btn .metin { display: none; } .arac .menu > .btn { padding: 0 10px; } }
 @media (max-width: 1100px) { .segment button { padding: 0 11px; } }
+
+/* ─── Açık tema ────────────────────────────────────────── */
+:root[data-tema="acik"] {
+  --bg-base:    #eef1f5;
+  --bg-panel:   #ffffff;
+  --bg-surface: #f4f6fa;
+  --bg-raised:  #e7ebf2;
+  --bg-input:   #ffffff;
+  --border-dim: #e2e7ef;
+  --border-mid: #cdd4e0;
+  --border-hi:  #b2bccd;
+  --accent:     #c97a0a;
+  --accent-dim: #a86408;
+  --accent2:    #1b6fc8;
+  --text-hi:    #1a2230;
+  --text-mid:   #465468;
+  --text-lo:    #75829a;
+  --red:        #d23f37;
+  --green:      #23925f;
+  color-scheme: light;
+}
+:root[data-tema="acik"] .cad-area {
+  background-color: #d7dde6;
+  background-image:
+    radial-gradient(ellipse 75% 65% at 50% 42%, rgba(255,255,255,0.55), rgba(215,221,230,0) 70%),
+    radial-gradient(rgba(40,56,80,0.14) 1px, transparent 1.4px);
+}
+:root[data-tema="acik"] .cad-area svg#teknik-svg { box-shadow: 0 0 0 1px rgba(30,45,70,0.18); }
+:root[data-tema="acik"] .cizim-alani svg { filter: drop-shadow(0 6px 22px rgba(30,45,70,0.28)) !important; }
+:root[data-tema="acik"] .btn.birincil { color: #fff; }
+:root[data-tema="acik"] .btn.birincil:hover { background: #b96d06; }
+:root[data-tema="acik"] .segment button.acik { color: #fff; }
+:root[data-tema="acik"] .satir input.tol { color: #c0392b; }
+:root[data-tema="acik"] .uyari div { color: #b02f27; }
+:root[data-tema="acik"] .uyari-sari div { color: #8a5a06; }
+:root[data-tema="acik"] .dc-oge.uyari { color: #8a5a06; }
+:root[data-tema="acik"] .dc-dugme.cakisma { color: #b02f27; }
+:root[data-tema="acik"] .zoom-kutusu { background: rgba(255,255,255,0.9); }
+:root[data-tema="acik"] .menu-liste, :root[data-tema="acik"] .tip-izgara { box-shadow: 0 12px 32px rgba(30,45,70,0.22); }
+:root[data-tema="acik"] .modal-perde { background: rgba(30,40,60,0.45); }
+:root[data-tema="acik"] .modal { box-shadow: 0 24px 60px rgba(30,45,70,0.3); }
+:root[data-tema="acik"] ::-webkit-scrollbar-thumb { background: #c2cad7; }
+
+/* Kısayol tuşu görünümü */
+.tus { display: inline-block; padding: 2px 7px; border: 1px solid var(--border-hi); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-surface); color: var(--text-hi); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+
+/* ─── Mobil: araç çubuğu ve durum çubuğu sığsın ───────── */
+@media (max-width: 899px) {
+  .arac .mobil-gizli { display: none; }
+  .arac .menu > .btn .metin { display: none; }
+  .arac .menu > .btn { padding: 0 9px; }
+  .dc-oge.tamam .dc-yazi, .dc-yazi { display: none; }
+  .dc-oge.uyari, .dc-dugme.cakisma { font-size: 12px; }
+}
