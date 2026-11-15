@@ -91,7 +91,33 @@ describe("Detay A", () => {
   });
   it("sayfada: radyüs frezede DETAY A çizilir, düz frezede çizilmez", () => {
     const r = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
-    expect(r).toMatch(/DETAY A \(\d+:1\)/);
-    expect(render({ ...DEFAULT_PARAMS, toolType: "flat" })).not.toContain("DETAY A");
+    expect(r).toMatch(/DETAY [AB] [(][0-9]+:1[)]/);
+    expect(render({ ...DEFAULT_PARAMS, toolType: "flat" })).not.toContain("DETAY");
+  });
+});
+
+import { kesitVarMi } from "../src/drawing/Kesit.jsx";
+
+describe("Kesit A-A", () => {
+  const dene = (ek) => { const p = { ...DEFAULT_PARAMS, ...ek }; return kesitVarMi(p, takimProfili(p)); };
+  it("çekirdeği tanımlı kanallı takımda var, çekirdek 0 ise yok", () => {
+    expect(dene({})).toBe(true);
+    expect(dene({ dCore: 0 })).toBe(false);
+    expect(dene({ kesitAA: false })).toBe(false);
+  });
+  it("sayfada kesme düzlemi ve taralı kesit çizilir", () => {
+    const svg = render({ ...DEFAULT_PARAMS });
+    expect(svg).toMatch(/KESİT A-A \(\d+:1\)/);
+    expect(svg).toContain("kesit-tarama");
+  });
+  it("kesit varken detay harfi B olur", () => {
+    const svg = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1 });
+    expect(svg).toContain("KESİT A-A");
+    expect(svg).toMatch(/DETAY B/);
+  });
+  it("çekirdek yoksa kesit yok ve detay A kalır", () => {
+    const svg = render({ ...DEFAULT_PARAMS, toolType: "bullnose", D: 12, d: 12, rCorner: 1, dCore: 0 });
+    expect(svg).not.toContain("KESİT");
+    expect(svg).toMatch(/DETAY A/);
   });
 });

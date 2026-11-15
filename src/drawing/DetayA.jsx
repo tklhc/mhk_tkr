@@ -28,7 +28,7 @@ export function detayOzelligi(params, g) {
 }
 
 /** Yan görünüşte ucun üzerine ince daire + "A", sayfada büyütülmüş detay. */
-export function DetayA({ params, yerlesim, dimOff, setDimOff }) {
+export function DetayA({ params, yerlesim, harf = "A", dimOff, setDimOff }) {
   const g = takimProfili(params);
   if (!(g.D > 0) || !(g.L > 0) || params.detayA === false) return null;
   const f = detayOzelligi(params, g);
@@ -62,7 +62,7 @@ export function DetayA({ params, yerlesim, dimOff, setDimOff }) {
     <g>
       {/* Yan görünüşte işaret: ince daire + harf */}
       <circle cx={n(X(f.cx))} cy={n(Y(f.cr))} r={n(rReal * s)} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <text x={n(X(f.cx) - rReal * s - 4.5)} y={n(Y(f.cr) + 1.2)} fontSize={3.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">A</text>
+      <text x={n(X(f.cx) - rReal * s - 4.5)} y={n(Y(f.cr) + 1.2)} fontSize={3.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">{harf}</text>
 
       {/* Detay */}
       <defs><clipPath id={klip}><circle cx={px} cy={py} r={rr} /></clipPath></defs>
@@ -70,7 +70,7 @@ export function DetayA({ params, yerlesim, dimOff, setDimOff }) {
       <path d={yol} clipPath={`url(#${klip})`} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />
       <Kilavuz id="aDetay" hedef={[n(hx), n(hy)]} dirsek={[n(px + (sol ? -rr * 0.75 : rr * 0.75)), n(py - rr * 0.75)]} metin={f.metin} {...ek} />
       <text x={px} y={n(py + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
-        DETAY A ({olcekYaz(s2)})
+        DETAY {harf} ({olcekYaz(s2)})
       </text>
     </g>
   );
