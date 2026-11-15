@@ -61,6 +61,8 @@ const DEFAULT_PARAMS = {
   showDimNeck: true,
   showDimHelix: true,
   showDimAngles: true,
+  kesitAA: true,        // kesit görünüşü A-A
+  detayA: true,         // büyütülmüş uç detayı
   // Sayfa
   kagit: "A4",           // A4 | A3
   olcek: "otomatik",     // otomatik | 2:1 | 1:1 | 1:2 ...

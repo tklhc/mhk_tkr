@@ -37,3 +37,11 @@ Yeni bir takım tipi önce `profil.js`'e eklenir; yan görünüş, DXF ve 3D öl
 
 `main`'e her push'ta GitHub Actions lint + test + derleme yapar ve `dist/`'i GitHub Pages'e yayınlar
 (`.github/workflows/yayin.yml`). Diğer dallarda ve PR'larda yalnız kontrol çalışır.
+
+## Arayüz
+
+- **Sol panel**, dört sekme: *Takım* (ölçüler, geometri, sap, soğutma), *Resim* (sayfa, nelerin gösterileceği, notlar, damga), *Belge* (antet bilgileri, müşteri, paylaşım), *Kütüphane*.
+- Sayı alanlarında ondalık için virgül ya da nokta, ↑/↓ ile adım (Shift ×10, Alt ×0,1) kullanılır. Hatalı alan kırmızı olur, *Takım* sekmesinde uyarı sayısı görünür.
+- Üstte **Veri** (CSV içe aktar, şablon, Excel raporu, örnek takımlar) ve **Dışa aktar** (PDF, PNG, SVG, DXF) menüleri.
+- Çalışma **otomatik kaydedilir** (bu tarayıcıda); sayfa yenilenince kaldığınız yerden devam edersiniz. **+ Yeni** boş resim açar.
+- Yakınlaştırma: sağ alttaki düğmeler, Ctrl + tekerlek ya da iki parmak; yakınlaştırınca fareyle sürükleyerek kaydırılır.

@@ -1,51 +1,107 @@
 import { useState } from "react";
+import { Grup } from "./inputs";
 
-// ─── TOOL LIBRARY PANEL ─────────────────────────────────
-function LibraryPanel({ params, setParams, INP }) {
-  const SB = { padding: "9px 12px 11px 14px", background: "var(--bg-raised)", borderLeft: "2px solid var(--accent)", borderBottom: "1px solid var(--border-dim)" };
-  const getLib = () => { try { return JSON.parse(localStorage.getItem("mihenk-lib") || "[]"); } catch { return []; } };
-  const [lib, setLib] = useState(getLib);
-  const [search, setSearch] = useState("");
-  const saveLib = (newLib) => { localStorage.setItem("mihenk-lib", JSON.stringify(newLib)); setLib(newLib); };
-  const filtered = search ? lib.filter(t => (t.toolName||"").toLowerCase().includes(search.toLowerCase()) || (t.material||"").toLowerCase().includes(search.toLowerCase())) : lib;
+const ANAHTAR = "mihenk-lib";
 
-  return (
-    <div style={SB}>
-      <button onClick={() => {
-        const name = params.toolName || "İsimsiz";
-        const idx = lib.findIndex(t => t.toolName === name);
-        let nl; if (idx >= 0) { nl = [...lib]; nl[idx] = { ...params, savedAt: new Date().toISOString() }; } else { nl = [...lib, { ...params, savedAt: new Date().toISOString() }]; }
-        saveLib(nl);
-      }}
-        style={{ width: "100%", background: "var(--accent)", border: "none", borderRadius: 3, padding: "6px 0", color: "#fff", fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, marginBottom: 6 }}>
-        💾 "{params.toolName}" KAYDET
-      </button>
-      <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Takım ara..." style={{ ...INP, fontSize: 10, marginBottom: 6 }} />
-      <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)", marginBottom: 4 }}>{lib.length} takım kayıtlı</div>
-      <div style={{ maxHeight: 180, overflowY: "auto" }}>
-        {filtered.length === 0 && <div style={{ fontSize: 9, color: "var(--text-lo)", fontFamily: "var(--mono)", padding: 8, textAlign: "center" }}>{lib.length === 0 ? "Henüz kayıt yok" : "Sonuç bulunamadı"}</div>}
-        {filtered.map((t, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 6px", marginBottom: 2, background: "var(--bg-input)", borderRadius: 3, border: "1px solid var(--border-dim)", cursor: "pointer" }}
-            onClick={() => setParams(p => ({ ...p, ...t }))}>
-            <div style={{ flex: 1, overflow: "hidden" }}>
-              <div style={{ fontSize: 10, color: "var(--text-hi)", fontFamily: "var(--mono)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.toolName}</div>
-              <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)" }}>⌀{t.D}×{t.L} · {t.z}Z · {t.material}</div>
-            </div>
-            <button onClick={(e) => { e.stopPropagation(); const nl = lib.filter((_, j) => j !== i); saveLib(nl); }}
-              style={{ background: "transparent", border: "none", color: "var(--red)", fontSize: 11, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>✕</button>
-          </div>
-        ))}
-      </div>
-      {lib.length > 0 && (
-        <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 6, paddingTop: 6, display: "flex", gap: 4 }}>
-          <button onClick={() => { const b = new Blob(["\uFEFF" + JSON.stringify(lib, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "mihenk-kutuphane.json"; a.click(); }}
-            style={{ flex: 1, background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "4px 0", color: "var(--text-mid)", fontSize: 8.5, cursor: "pointer", fontFamily: "var(--mono)" }}>📤 Dışa Aktar</button>
-          <button onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json"; inp.onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d)) saveLib([...lib, ...d]); } catch {} }; r.readAsText(f); }; inp.click(); }}
-            style={{ flex: 1, background: "var(--bg-surface)", border: "1px solid var(--border-mid)", borderRadius: 3, padding: "4px 0", color: "var(--text-mid)", fontSize: 8.5, cursor: "pointer", fontFamily: "var(--mono)" }}>📥 İçe Aktar</button>
-        </div>
-      )}
-    </div>
-  );
+function oku() {
+  try { const v = JSON.parse(localStorage.getItem(ANAHTAR) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function yaz(liste) {
+  try { localStorage.setItem(ANAHTAR, JSON.stringify(liste)); return true; } catch { return false; }
 }
 
-export { LibraryPanel };
+/** Takım kütüphanesi: bu tarayıcıda saklanır; JSON olarak dışa/içe aktarılabilir. */
+export function LibraryPanel({ params, setParams }) {
+  const [lib, setLib] = useState(oku);
+  const [ara, setAra] = useState("");
+  const [mesaj, setMesaj] = useState("");
+
+  const kaydet = (yeni) => {
+    if (yaz(yeni)) { setLib(yeni); return true; }
+    setMesaj("Kaydedilemedi: tarayıcı depolaması dolu ya da kapalı.");
+    return false;
+  };
+  const filtre = ara.trim().toLowerCase();
+  const gorunen = filtre
+    ? lib.filter((t) => `${t.toolName || ""} ${t.material || ""} ${t.coating || ""}`.toLowerCase().includes(filtre))
+    : lib;
+  const adVar = lib.some((t) => t.toolName === (params.toolName || "İsimsiz"));
+
+  return (
+    <>
+      <Grup baslik="Geçerli takım">
+        <button className="btn birincil tam" onClick={() => {
+          const ad = params.toolName || "İsimsiz";
+          const kayit = { ...params, toolName: ad, savedAt: new Date().toISOString() };
+          const i = lib.findIndex((t) => t.toolName === ad);
+          if (kaydet(i >= 0 ? lib.map((t, j) => (j === i ? kayit : t)) : [...lib, kayit])) setMesaj(i >= 0 ? `"${ad}" güncellendi.` : `"${ad}" kütüphaneye eklendi.`);
+        }}>
+          {adVar ? "Kütüphanede güncelle" : "Kütüphaneye kaydet"}
+        </button>
+        <div className="ipucu">{params.toolName || "İsimsiz"}{adVar ? " · aynı adlı kayıt güncellenir" : ""}</div>
+        {mesaj && <div className="ipucu" style={{ color: "var(--accent2)" }}>{mesaj}</div>}
+      </Grup>
+
+      <Grup baslik="Kayıtlı takımlar" sag={`${lib.length} kayıt`}>
+        <input type="search" className="alan" style={{ marginBottom: 8 }} placeholder="Ad, malzeme ya da kaplama ara…" value={ara} onChange={(e) => setAra(e.target.value)} />
+        <div className="liste">
+          {gorunen.length === 0 && (
+            <div className="ipucu" style={{ textAlign: "center", padding: 14 }}>
+              {lib.length === 0 ? "Henüz kayıt yok. Bir takım çizip yukarıdan kaydedin." : "Eşleşen kayıt yok."}
+            </div>
+          )}
+          {gorunen.map((t) => (
+            <div key={t.toolName} className="liste-oge" onClick={() => setParams((p) => ({ ...p, ...t }))} title="Yüklemek için tıklayın">
+              <div className="govde">
+                <div className="ad">{t.toolName}</div>
+                <div className="alt">⌀{t.D}×{t.L} · {t.z}Z{t.material ? ` · ${t.material}` : ""}</div>
+              </div>
+              <button className="btn kucuk tehlike" aria-label={`${t.toolName} kaydını sil`} onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`"${t.toolName}" kütüphaneden silinsin mi?`)) kaydet(lib.filter((x) => x.toolName !== t.toolName));
+              }}>Sil</button>
+            </div>
+          ))}
+        </div>
+      </Grup>
+
+      <Grup baslik="Yedekle">
+        <div className="btn-satir">
+          <button className="btn" disabled={lib.length === 0} onClick={() => {
+            const b = new Blob(["﻿" + JSON.stringify(lib, null, 2)], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(b);
+            a.download = `mihenk-kutuphane-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          }}>Dışa aktar</button>
+          <button className="btn" onClick={() => {
+            const inp = document.createElement("input");
+            inp.type = "file"; inp.accept = ".json";
+            inp.onchange = (e) => {
+              const f = e.target.files[0]; if (!f) return;
+              const r = new FileReader();
+              r.onload = (ev) => {
+                try {
+                  const veri = JSON.parse(String(ev.target.result).replace(/^﻿/, ""));
+                  if (!Array.isArray(veri)) throw new Error("liste değil");
+                  const birlesik = [...lib];
+                  let yeni = 0, guncel = 0;
+                  for (const t of veri) {
+                    if (!t || typeof t.toolName !== "string") continue;
+                    const i = birlesik.findIndex((x) => x.toolName === t.toolName);
+                    if (i >= 0) { birlesik[i] = t; guncel++; } else { birlesik.push(t); yeni++; }
+                  }
+                  if (kaydet(birlesik)) setMesaj(`İçe aktarıldı: ${yeni} yeni, ${guncel} güncellendi.`);
+                } catch { setMesaj("Dosya okunamadı: geçerli bir kütüphane JSON'u değil."); }
+              };
+              r.readAsText(f);
+            };
+            inp.click();
+          }}>İçe aktar</button>
+        </div>
+        <div className="ipucu">Kütüphane bu tarayıcıda saklanır. Tarayıcı verisini silmeden önce dışa aktarıp yedekleyin.</div>
+      </Grup>
+    </>
+  );
+}

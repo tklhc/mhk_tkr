@@ -3,43 +3,69 @@ import { DEFAULT_PARAMS } from "./constants";
 import { Sayfa, duzenHesapla } from "./drawing/Sayfa";
 import { olcekYaz } from "./drawing/sayfaDuzeni";
 import { Panel } from "./ui/Panel";
+import { Menu, MenuOge, MenuAyrac } from "./ui/Menu";
 import { csvOku, csvMetniOku, getInitialBatch } from "./io/csv";
 import { ThreeDView } from "./view3d/ThreeDView";
 import { downloadExcel, generateTemplateExcel, generateExcelReport } from "./io/excel";
 import { generateDXF } from "./io/dxf";
-import { svgIndir, pngIndir, pdfYazdir } from "./io/export";
+import { svgIndir, pngIndir, pdfYazdir, dosyaIndir } from "./io/export";
+
+const TASLAK = "mihenk-taslak-v1";
+const ZOOM_MIN = 1, ZOOM_MAX = 5;
+const sinirla = (z) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+const dosyaAdi = (p) => (p.toolName || "teknik-resim").replace(/[\\/:*?"<>|]+/g, "_").trim() || "teknik-resim";
+
+/** Son çalışma: tarayıcıda saklanan taslak (bozuksa ya da yoksa null). */
+function taslakYukle() {
+  try {
+    const k = JSON.parse(localStorage.getItem(TASLAK));
+    if (k && k.params && typeof k.params === "object") return { params: { ...DEFAULT_PARAMS, ...k.params }, dimOff: k.dimOff && typeof k.dimOff === "object" ? k.dimOff : {} };
+  } catch { /* depolama kapalı ya da bozuk: boş başla */ }
+  return null;
+}
 
 function App() {
-  const [params, setParams] = useState(DEFAULT_PARAMS);
+  const ilk = useRef(undefined);
+  if (ilk.current === undefined) ilk.current = taslakYukle();
+
+  const [params, setParams] = useState(ilk.current?.params ?? DEFAULT_PARAMS);
+  const [dimOff, setDimOff] = useState(ilk.current?.dimOff ?? {});
   const [view, setView] = useState("all");
   const [showPanel, setShowPanel] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
-  const [dimOff, setDimOff] = useState({});
-  const initBatch = useMemo(() => getInitialBatch(), []);
-  const [batch, setBatch] = useState(initBatch);
+  const [batch, setBatch] = useState([]);
   const [batchIdx, setBatchIdx] = useState(0);
+  const csvGirdi = useRef(null);
 
-  // Zoom & Pan state
+  // ── Taslak otomatik kaydı ──
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { localStorage.setItem(TASLAK, JSON.stringify({ params, dimOff })); } catch { /* depolama dolu/kapalı */ }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [params, dimOff]);
+
+  const yeni = useCallback(() => {
+    if (!window.confirm("Geçerli çizim kapatılıp varsayılan takımla yeni resim başlatılsın mı?\n(Kütüphanede kayıtlı takımlar etkilenmez.)")) return;
+    setParams(DEFAULT_PARAMS); setDimOff({}); setBatch([]); setBatchIdx(0);
+  }, []);
+
+  // ── Yakınlaştırma ve kaydırma ──
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const gestureRef = useRef({ lastDist: 0, lastPan: { x: 0, y: 0 }, startPan: { x: 0, y: 0 }, isPinching: false, isPanning: false });
-
+  const gestureRef = useRef({ lastDist: 0, startPan: { x: 0, y: 0 }, isPinching: false, isPanning: false, mouse: false });
   const resetZoom = useCallback(() => { setZoom(1); setPan({ x: 0, y: 0 }); }, []);
+  const yakinlastir = useCallback((carpan) => setZoom((z) => { const y = sinirla(z * carpan); if (y === 1) setPan({ x: 0, y: 0 }); return y; }), []);
 
-  // Touch handlers for pinch-zoom and pan
   const onTouchStart = useCallback((e) => {
     const g = gestureRef.current;
     if (e.touches.length === 2) {
       e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      g.lastDist = Math.sqrt(dx * dx + dy * dy);
-      g.isPinching = true;
-      g.isPanning = false;
+      g.lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      g.isPinching = true; g.isPanning = false;
     } else if (e.touches.length === 1 && zoom > 1) {
       g.startPan = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
-      g.isPanning = true;
-      g.isPinching = false;
+      g.isPanning = true; g.isPinching = false;
     }
   }, [zoom, pan]);
 
@@ -47,13 +73,8 @@ function App() {
     const g = gestureRef.current;
     if (g.isPinching && e.touches.length === 2) {
       e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (g.lastDist > 0) {
-        const scale = dist / g.lastDist;
-        setZoom(z => Math.max(1, Math.min(5, z * scale)));
-      }
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if (g.lastDist > 0) setZoom((z) => sinirla(z * (dist / g.lastDist)));
       g.lastDist = dist;
     } else if (g.isPanning && e.touches.length === 1 && zoom > 1) {
       e.preventDefault();
@@ -62,21 +83,30 @@ function App() {
   }, [zoom]);
 
   const onTouchEnd = useCallback(() => {
-    gestureRef.current.isPinching = false;
-    gestureRef.current.isPanning = false;
-    gestureRef.current.lastDist = 0;
+    const g = gestureRef.current;
+    g.isPinching = false; g.isPanning = false; g.lastDist = 0;
   }, []);
 
-  // Mouse wheel zoom (desktop)
   const onWheel = useCallback((e) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      setZoom(z => Math.max(1, Math.min(5, z - e.deltaY * 0.003)));
+      setZoom((z) => sinirla(z - e.deltaY * 0.003));
     }
   }, []);
 
-  // Reset zoom on view change
-  useEffect(() => { resetZoom(); }, [view]);
+  // Fare ile kaydırma (yalnız yakınlaştırılmışken; ölçü sürüklemeleri kendi olayını durdurur)
+  const onMouseDown = useCallback((e) => {
+    if (zoom <= 1 || e.button !== 0) return;
+    gestureRef.current.mouse = true;
+    gestureRef.current.startPan = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  }, [zoom, pan]);
+  const onMouseMove = useCallback((e) => {
+    const g = gestureRef.current;
+    if (g.mouse) setPan({ x: e.clientX - g.startPan.x, y: e.clientY - g.startPan.y });
+  }, []);
+  const onMouseUp = useCallback(() => { gestureRef.current.mouse = false; }, []);
+
+  useEffect(() => { resetZoom(); }, [view, resetZoom]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -89,211 +119,125 @@ function App() {
   }, []);
 
   const duzen = useMemo(() => duzenHesapla(params), [params]);
-  const calc = { text: olcekYaz(duzen.yan.olcek), kagit: duzen.kagit.ad };
+  const svgAl = () => document.getElementById("teknik-svg");
+  const adAl = dosyaAdi(params);
 
-  const BTN = (label, onClick, color, hov) => (
-    <button onClick={onClick} style={{ background: color, border: "none", borderRadius: 3, padding: isMobile ? "5px 8px" : "4px 13px", color: "#fff", fontSize: isMobile ? 10 : 10.5, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 600, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 3 }}
-      onMouseOver={(e) => e.currentTarget.style.background = hov}
-      onMouseOut={(e) => e.currentTarget.style.background = color}>
-      {label}
-    </button>
-  );
+  const topluGit = (i) => { setBatchIdx(i); setParams((p) => ({ ...p, ...batch[i] })); setDimOff({}); };
+
+  const csvSec = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const { items, uyarilar } = csvOku(csvMetniOku(ev.target.result));
+      if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams((p) => ({ ...p, ...items[0] })); setDimOff({}); }
+      if (items.length === 0) alert("CSV dosyası okunamadı veya boş.");
+      else if (uyarilar.length > 0) alert(`${items.length} takım okundu. ${uyarilar.length} uyarı:\n\n` + uyarilar.slice(0, 8).join("\n") + (uyarilar.length > 8 ? `\n… (+${uyarilar.length - 8})` : ""));
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
+
+  const cizimde = view !== "3d";
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "var(--mono)", background: "var(--bg-base)" }}>
+    <div className="uygulama">
+      <Panel params={params} setParams={setParams} isMobile={isMobile} showPanel={showPanel} onClose={() => setShowPanel(false)} onYeni={yeni} />
+      {isMobile && showPanel && <div className="perde" onClick={() => setShowPanel(false)} />}
 
-      {!isMobile && <Panel params={params} setParams={setParams} isMobile={false} showPanel={true} onClose={() => {}} />}
-      {isMobile && <Panel params={params} setParams={setParams} isMobile={true} showPanel={showPanel} onClose={() => setShowPanel(false)} />}
+      <main className="ana">
+        {/* ── Araç çubuğu ── */}
+        <div className="arac">
+          {isMobile && <button className="btn ikon" onClick={() => setShowPanel(true)} aria-label="Takım ayarlarını aç">☰</button>}
 
-      {isMobile && showPanel && (
-        <div onClick={() => setShowPanel(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 999 }} />
-      )}
-
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-
-        {/* ── TOOLBAR ── */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: isMobile ? 3 : 5,
-          padding: isMobile ? "4px 8px" : "5px 12px",
-          background: "var(--bg-base)",
-          borderBottom: "1px solid var(--border-mid)",
-          flexWrap: "nowrap",
-          flexShrink: 0,
-        }}>
-          {/* Accent left stripe */}
-          <div style={{ position: "absolute", left: isMobile ? 0 : "var(--panel-w)", top: 0, width: 0, height: 0 }} />
-
-          {isMobile && (
-            <button onClick={() => setShowPanel(true)} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "5px 9px", color: "var(--text-hi)", fontSize: 14, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>☰</button>
-          )}
-
-          {/* View toggle — CAD style segmented */}
-          <div style={{ display: "flex", background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
-            {[["all","ÇİZİM"],["3d","3D"]].map(([v,lbl]) => (
-              <button key={v} onClick={() => setView(v)} style={{
-                background: view === v ? "var(--accent)" : "transparent",
-                border: "none",
-                borderRight: v !== "3d" ? "1px solid var(--border-hi)" : "none",
-                padding: isMobile ? "4px 8px" : "4px 14px",
-                color: view === v ? "#fff" : "var(--text-mid)",
-                fontSize: isMobile ? 9 : 9.5, cursor: "pointer", fontFamily: "var(--mono)",
-                fontWeight: 700, letterSpacing: 1.5, transition: "background 0.12s",
-              }}>{lbl}</button>
+          <div className="segment" role="tablist" aria-label="Görünüm">
+            {[["all", "Çizim"], ["3d", "3D"]].map(([v, ad]) => (
+              <button key={v} role="tab" aria-selected={view === v} className={view === v ? "acik" : ""} onClick={() => setView(v)}>{ad}</button>
             ))}
           </div>
 
-          <div style={{ flex: 1 }} />
+          <div className="durum">
+            <b>{olcekYaz(duzen.yan.olcek)}</b> · {duzen.kagit.ad} · ⌀{params.D}×{params.L} mm · {params.z}Z
+          </div>
+          <div className="bosluk" />
 
-          {/* Status readout — desktop only */}
-          {!isMobile && (
-            <div style={{ fontSize: 9, color: "var(--text-lo)", fontFamily: "var(--mono)", letterSpacing: 0.5, marginRight: 4, whiteSpace: "nowrap" }}>
-              <span style={{ color: "var(--text-mid)" }}>{calc.text}</span>
-              {" "}·{" "}
-              <span style={{ color: "var(--accent2)" }}>⌀{params.D}×{params.L}mm</span>
-              {" "}·{" "}{params.z}Z{" "}Helis{" "}{params.helix}°
-              {params.l2 > 0 ? <span style={{ color: "var(--text-lo)" }}>{" "}· Boğaz ⌀{params.neckDia}×{params.l2}mm@{params.neckAngle}°</span> : ""}
-            </div>
-          )}
+          <button className="btn ikon hayalet" title="Ölçü ve etiket konumlarını sıfırla" aria-label="Ölçü konumlarını sıfırla" onClick={() => setDimOff({})}>↺</button>
 
-          {/* Export buttons — unified style */}
-          {BTN(isMobile ? "📄" : "PDF", () => {
-            const svgEl = document.getElementById("teknik-svg"); if (!svgEl) return;
-            pdfYazdir(svgEl, `MİHENK - ${params.toolName}`);
-          }, "#1a4a28", "#1e6030")}
+          <Menu etiket="Veri" ikon="⇅ ">
+            <MenuOge onClick={() => csvGirdi.current?.click()} altMetin="UTF-8 ya da Excel (Windows-1254) CSV">CSV içe aktar…</MenuOge>
+            <MenuOge onClick={() => downloadExcel(generateTemplateExcel(), "mihenk-takim-sablonu.xls")} altMetin="Doldurup CSV olarak kaydedin">Şablon indir (.xls)</MenuOge>
+            <MenuOge onClick={() => {
+              let lib = [];
+              try { lib = JSON.parse(localStorage.getItem("mihenk-lib") || "[]"); } catch { /* boş */ }
+              const html = generateExcelReport(batch, lib);
+              if (!html) { alert("Rapor için toplu liste ya da kütüphanede kayıt olmalı."); return; }
+              downloadExcel(html, `mihenk-rapor-${new Date().toISOString().slice(0, 10)}.xls`);
+            }} altMetin="Toplu liste ya da kütüphane">Excel raporu</MenuOge>
+            <MenuAyrac />
+            <MenuOge onClick={() => { const it = getInitialBatch(); setBatch(it); setBatchIdx(0); setParams((p) => ({ ...p, ...it[0] })); setDimOff({}); }} altMetin="8 hazır takımla deneme">Örnek takımları yükle</MenuOge>
+          </Menu>
 
-          {BTN(isMobile ? "💾" : "SVG", () => {
-            const svgEl = document.getElementById("teknik-svg"); if (!svgEl) return;
-            svgIndir(svgEl, `${params.toolName || "teknik-resim"}.svg`);
-          }, "#162040", "#1e3060")}
-
-          {BTN(isMobile ? "🖼" : "PNG", () => {
-            const svgEl = document.getElementById("teknik-svg"); if (!svgEl) return;
-            pngIndir(svgEl, `${params.toolName || "teknik-resim"}.png`);
-          }, "#3a1a08", "#5a2a0a")}
-
-          {BTN(isMobile ? "↺" : "↺ Sıfırla", () => setDimOff({}), "var(--bg-surface)", "var(--bg-raised)")}
-
-          {/* DXF Export */}
-          {BTN(isMobile ? "⬡" : "DXF", () => {
-            const dxf = generateDXF(params);
-            const blob = new Blob([dxf], { type: "application/dxf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url; a.download = `${params.toolName || "teknik-resim"}.dxf`; a.click();
-            URL.revokeObjectURL(url);
-          }, "#4a1a4a", "#6a2a6a")}
-
-          {/* CSV Import */}
-          {BTN(isMobile ? "📥" : "CSV İçe", () => document.getElementById("csv-import").click(), "#0a3a5a", "#0e4a6a")}
-          <input id="csv-import" type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={(e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-              const { items, uyarilar } = csvOku(csvMetniOku(ev.target.result));
-              if (items.length > 0) { setBatch(items); setBatchIdx(0); setParams(p => ({ ...p, ...items[0] })); setDimOff({}); }
-              if (items.length === 0) alert("CSV dosyası okunamadı veya boş.");
-              else if (uyarilar.length > 0) alert(`${items.length} takım okundu. ${uyarilar.length} uyarı:\n\n` + uyarilar.slice(0, 8).join("\n") + (uyarilar.length > 8 ? `\n… (+${uyarilar.length - 8})` : ""));
-            };
-            reader.readAsArrayBuffer(file);
-            e.target.value = "";
-          }} />
-
-          {/* Şablon İndir */}
-          {BTN(isMobile ? "📋" : "Şablon", () => {
-            downloadExcel(generateTemplateExcel(), "mihenk-takim-sablonu.xls");
-          }, "#2a2a2a", "#3a3a3a")}
-
-          {/* Excel Rapor */}
-          {BTN(isMobile ? "📊" : "Rapor", () => {
-            const lib = (() => { try { return JSON.parse(localStorage.getItem("mihenk-lib") || "[]"); } catch { return []; } })();
-            const html = generateExcelReport(batch, lib);
-            if (!html) { alert("Rapor için toplu liste veya kütüphanede kayıt olmalı."); return; }
-            downloadExcel(html, `mihenk-rapor-${new Date().toISOString().slice(0,10)}.xls`);
-          }, "#1a3a1a", "#2a4a2a")}
-
+          <Menu etiket="Dışa aktar" ikon="⬇ " birincil>
+            <MenuOge onClick={() => { const s = svgAl(); if (s) pdfYazdir(s, `MİHENK - ${adAl}`); }} altMetin="Kağıt boyutunda, gerçek ölçek">PDF / Yazdır</MenuOge>
+            <MenuOge onClick={() => { const s = svgAl(); if (s) pngIndir(s, `${adAl}.png`); }} altMetin="≈305 dpi">PNG resim</MenuOge>
+            <MenuOge onClick={() => { const s = svgAl(); if (s) svgIndir(s, `${adAl}.svg`); }} altMetin="Vektör, mm ölçekli">SVG vektör</MenuOge>
+            <MenuOge onClick={() => dosyaIndir(new Blob([generateDXF(params)], { type: "application/dxf" }), `${adAl}.dxf`)} altMetin="CAD için kontur ve eksen">DXF</MenuOge>
+          </Menu>
+          <input ref={csvGirdi} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={csvSec} />
         </div>
 
-        {/* ── BATCH NAVIGATION BAR ── */}
-        {batch.length > 1 && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "4px 12px", background: "linear-gradient(90deg, rgba(58,143,212,0.12), rgba(232,146,42,0.08))",
-            borderBottom: "1px solid var(--border-mid)", flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 9, color: "var(--accent2)", fontFamily: "var(--mono)", fontWeight: 700 }}>
-              TOPLU: {batchIdx + 1} / {batch.length}
-            </span>
-            <button onClick={() => { const i = Math.max(0, batchIdx - 1); setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({}); }}
-              disabled={batchIdx === 0}
-              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "2px 10px", color: batchIdx === 0 ? "var(--text-lo)" : "var(--text-hi)", fontSize: 11, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700 }}>◀</button>
-            <button onClick={() => { const i = Math.min(batch.length - 1, batchIdx + 1); setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({}); }}
-              disabled={batchIdx >= batch.length - 1}
-              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-hi)", borderRadius: 3, padding: "2px 10px", color: batchIdx >= batch.length - 1 ? "var(--text-lo)" : "var(--text-hi)", fontSize: 11, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700 }}>▶</button>
-            <span style={{ fontSize: 9, color: "var(--accent)", fontFamily: "var(--mono)", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {params.toolName}
-            </span>
-            {/* Toplu PNG Export */}
-            <button onClick={async () => {
+        {/* ── Toplu liste ── */}
+        {batch.length > 0 && (
+          <div className="toplu">
+            <span className="sayac">TOPLU {batchIdx + 1} / {batch.length}</span>
+            <button className="btn kucuk" disabled={batchIdx === 0} onClick={() => topluGit(Math.max(0, batchIdx - 1))} aria-label="Önceki takım">◀</button>
+            <button className="btn kucuk" disabled={batchIdx >= batch.length - 1} onClick={() => topluGit(Math.min(batch.length - 1, batchIdx + 1))} aria-label="Sonraki takım">▶</button>
+            <span className="ad">{params.toolName}</span>
+            <button className="btn kucuk" onClick={async () => {
               for (let i = 0; i < batch.length; i++) {
-                setBatchIdx(i); setParams(p => ({ ...p, ...batch[i] })); setDimOff({});
-                await new Promise(r => setTimeout(r, 400));
-                const svgEl = document.getElementById("teknik-svg"); if (!svgEl) continue;
-                await pngIndir(svgEl, `${batch[i].toolName || "takim-" + (i+1)}.png`);
-                await new Promise(r => setTimeout(r, 200));
+                topluGit(i);
+                await new Promise((r) => setTimeout(r, 500));
+                const s = svgAl(); if (!s) continue;
+                await pngIndir(s, `${dosyaAdi(batch[i]) || "takim-" + (i + 1)}.png`);
+                await new Promise((r) => setTimeout(r, 200));
               }
-            }}
-              style={{ background: "#3a1a08", border: "none", borderRadius: 3, padding: "3px 10px", color: "#fff", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 0.5 }}>
-              TOPLU PNG
-            </button>
-            <button onClick={() => { setBatch([]); setBatchIdx(0); }}
-              style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 3, padding: "2px 8px", color: "var(--red)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700 }}>✕</button>
+            }}>Hepsini PNG indir</button>
+            <button className="btn kucuk tehlike" onClick={() => { setBatch([]); setBatchIdx(0); }}>Listeyi kapat</button>
           </div>
         )}
 
-        {/* ── DRAWING AREA ── */}
-        <div className="cad-area" style={{ flex: 1, display: "flex", padding: isMobile ? 4 : 8, overflow: "hidden", position: "relative" }}
-          onTouchStart={view !== "3d" ? onTouchStart : undefined}
-          onTouchMove={view !== "3d" ? onTouchMove : undefined}
-          onTouchEnd={view !== "3d" ? onTouchEnd : undefined}
-          onWheel={view !== "3d" ? onWheel : undefined}
+        {/* ── Çizim alanı ── */}
+        <div className="cad-area cizim-alani"
+          style={{ cursor: cizimde && zoom > 1 ? "grab" : undefined }}
+          onTouchStart={cizimde ? onTouchStart : undefined}
+          onTouchMove={cizimde ? onTouchMove : undefined}
+          onTouchEnd={cizimde ? onTouchEnd : undefined}
+          onWheel={cizimde ? onWheel : undefined}
+          onMouseDown={cizimde ? onMouseDown : undefined}
+          onMouseMove={cizimde ? onMouseMove : undefined}
+          onMouseUp={cizimde ? onMouseUp : undefined}
+          onMouseLeave={cizimde ? onMouseUp : undefined}
         >
-          {view === "3d" ? (
-            <ThreeDView params={params} />
-          ) : (<>
-          <Sayfa params={params} dimOff={dimOff} setDimOff={setDimOff} style={{
-            flex: 1, display: "block", background: "transparent", borderRadius: 2,
-            filter: "drop-shadow(0 6px 30px rgba(0,0,0,0.55))",
-            transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-            transformOrigin: "center center",
-            transition: zoom === 1 ? "transform 0.2s ease" : "none",
-            touchAction: zoom > 1 ? "none" : "auto",
-          }} />
-          {/* Zoom indicator */}
-          {zoom > 1.05 && (
-            <div style={{
-              position: "absolute", bottom: isMobile ? 10 : 14, right: isMobile ? 10 : 14,
-              display: "flex", gap: 6, alignItems: "center",
-            }}>
-              <span style={{
-                background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 11, fontFamily: "var(--mono)",
-                fontWeight: 700, padding: "4px 10px", borderRadius: 4,
-              }}>{Math.round(zoom * 100)}%</span>
-              <button onClick={resetZoom} style={{
-                background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4,
-                padding: "4px 10px", color: "#fff", fontSize: 11, cursor: "pointer",
-                fontFamily: "var(--mono)", fontWeight: 600,
-              }}>✕ Sıfırla</button>
-            </div>
+          {!cizimde ? <ThreeDView params={params} /> : (
+            <>
+              <Sayfa params={params} dimOff={dimOff} setDimOff={setDimOff} style={{
+                flex: 1, display: "block", background: "transparent", borderRadius: 2, minWidth: 0,
+                filter: "drop-shadow(0 6px 30px rgba(0,0,0,0.45))",
+                transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                transformOrigin: "center center",
+                transition: zoom === 1 ? "transform 0.2s ease" : "none",
+                touchAction: zoom > 1 ? "none" : "auto",
+              }} />
+              <div className="zoom-kutusu" role="group" aria-label="Yakınlaştırma">
+                <button onClick={() => yakinlastir(1 / 1.25)} disabled={zoom <= ZOOM_MIN} aria-label="Uzaklaştır" title="Uzaklaştır">−</button>
+                <span className="oran">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => yakinlastir(1.25)} disabled={zoom >= ZOOM_MAX} aria-label="Yakınlaştır" title="Yakınlaştır (Ctrl + tekerlek)">+</button>
+                <button onClick={resetZoom} aria-label="Sayfaya sığdır" title="Sayfaya sığdır">⤢</button>
+              </div>
+              {isMobile && zoom <= 1.05 && <div className="ipucu-yuzen">İki parmakla yakınlaştır</div>}
+            </>
           )}
-          {isMobile && zoom <= 1.05 && (
-            <div style={{
-              position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
-              background: "rgba(0,0,0,0.45)", color: "#ccc", fontSize: 9, fontFamily: "var(--mono)",
-              padding: "3px 10px", borderRadius: 10, pointerEvents: "none", whiteSpace: "nowrap",
-            }}>İki parmakla yakınlaştır</div>
-          )}
-          </>)}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
