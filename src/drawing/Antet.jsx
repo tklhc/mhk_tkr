@@ -90,22 +90,24 @@ export function Antet({ params, sayfa }) {
 
   return (
     <g fontFamily={YAZI.font}>
-      {/* ── Teknik veri tablosu ── */}
-      <rect x={v.x} y={v.y} width={v.w} height={v.h} fill="none" stroke="#000" strokeWidth={kalin} />
-      <rect x={v.x} y={v.y} width={v.w} height={bas} fill="#eef1f5" stroke="#000" strokeWidth={ince} />
-      <text x={v.x + 2} y={v.y + bas - 1.9} fontSize={3.4} fontWeight={700} fill="#000" letterSpacing="0.6">TEKNİK VERİ</text>
-      <line x1={v.x + lw} y1={v.y + bas} x2={v.x + lw} y2={v.y + v.h} stroke="#000" strokeWidth={ince} />
-      {satirlar.map(([k, val], i) => {
-        const yy = v.y + bas + i * sh;
-        const fs = sigdir(val, v.w - lw - 3, 3.7, 3);
-        return (
-          <g key={k}>
-            {i > 0 && <line x1={v.x} y1={yy} x2={v.x + v.w} y2={yy} stroke="#9aa3ae" strokeWidth={0.2} />}
-            <text x={v.x + 2} y={yy + sh * 0.7} fontSize={3.1} fill="#444">{k}</text>
-            <text x={v.x + lw + 2} y={yy + sh * 0.7} fontSize={fs} fontWeight={700} fill="#000">{val}</text>
-          </g>
-        );
-      })}
+      {/* ── Teknik veri tablosu (yalnız müşteri çiziminde; iş emri çiziminde yerinde üretim özellikleri var) ── */}
+      {!ie && <>
+        <rect x={v.x} y={v.y} width={v.w} height={v.h} fill="none" stroke="#000" strokeWidth={kalin} />
+        <rect x={v.x} y={v.y} width={v.w} height={bas} fill="#eef1f5" stroke="#000" strokeWidth={ince} />
+        <text x={v.x + 2} y={v.y + bas - 1.9} fontSize={3.4} fontWeight={700} fill="#000" letterSpacing="0.6">TEKNİK VERİ</text>
+        <line x1={v.x + lw} y1={v.y + bas} x2={v.x + lw} y2={v.y + v.h} stroke="#000" strokeWidth={ince} />
+        {satirlar.map(([k, val], i) => {
+          const yy = v.y + bas + i * sh;
+          const fs = sigdir(val, v.w - lw - 3, 3.7, 3);
+          return (
+            <g key={k}>
+              {i > 0 && <line x1={v.x} y1={yy} x2={v.x + v.w} y2={yy} stroke="#9aa3ae" strokeWidth={0.2} />}
+              <text x={v.x + 2} y={yy + sh * 0.7} fontSize={3.1} fill="#444">{k}</text>
+              <text x={v.x + lw + 2} y={yy + sh * 0.7} fontSize={fs} fontWeight={700} fill="#000">{val}</text>
+            </g>
+          );
+        })}
+      </>}
 
       {/* ── Antet çerçevesi ── */}
       <rect x={a.x} y={a.y} width={a.w} height={a.h} fill="none" stroke="#000" strokeWidth={kalin} />

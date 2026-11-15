@@ -176,12 +176,21 @@ describe("Antet okunabilirliği", () => {
     expect(svg).not.toContain(">GENEL TOLERANS<");
     expect(svg).not.toContain("0507");
     for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN"]) expect(svg).toContain(`>${e}<`);
-    expect(svg).toContain(">TEKNİK VERİ<");
     expect(svg).toContain(">ABC Makina<");
   });
+  it("iş emri çiziminde teknik veri tablosu yok (yerinde üretim özellikleri var); müşteri çiziminde teknik veri var", () => {
+    const ek = [["Kesme Açısı", "8 °"], ["Alın Açısı", "1.5 °"]];
+    const ie = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
+    expect(ie).not.toContain(">TEKNİK VERİ<");
+    expect(ie).not.toContain(">Malzeme<");
+    expect(ie).toContain(">ÜRETİM ÖZELLİKLERİ<");
+    const m = render({ ...DEFAULT_PARAMS, cizimTuru: "musteri", ekOzellikler: ek });
+    expect(m).toContain(">TEKNİK VERİ<");
+    expect(m).not.toContain(">ÜRETİM ÖZELLİKLERİ<");
+  });
   it("iş emri çiziminde de antetteki hiçbir yazı 2,4 mm'den küçük değil", () => {
-    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", toolName: "Std. Freze 114x15,5x45x16x100", customerName: "ABC Makina Sanayi", orderNo: "İE-818" });
-    const antet = svg.slice(svg.indexOf("TEKNİK VERİ") - 400);
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie", toolName: "Std. Freze 114x15,5x45x16x100", customerName: "ABC Makina Sanayi", orderNo: "İE-818", ekOzellikler: Array.from({ length: 12 }, (_, i) => [`Özellik ${i}`, `${i}.5 mm`]) });
+    const antet = svg.slice(svg.indexOf("ALET ADI") - 400);
     const boyutlar = [...antet.matchAll(/font-size="([0-9.]+)"/g)].map((m) => +m[1]);
     expect(Math.min(...boyutlar)).toBeGreaterThanOrEqual(2.4);
   });
@@ -207,7 +216,7 @@ describe("Ölçü yazısı toleransı", () => {
   });
 });
 
-import { uretimYerlesimi } from "../src/drawing/UretimTablosu.jsx";
+import { uretimSutunlari } from "../src/drawing/sayfaDuzeni.js";
 import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
 
 describe("Üretim özellikleri tablosu", () => {
@@ -230,18 +239,52 @@ describe("Üretim özellikleri tablosu", () => {
     expect(svg).toContain(">Serbest Yüzey<");
     expect(svg).not.toMatch(/NaN|undefined/);
   });
-  it("tablo yan görünüş bölgesinin içinde ve ölçü satırlarının altında kalır", () => {
-    const p = { ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek };
-    const yan = duzenHesapla(p).yan;
-    const y = uretimYerlesimi(p, yan);
-    expect(y).not.toBeNull();
-    expect(y.x).toBeGreaterThanOrEqual(yan.bolge.x);
-    expect(y.x + y.w).toBeLessThanOrEqual(yan.bolge.x + yan.bolge.w);
-    expect(y.y + y.h).toBeLessThanOrEqual(yan.bolge.y + yan.bolge.h);
-    expect(y.y).toBeGreaterThan(yan.oy + 5 * yan.olcek);
+  it("tablo teknik veri tablosunun yerinde: antete bitişik, antetle aynı yükseklikte, çerçevenin içinde", () => {
+    const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
+    expect(d.uretim).not.toBeNull();
+    expect(d.veriTablosu.w).toBe(d.uretim.w);
+    expect(d.veriTablosu.x + d.veriTablosu.w).toBe(d.antet.x);
+    expect(d.veriTablosu.y).toBe(d.antet.y);
+    expect(d.veriTablosu.h).toBe(d.antet.h);
+    expect(d.veriTablosu.x).toBeGreaterThanOrEqual(d.cerceve.x);
   });
-  it("çok fazla özellik sığmazsa tablo atlanır, çökmez", () => {
+  it("sütun sayısı özellik sayısına uyar: satırlar 3,9 mm'den sıkışmaz, sığmayan atılır", () => {
+    expect(uretimSutunlari(0)).toBeNull();
+    const on = uretimSutunlari(10);           // İE-818: 10 özellik tek sütun
+    expect(on.sutun).toBe(1);
+    expect(on.satirH).toBeGreaterThanOrEqual(3.9);
+    expect(uretimSutunlari(14).sutun).toBe(2);
+    expect(uretimSutunlari(200)).toMatchObject({ sutun: 3 });
+    expect(uretimSutunlari(200).adet).toBeLessThan(200);
+  });
+  it("özellik yoksa iş emri şeridi yalnız antettir", () => {
+    const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie" });
+    expect(d.veriTablosu.w).toBe(0);
+  });
+  it("çok fazla özellik sığmazsa fazlası atılır, çökmez", () => {
     const cok = Array.from({ length: 60 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
     expect(() => render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: cok })).not.toThrow();
+  });
+});
+
+describe("Görünüşlerin sürüklenmesi", () => {
+  const renderOff = (params, dimOff) => renderToStaticMarkup(h(Sayfa, { params, dimOff, setDimOff: () => {} }));
+  const p = { ...DEFAULT_PARAMS, cizimTuru: "ie", chamferSize: 0.264, ekOzellikler: [["Kesme Açısı", "8 °"]] };
+  it("yan görünüş, detay ve uçtan görünüş sürüklenebilir tutamaçla gelir", () => {
+    const svg = render(p);
+    expect((svg.match(/gorunum-tutac/g) || []).length).toBeGreaterThanOrEqual(3);
+  });
+  it("kayıtlı konum görünüşü ve içindekileri birlikte kaydırır", () => {
+    const svg = renderOff(p, { "g-uc": { dx: 12, dy: -7 } });
+    expect(svg).toContain("translate(12,-7)");
+  });
+  it("kesit açıkken kesit görünüşü de sürüklenebilir; düzlem işareti yan görünüşle gider", () => {
+    const k = { ...DEFAULT_PARAMS, kesitAA: true };
+    expect(renderOff(k, { "g-kesit": { dx: 3, dy: 4 } })).toContain("translate(3,4)");
+    expect(renderOff(k, { "g-yan": { dx: 5, dy: 6 } })).toContain("translate(5,6)");
+  });
+  it("tutamaçlar ölçü/etiket tutamaçlarını bozmaz: setOffsets yoksa tutamaç da yok", () => {
+    const svg = renderToStaticMarkup(h(Sayfa, { params: p, dimOff: {}, setDimOff: undefined }));
+    expect(svg).not.toContain("gorunum-tutac");
   });
 });

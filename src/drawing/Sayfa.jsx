@@ -1,13 +1,13 @@
 import { takimProfili } from "../geometry/profil";
 import { sayfaDuzeni, olcekYaz } from "./sayfaDuzeni";
-import { Draggable } from "./Draggable";
+import { Draggable, Surukle } from "./Draggable";
 import { YanGorunus } from "./YanGorunus";
 import { DetayA } from "./DetayA";
 import { Kesit, kesitVarMi } from "./Kesit";
 import { UcGorunus } from "./UcGorunus";
 import { Antet } from "./Antet";
 import { Cerceve } from "./Cerceve";
-import { UretimTablosu, uretimYerlesimi } from "./UretimTablosu";
+import { UretimTablosu, uretimVarMi } from "./UretimTablosu";
 import { YAZI } from "./iso";
 
 /** Parametrelerden sayfa düzenini hesaplar (Sayfa ve durum çubuğu ortak kullanır). */
@@ -19,6 +19,7 @@ export function duzenHesapla(params) {
     D: Math.max(g.D, g.d, 1),
     olcek: params.olcek,
     tur: params.cizimTuru === "ie" ? "ie" : "musteri",
+    uretimSayisi: uretimVarMi(params) ? params.ekOzellikler.length : 0,
   });
 }
 
@@ -31,17 +32,26 @@ export function Sayfa({ params, dimOff, setDimOff, style }) {
   const olcekMetni = olcekYaz(yan.olcek);
   const ek = { dimOff, setDimOff };
   const notlar = params.notes || [];
+  const detayHarfi = kesitVarMi(params, takimProfili(params)) ? "B" : "A";
 
   return (
     <svg id="teknik-svg" viewBox={`0 0 ${kagit.w} ${kagit.h}`} preserveAspectRatio="xMidYMid meet" style={style}>
       <rect x={0} y={0} width={kagit.w} height={kagit.h} fill="#fff" />
       <Cerceve kagit={kagit} cerceve={c} />
 
-      <YanGorunus params={params} yerlesim={yan} {...ek} />
-      <UretimTablosu params={params} yan={yan} />
-      <DetayA params={params} yerlesim={yan} sagaYasla={!!uretimYerlesimi(params, yan)} harf={kesitVarMi(params, takimProfili(params)) ? "B" : "A"} {...ek} />
-      <Kesit params={params} yan={yan} uc={uc} {...ek} />
-      <UcGorunus params={params} yerlesim={uc} {...ek} />
+      {/* Görünüşler tutamaçlarından sürüklenebilir: yan görünüş (takım + ölçüleri + detay/kesit işaretleri),
+          detay, uçtan görünüş ve kesit görünüşü ayrı ayrı. Konumlar dimOff içinde "g-…" anahtarlarıyla durur. */}
+      <Surukle id="g-yan" offsets={dimOff} setOffsets={setDimOff}>
+        <YanGorunus params={params} yerlesim={yan} {...ek} />
+        <DetayA params={params} yerlesim={yan} bolum="isaret" harf={detayHarfi} {...ek} />
+        <Kesit params={params} yan={yan} uc={uc} bolum="duzlem" {...ek} />
+      </Surukle>
+      <DetayA params={params} yerlesim={yan} bolum="gorunum" harf={detayHarfi} {...ek} />
+      <Kesit params={params} yan={yan} uc={uc} bolum="gorunum" {...ek} />
+      <Surukle id="g-uc" offsets={dimOff} setOffsets={setDimOff}>
+        <UcGorunus params={params} yerlesim={uc} {...ek} />
+      </Surukle>
+      <UretimTablosu params={params} sayfa={duzen} />
       <Antet params={params} sayfa={duzen} />
 
       {yan.tasiyor && (

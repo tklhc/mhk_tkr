@@ -14,6 +14,7 @@ function temizKlon(svgEl) {
   klon.setAttribute("height", `${vb.height}mm`);
   klon.removeAttribute("style");
   klon.removeAttribute("id");
+  klon.querySelectorAll(".gorunum-tutac").forEach((e) => e.remove()); // sürükleme tutamaçları çıktıda olmasın
   return { klon, w: vb.width, h: vb.height };
 }
 

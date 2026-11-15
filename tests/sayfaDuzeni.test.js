@@ -28,9 +28,9 @@ describe("sayfa düzeni", () => {
     expect(s.veriTablosu.w).toBe(67); // teknik veri tablosu dar
   });
 
-  it("iş emri çizimi: antet ve veri tablosu dar, sağ altta bitişik; görünüş bölgeleri değişmez", () => {
+  it("iş emri çizimi: antet dar, solunda üretim özellikleri şeridi bitişik; görünüş bölgeleri değişmez", () => {
     const m = sayfaDuzeni({ kagit: "A4", L: 75, D: 10 });
-    const ie = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tur: "ie" });
+    const ie = sayfaDuzeni({ kagit: "A4", L: 75, D: 10, tur: "ie", uretimSayisi: 10 });
     expect(ie.tur).toBe("ie");
     expect(ie.antet.w).toBeLessThan(m.antet.w);
     expect(ie.veriTablosu.w).toBeLessThan(m.veriTablosu.w);

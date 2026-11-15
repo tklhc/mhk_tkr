@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 // ─── SÜRÜKLEME ──────────────────────────────────────────
 // Ölçü ve etiketlerin yerini elle ince ayarlamak için. Kaydırma miktarları
@@ -67,4 +67,39 @@ function Draggable({ id, offsets, setOffsets, axis, children }) {
   );
 }
 
-export { svgPoint, Draggable, useSurukle };
+// Sunucuda (testler) useLayoutEffect uyarı verir; orada useEffect kullanılır.
+const useOlcumEfekti = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/**
+ * Bir görünüşü (takım, detay, uçtan görünüş, kesit) bütün olarak sürükleme.
+ * Grubun kapladığı dikdörtgen görünmez bir tutamaçtır (ince çizgiyi tam
+ * yakalamak gerekmez); üzerine gelince kesikli çerçeve çıkar. İçindeki ölçü
+ * ve etiketler kendi tutamaçlarını koruyup ayrıca sürüklenebilir.
+ * Tutamaç dışa aktarmada (SVG/PNG/PDF) kaldırılır.
+ */
+function Surukle({ id, offsets, setOffsets, kutu, children }) {
+  const { off, olaylar } = useSurukle(id, offsets, setOffsets);
+  const aktif = !!(id && setOffsets);
+  const grup = useRef(null), tutac = useRef(null);
+  useOlcumEfekti(() => {
+    const g = grup.current, r = tutac.current;
+    if (!g || !r) return;
+    let b = null;
+    if (kutu) b = { x: kutu[0], y: kutu[1], width: kutu[2], height: kutu[3] };   // klip kullanan görünüşlerde (getBBox klipi görmez) elle verilir
+    else {
+      r.setAttribute("display", "none");        // kendi dikdörtgenini ölçmeyelim
+      try { b = g.getBBox(); } catch { b = null; }
+      r.removeAttribute("display");
+    }
+    const gecerli = b && b.width > 0 && b.height > 0;
+    for (const [k, v] of Object.entries({ x: gecerli ? b.x - 1 : 0, y: gecerli ? b.y - 1 : 0, width: gecerli ? b.width + 2 : 0, height: gecerli ? b.height + 2 : 0 })) r.setAttribute(k, String(+v.toFixed(2)));
+  });
+  return (
+    <g ref={grup} transform={`translate(${off.dx},${off.dy})`}>
+      {aktif && <rect ref={tutac} className="gorunum-tutac" x={0} y={0} width={0} height={0} fill="rgba(0,0,0,0)" stroke="none" {...olaylar} />}
+      {children}
+    </g>
+  );
+}
+
+export { svgPoint, Draggable, Surukle, useSurukle };

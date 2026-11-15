@@ -176,7 +176,7 @@ function App() {
           </div>
           <div className="bosluk" />
 
-          <button className="btn ikon hayalet" title="Ölçü ve etiket konumlarını sıfırla" aria-label="Ölçü konumlarını sıfırla" onClick={() => setDimOff({})}>↺</button>
+          <button className="btn ikon hayalet" title="Ölçü, etiket ve görünüş konumlarını sıfırla" aria-label="Konumları sıfırla" onClick={() => setDimOff({})}>↺</button>
 
           <Menu etiket="Veri" ikon="⇅ ">
             <MenuOge onClick={() => setIeAcik(true)} altMetin="ÜTS iş emri PDF'i ya da yazısından">İş emrinden resim çiz…</MenuOge>

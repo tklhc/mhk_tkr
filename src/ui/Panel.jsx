@@ -176,7 +176,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose, onYeni }) {
               })}
             </div>
             <div className="ipucu"><b>Kesit A-A:</b> kanallı bölümün enine kesiti. Diş sayısı (z), çekirdek çapı (dc) ve kesim yönü <i>Takım</i> sekmesinden gelir. Kanal profili şematiktir; gerçek taşlama profilini göstermez, bu yüzden varsayılan kapalıdır.</div>
-            <div className="ipucu">Ölçüleri ve etiketleri çizim üzerinde sürükleyerek kaydırabilirsiniz; araç çubuğundaki ↺ konumları sıfırlar.</div>
+            <div className="ipucu">Takımı, detayı, uçtan görünüşü ve kesiti çizim üzerinde tutup sürükleyerek yerlerini değiştirebilirsiniz; ölçüler ve etiketler ayrıca kendi başlarına kayar. Araç çubuğundaki ↺ tüm konumları sıfırlar.</div>
           </Grup>
 
           <Grup baslik="Notlar" sag="numaralı balon">

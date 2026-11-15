@@ -231,3 +231,7 @@ details.ek > .ek-ic { padding: 4px 12px 12px; }
 .uyari-sari { background: rgba(240,160,48,0.08); border-color: rgba(240,160,48,0.4); }
 .uyari-sari div { color: #e8c58a; }
 @media (max-width: 640px) { .ie-ozet { grid-template-columns: 1fr; } .ie-satir { grid-template-columns: 1fr 1fr; } .ie-satir em { grid-column: 1 / -1; } }
+
+/* Görünüş sürükleme tutamağı: üzerine gelince kesikli çerçeve (dışa aktarmada kaldırılır) */
+.gorunum-tutac { cursor: move; }
+.gorunum-tutac:hover { stroke: #4a9eff; stroke-width: 0.35; stroke-dasharray: 1.6 1; fill: rgba(74, 158, 255, 0.05); }

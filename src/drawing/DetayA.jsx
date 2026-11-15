@@ -2,6 +2,7 @@ import { takimProfili, tamKontur, svgYolu } from "../geometry/profil";
 import { olcekSec, olcekYaz } from "./sayfaDuzeni";
 import { CIZGI, YAZI, Kilavuz, fmt } from "./iso";
 import { kaplamaRengi, ton } from "./stil";
+import { Surukle } from "./Draggable";
 
 const n = (v) => +v.toFixed(3);
 
@@ -28,8 +29,12 @@ export function detayOzelligi(params, g) {
   return null;
 }
 
-/** Yan görünüşte ucun üzerine ince daire + "A", sayfada büyütülmüş detay. */
-export function DetayA({ params, yerlesim, harf = "A", sagaYasla = false, dimOff, setDimOff }) {
+/**
+ * Yan görünüşte ucun üzerine ince daire + "A", sayfada büyütülmüş detay.
+ * @param {"isaret"|"gorunum"} [bolum] yalnız yan görünüşteki işaret ya da yalnız büyütülmüş görünüş
+ *   (görünüş ayrıca sürüklenebilir; verilmezse ikisi birlikte çizilir)
+ */
+export function DetayA({ params, yerlesim, harf = "A", bolum, dimOff, setDimOff }) {
   const g = takimProfili(params);
   if (!(g.D > 0) || !(g.L > 0) || params.detayA === false) return null;
   const f = detayOzelligi(params, g);
@@ -50,7 +55,7 @@ export function DetayA({ params, yerlesim, harf = "A", sagaYasla = false, dimOff
   const s2 = olcekSec([[rReal, rr]]);
   if (s2 <= s) return null;                       // büyütme yok: detay gereksiz
   const sagKenar = bolge.x + bolge.w - rr - 4;
-  const px = sagaYasla ? sagKenar : Math.min(sagKenar, X(g.L)); // üretim tablosu solda varsa detay sağ kenarda
+  const px = Math.min(sagKenar, X(g.L));
   const py = bolge.y + bolge.h - rr - 6;
   const P = (x, r) => [px + (x - f.cx) * s2, py - (r - f.cr) * s2];
 
@@ -63,17 +68,23 @@ export function DetayA({ params, yerlesim, harf = "A", sagaYasla = false, dimOff
   return (
     <g>
       {/* Yan görünüşte işaret: ince daire + harf */}
-      <circle cx={n(X(f.cx))} cy={n(Y(f.cr))} r={n(rReal * s)} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <text x={n(X(f.cx) - rReal * s - 4.5)} y={n(Y(f.cr) + 1.2)} fontSize={3.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">{harf}</text>
+      {bolum !== "gorunum" && (<>
+        <circle cx={n(X(f.cx))} cy={n(Y(f.cr))} r={n(rReal * s)} fill="none" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
+        <text x={n(X(f.cx) - rReal * s - 4.5)} y={n(Y(f.cr) + 1.2)} fontSize={3.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">{harf}</text>
+      </>)}
 
-      {/* Detay */}
-      <defs><clipPath id={klip}><circle cx={px} cy={py} r={rr} /></clipPath></defs>
-      <circle cx={px} cy={py} r={rr} fill="#fff" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <path d={yol} clipPath={`url(#${klip})`} fill={params.sunum !== false ? ton(kaplamaRengi(params.coating, params.colCut), 38) : "none"} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />
-      <Kilavuz id="aDetay" hedef={[n(hx), n(hy)]} dirsek={[n(px + (sol ? -rr * 0.75 : rr * 0.75)), n(py - rr * 0.75)]} metin={f.metin} {...ek} />
-      <text x={px} y={n(py + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
-        DETAY {harf} ({olcekYaz(s2)})
-      </text>
+      {/* Büyütülmüş detay görünüşü (sürüklenebilir) */}
+      {bolum !== "isaret" && (
+        <Surukle id="g-detay" offsets={dimOff} setOffsets={setDimOff} kutu={[n(px - rr), n(py - rr), n(2 * rr), n(2 * rr + 6)]}>
+          <defs><clipPath id={klip}><circle cx={px} cy={py} r={rr} /></clipPath></defs>
+          <circle cx={px} cy={py} r={rr} fill="#fff" stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
+          <path d={yol} clipPath={`url(#${klip})`} fill={params.sunum !== false ? ton(kaplamaRengi(params.coating, params.colCut), 38) : "none"} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} strokeLinejoin="round" />
+          <Kilavuz id="aDetay" hedef={[n(hx), n(hy)]} dirsek={[n(px + (sol ? -rr * 0.75 : rr * 0.75)), n(py - rr * 0.75)]} metin={f.metin} {...ek} />
+          <text x={px} y={n(py + rr + 4.5)} textAnchor="middle" fontSize={YAZI.etiket + 0.5} fontFamily={YAZI.font} fill={CIZGI.renk} fontWeight="700">
+            DETAY {harf} ({olcekYaz(s2)})
+          </text>
+        </Surukle>
+      )}
     </g>
   );
 }

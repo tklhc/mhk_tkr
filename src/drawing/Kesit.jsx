@@ -2,6 +2,7 @@ import { takimProfili, yaricapAt } from "../geometry/profil";
 import { OLCEKLER, olcekYaz } from "./sayfaDuzeni";
 import { CIZGI, DESEN, YAZI, Ok, Olcu } from "./iso";
 import { kanalYolu } from "./kanalYolu";
+import { Surukle } from "./Draggable";
 
 const n = (v) => +v.toFixed(3);
 
@@ -14,8 +15,9 @@ export function kesitVarMi(params, g) {
  * Kesit A-A: kanallı bölümün ortasından kesme düzlemi (yan görünüşte kalın uçlu
  * eksen çizgisi + oklar) ve taralı kesit görünüşü (uç görünüşün altında).
  * Kesit, uç görünüşle aynı basitleştirilmiş kanal profilini kullanır.
+ * @param {"duzlem"|"gorunum"} [bolum] yalnız yan görünüşteki kesme düzlemi ya da yalnız (sürüklenebilir) kesit görünüşü
  */
-export function Kesit({ params, yan, uc, dimOff, setDimOff }) {
+export function Kesit({ params, yan, uc, bolum, dimOff, setDimOff }) {
   const g = takimProfili(params);
   if (!(g.D > 0) || !kesitVarMi(params, g)) return null;
 
@@ -72,16 +74,20 @@ export function Kesit({ params, yan, uc, dimOff, setDimOff }) {
   return (
     <g>
       {/* Kesme düzlemi: ince eksen çizgisi, uçlarda kalın parça ve bakış yönünü gösteren oklar (sağa) */}
-      <line x1={n(px)} y1={n(yU)} x2={n(px)} y2={n(yA)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} strokeDasharray={DESEN.eksen} />
-      <line x1={n(px)} y1={n(yU)} x2={n(px)} y2={n(yU + KALIN)} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />
-      <line x1={n(px)} y1={n(yA)} x2={n(px)} y2={n(yA - KALIN)} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />
-      <line x1={n(px)} y1={n(yU)} x2={n(px + OK_BOY)} y2={n(yU)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <line x1={n(px)} y1={n(yA)} x2={n(px + OK_BOY)} y2={n(yA)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
-      <Ok x={n(px + OK_BOY)} y={n(yU)} ux={1} uy={0} />
-      <Ok x={n(px + OK_BOY)} y={n(yA)} ux={1} uy={0} />
-      <text x={n(px - 2.5)} y={n(yU - 1)} {...harfStil}>{harf}</text>
-      <text x={n(px - 2.5)} y={n(yA + 4.2)} {...harfStil}>{harf}</text>
-      {kesitGoruntusu}
+      {bolum !== "gorunum" && (<>
+        <line x1={n(px)} y1={n(yU)} x2={n(px)} y2={n(yA)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} strokeDasharray={DESEN.eksen} />
+        <line x1={n(px)} y1={n(yU)} x2={n(px)} y2={n(yU + KALIN)} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />
+        <line x1={n(px)} y1={n(yA)} x2={n(px)} y2={n(yA - KALIN)} stroke={CIZGI.renk} strokeWidth={CIZGI.kalin} />
+        <line x1={n(px)} y1={n(yU)} x2={n(px + OK_BOY)} y2={n(yU)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
+        <line x1={n(px)} y1={n(yA)} x2={n(px + OK_BOY)} y2={n(yA)} stroke={CIZGI.renk} strokeWidth={CIZGI.ince} />
+        <Ok x={n(px + OK_BOY)} y={n(yU)} ux={1} uy={0} />
+        <Ok x={n(px + OK_BOY)} y={n(yA)} ux={1} uy={0} />
+        <text x={n(px - 2.5)} y={n(yU - 1)} {...harfStil}>{harf}</text>
+        <text x={n(px - 2.5)} y={n(yA + 4.2)} {...harfStil}>{harf}</text>
+      </>)}
+      {bolum !== "duzlem" && kesitGoruntusu && (
+        <Surukle id="g-kesit" offsets={dimOff} setOffsets={setDimOff}>{kesitGoruntusu}</Surukle>
+      )}
     </g>
   );
 }
