@@ -3,10 +3,13 @@ import { TOOL_TYPES } from "../constants";
 import { NI, TolInput, NIT } from "./inputs";
 import { LibraryPanel } from "./LibraryPanel";
 import { LOGO_IMG } from "../assets/images";
+import { takimProfili } from "../geometry/profil";
+import { OLCEKLER, olcekYaz } from "../drawing/sayfaDuzeni";
 
 function Panel({ params, setParams, isMobile, showPanel, onClose }) {
   const u = useCallback((k, v) => setParams((p) => ({ ...p, [k]: v })), [setParams]);
-  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, col: false, doc: false, notes: false, cust: false, lib: false, step: true });
+  const [openSec, setOpenSec] = useState({ geo: true, cool: false, show: false, page: true, doc: false, notes: false, cust: false, lib: false, step: true });
+  const hatalar = takimProfili(params).hatalar;
   const togSec = useCallback((k) => setOpenSec((s) => ({ ...s, [k]: !s[k] })), []);
 
   const SH = (label, key, icon = "▸") => {
@@ -94,6 +97,15 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
           {Object.entries(TOOL_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
+
+      {/* ── GEOMETRİ UYARILARI ── */}
+      {hatalar.length > 0 && (
+        <div style={{ padding: "6px 12px", background: "rgba(204,68,68,0.10)", borderBottom: "1px solid var(--red)", flexShrink: 0 }}>
+          {hatalar.map((h, i) => (
+            <div key={i} style={{ fontSize: 9, color: "#e08a8a", fontFamily: "var(--mono)", lineHeight: 1.35, marginBottom: i < hatalar.length - 1 ? 3 : 0 }}>⚠ {h.mesaj}</div>
+          ))}
+        </div>
+      )}
 
       {/* ── SCROLLABLE BODY ── */}
       <div style={{ flex: 1, overflowY: "auto" }}>
@@ -212,34 +224,32 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
           ))}
         </div>}
 
-        {/* RENKLER */}
-        {SH("Renkler", "col", "▣")}
-        {openSec.col && <div style={SB}>
-          {[["colShank","Sap"],["colNeck","Boğaz"],["colCut","Kesici"],["colFlute","Kanal"],["colTip","Uç"]].map(([key,lbl]) => (
-            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <input type="color" value={params[key]} onChange={(ev) => u(key, ev.target.value)}
-                style={{ width: 24, height: 18, border: "1px solid var(--border-hi)", borderRadius: 2, padding: 0, cursor: "pointer", background: "none", flexShrink: 0 }} />
-              <label style={{ fontSize: 10, color: "var(--text-mid)", fontFamily: "var(--mono)", flex: 1 }}>{lbl}</label>
-              <span style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)" }}>{params[key]}</span>
+        {/* SAYFA */}
+        {SH("Sayfa", "page", "▭")}
+        {openSec.page && <div style={SB}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <div style={{ flex: 1 }}>
+              <label style={LBL}>Kağıt</label>
+              <select value={params.kagit} onChange={(e) => u("kagit", e.target.value)} style={{ ...INP }}>
+                <option value="A4">A4 (297×210)</option><option value="A3">A3 (420×297)</option>
+              </select>
             </div>
-          ))}
-          <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 7, paddingTop: 7, display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {[
-              {l:"Numroto",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#6088b0",colFlute:"#3a5a78",colTip:"#88aed0"}},
-              {l:"Altın",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#b08830",colFlute:"#786028",colTip:"#d0b060"}},
-              {l:"TiAlN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#7858a8",colFlute:"#4a3878",colTip:"#9878c0"}},
-              {l:"DLC",c:{colShank:"#c0c4c8",colNeck:"#a0a4a8",colCut:"#484848",colFlute:"#282828",colTip:"#606060"}},
-              {l:"TiN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#c0a030",colFlute:"#887020",colTip:"#d8c050"}},
-              {l:"AlTiN",c:{colShank:"#c8ccd2",colNeck:"#b0b5bc",colCut:"#5a4848",colFlute:"#3a2828",colTip:"#786060"}},
-              {l:"Sade",c:{colShank:"#d0d0d0",colNeck:"#c0c0c0",colCut:"#b8b8b8",colFlute:"#888888",colTip:"#c8c8c8"}},
-            ].map(p => (
-              <button key={p.l} onClick={() => setParams(pr => ({...pr,...p.c}))}
-                style={{ background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:2, padding:"2px 8px", color:"var(--text-mid)", fontSize:8.5, cursor:"pointer", fontFamily:"var(--mono)", letterSpacing:0.5 }}
-                onMouseOver={(e) => { e.currentTarget.style.background="var(--bg-surface)"; e.currentTarget.style.color="var(--accent)"; e.currentTarget.style.borderColor="var(--accent)"; }}
-                onMouseOut={(e) => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.color="var(--text-mid)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}>
-                {p.l}
-              </button>
-            ))}
+            <div style={{ flex: 1 }}>
+              <label style={LBL}>Ölçek</label>
+              <select value={params.olcek} onChange={(e) => u("olcek", e.target.value)} style={{ ...INP }}>
+                <option value="otomatik">Otomatik</option>
+                {OLCEKLER.map((o) => <option key={o} value={olcekYaz(o)}>{olcekYaz(o)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <label style={LBL}>Genel Tolerans</label>
+            <input type="text" value={params.genelTolerans} onChange={(e) => u("genelTolerans", e.target.value)} style={INP} />
+          </div>
+          <div>
+            <label style={LBL}>Tarih</label>
+            <input type="date" value={params.tarih || ""} onChange={(e) => u("tarih", e.target.value)} style={{ ...INP, fontSize: 10.5 }} />
+            <div style={{ fontSize: 8, color: "var(--text-lo)", fontFamily: "var(--mono)", marginTop: 2 }}>Boşsa bugünün tarihi yazılır</div>
           </div>
         </div>}
 
@@ -260,19 +270,12 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
               <div key={k} style={{ flex: 1 }}><label style={LBL}>{l}</label><input type="text" value={params[k]} onChange={(e) => u(k,e.target.value)} style={{...INP}} /></div>
             ))}
           </div>
-          <div><label style={LBL}>Oluşturan</label><input type="text" value={params.createdBy} onChange={(e) => u("createdBy",e.target.value)} style={INP} /></div>
-
-          {/* ── Alt Blok Düzeni ── */}
-          <div style={{ borderTop: "1px solid var(--border-dim)", marginTop: 8, paddingTop: 8 }}>
-            <div style={{ fontSize: 8, fontWeight: 700, color: "var(--accent)", letterSpacing: 1.5, marginBottom: 6, fontFamily: "var(--mono)" }}>ALT BLOK DÜZENİ</div>
-            <NI label="Toplam Gen." value={params.bbWidth} onChange={(v) => u("bbWidth", Math.max(40, Math.min(100, v)))} min={40} max={100} step={1} unit="%" />
-            <NI label="Param. Kol." value={params.bbCol1} onChange={(v) => u("bbCol1", Math.max(10, Math.min(40, v)))} min={10} max={40} step={1} unit="%" />
-            <NI label="Firma Kol." value={params.bbCol2} onChange={(v) => u("bbCol2", Math.max(15, Math.min(55, v)))} min={15} max={55} step={1} unit="%" />
-            <div style={{ fontSize: 8.5, color: "var(--accent2)", fontFamily: "var(--mono)", marginTop: 3, fontWeight: 600 }}>
-              Alet Adı Kol: %{100 - params.bbCol1 - params.bbCol2}
-            </div>
+          <div style={{ display: "flex", gap: 5 }}>
+            <div style={{ flex: 1 }}><label style={LBL}>Çizen</label><input type="text" value={params.createdBy} onChange={(e) => u("createdBy",e.target.value)} placeholder="Varsayılan: firma ayarı" style={INP} /></div>
+            <div style={{ flex: 1 }}><label style={LBL}>Onaylayan</label><input type="text" value={params.approvedBy || ""} onChange={(e) => u("approvedBy",e.target.value)} style={INP} /></div>
           </div>
-        </div>}
+
+                  </div>}
 
         {/* NOTLAR (Balon) */}
         {SH("Notlar", "notes", "◉")}
@@ -287,7 +290,7 @@ function Panel({ params, setParams, isMobile, showPanel, onClose }) {
                 style={{ background: "transparent", border: "1px solid var(--red)", borderRadius: 2, padding: "1px 5px", color: "var(--red)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", flexShrink: 0 }}>✕</button>
             </div>
           ))}
-          <button onClick={() => setParams(p => ({ ...p, notes: [...(p.notes || []), { text: "Not " + ((p.notes || []).length + 1), x: 60 + (p.notes || []).length * 20, y: 160 }] }))}
+          <button onClick={() => setParams(p => ({ ...p, notes: [...(p.notes || []), { text: "Not " + ((p.notes || []).length + 1) }] }))}
             style={{ width: "100%", background: "transparent", border: "1px dashed var(--border-hi)", borderRadius: 3, padding: "5px 0", color: "var(--accent)", fontSize: 9, cursor: "pointer", fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: 1 }}>
             + NOT EKLE
           </button>

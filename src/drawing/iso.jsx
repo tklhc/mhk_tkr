@@ -11,7 +11,7 @@ export const CIZGI = {
   renk: "#000",
 };
 export const YAZI = {
-  font: "'IBM Plex Sans Condensed','Arial Narrow',Arial,sans-serif",
+  font: "'Arial Narrow',Arial,Helvetica,sans-serif",
   olcu: 3.5,      // ölçü yazısı
   tol: 2.5,       // tolerans sapmaları
   etiket: 2.5,

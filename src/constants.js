@@ -46,10 +46,11 @@ const DEFAULT_PARAMS = {
   showDimNeck: true,
   showDimHelix: true,
   showDimAngles: true,
-  // Bottom block layout (%)
-  bbWidth: 82,      // overall width %
-  bbCol1: 20,       // param column %
-  bbCol2: 35,       // firma column %  (col3 = auto)
+  // Sayfa
+  kagit: "A4",           // A4 | A3
+  olcek: "otomatik",     // otomatik | 2:1 | 1:1 | 1:2 ...
+  genelTolerans: "ISO 2768-m",
+  tarih: "",             // boşsa bugün
   // Müşteri modu & Onay damgası
   customerMode: false,  // müşteri modunda iç detaylar gizlenir
   stamp: "",            // "": yok, "ONAYLANDI", "TASLAK", "REVİZYON", "İPTAL"

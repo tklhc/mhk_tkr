@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sayfaDuzeni, olcekYaz, olcekOku, olcekSec } from "../src/drawing/sayfa.js";
+import { sayfaDuzeni, olcekYaz, olcekOku, olcekSec } from "../src/drawing/sayfaDuzeni.js";
 
 describe("ölçek", () => {
   it("yazım ve okuma", () => {
