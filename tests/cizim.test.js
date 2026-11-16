@@ -292,21 +292,22 @@ describe("Görünüşlerin sürüklenmesi", () => {
   });
 });
 
-describe("Sayfa notları (ölçek, birim, genel tolerans)", () => {
-  it("müşteri ve iş emri çiziminde ölçek ve birim yazılır; genel tolerans doluysa o da", () => {
+describe("Sayfa notları (yalnız genel tolerans; ölçek ve birim yazılmaz)", () => {
+  it("müşteri ve iş emri çiziminde ölçek ve birim yazılmaz; genel tolerans doluysa kutu çıkar", () => {
     for (const cizimTuru of ["musteri", "ie"]) {
       const svg = render({ ...DEFAULT_PARAMS, cizimTuru, ekOzellikler: [["Kesme Açısı", "8 °"]] });
       expect(svg).toContain('id="sayfa-notlari"');
-      expect(svg).toContain(">Ölçek<");
-      expect(svg).toContain(">2:1<");
-      expect(svg).toContain(">Birim<");
+      expect(svg).not.toContain(">Ölçek<");
+      expect(svg).not.toContain(">Birim<");
+      expect(svg).toContain(">Genel tol.<");
       expect(svg).toContain(">ISO 2768-m<");
     }
   });
-  it("genel tolerans boşsa o satır yazılmaz; ölçek elle seçilince notta görünür", () => {
+  it("genel tolerans boşsa kutu hiç çıkmaz; ölçek elle seçilse de notta yazılmaz", () => {
     const svg = render({ ...DEFAULT_PARAMS, genelTolerans: "  ", olcek: "1:1" });
+    expect(svg).not.toContain('id="sayfa-notlari"');
     expect(svg).not.toContain(">Genel tol.<");
-    expect(svg).toContain(">1:1<");
+    expect(svg).not.toContain(">Ölçek<");
   });
   it("çok sütunlu üretim tablosunda yer yoksa sayfa notları atlanır, çökmez", () => {
     const cok = Array.from({ length: 30 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
