@@ -108,6 +108,9 @@ function generateDXF(params) {
   if (!stepdrill && params.showDiml1 !== false) {
     olcuYatay(g.x.boyunSonu, -hD, L, -hD, yAlt - 7, olcuMetni(g.l1, { tol: params.toll1, anma: g.l1 }));
   }
+  if (stepdrill && params.kademeOlcu === "toplam" && params.showDiml1 !== false) {
+    olcuYatay(L - g.l1, hmax, L, hmax, hmax + 7, olcuMetni(g.l1, { tol: params.toll1, anma: g.l1 }));
+  }
   if (params.showDimL !== false) {
     olcuYatay(0, -hd, L, -hD, yAlt - (stepdrill ? 7 : 14), olcuMetni(L, { tol: params.tolL, anma: L }));
   }
@@ -118,7 +121,8 @@ function generateDXF(params) {
     olcuDikey(L, hD, L, -hD, L + 10, olcuMetni(D, { onEk: "⌀", tol: params.tolD, anma: D }));
   }
   if (stepdrill && params.showDimD !== false) {
-    for (const kd of g.kademeler) {
+    for (const [i, kd] of g.kademeler.entries()) {
+      if (params.kademeOlcu === "toplam" && i > 0 && Math.abs(kd.dia - d) < 1e-9) continue;
       const xm = (kd.sol + kd.sag - kd.gecisBoyu) / 2;
       olcuDikey(xm, kd.dia / 2, xm, -kd.dia / 2, xm, olcuMetni(kd.dia, { onEk: "⌀", tol: kd.tolDia, anma: kd.dia }));
     }

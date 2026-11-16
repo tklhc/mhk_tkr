@@ -32,6 +32,7 @@ const DEFAULT_PARAMS = {
   sapDuzUzunluk: 0,     // 0 = otomatik
   sapDuzDerinlik: 0,    // 0 = otomatik
   pointAngle: 140,
+  kademeOlcu: "kademe",   // kademeli matkap ölçüleri: "kademe" her kademenin boyu | "toplam" uçtan tek kesici boy (havşalı matkap)
   steps: [
     { dia: 10, len: 15, angle: 140, tolDia: "±0.01", tolLen: "±0.01" },
     { dia: 14, len: 15, angle: 90, tolDia: "±0.01", tolLen: "±0.01" },

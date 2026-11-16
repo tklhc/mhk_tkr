@@ -169,6 +169,8 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
 
           {kademeli && (
             <Grup baslik="Kademeler" sag="uçtan sapa">
+              <Secim label="Boy ölçüsü" value={params.kademeOlcu || "kademe"} onChange={(v) => u("kademeOlcu", v)}
+                secenekler={[["kademe", "Her kademenin boyu"], ["toplam", "Uçtan tek kesici boy (havşalı)"]]} />
               {(params.steps || []).map((st, i) => (
                 <div key={i} className="kademe">
                   <div className="kademe-ust">
