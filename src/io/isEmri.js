@@ -27,7 +27,7 @@ const CIZIM = [
   ["Takım Çapı", "D"], ["Şaft Çapı", "d"], ["Sap Çapı", "d"], ["Takım Boyu", "L"],
   ["Helis Boyu", "l1"], ["Kesici Boy", "l1"], ["Kesici Boyu", "l1"], ["Ağız Sayısı", "z"],
   ["Helis Açısı", "helix"], ["Çekirdek Çapı", "dCore"], ["Köşe Pahı", "kosePahi"],
-  ["Köşe Radyusu", "rCorner"], ["Köşe Radyüsü", "rCorner"], ["Uç Açısı", "pointAngle"],
+  ["Kademe Boyu", "kademeBoyu"], ["Köşe Radyusu", "rCorner"], ["Köşe Radyüsü", "rCorner"], ["Uç Açısı", "pointAngle"],
   ["1.Pah Genişliği", "pahGenisligi"], ["Pah Genişliği", "pahGenisligi"],
   ["Küre Radyusu", "kureRadyusu"], ["Küre Radyüsü", "kureRadyusu"],
 ];
@@ -78,7 +78,7 @@ function sayiOku(ham) {
 const KULLANIM_AD = {
   D: "Kesici çap (D)", d: "Sap çapı (d)", L: "Toplam boy (L)", l1: "Kesici boy (l₁)", z: "Diş sayısı (z)",
   helix: "Helis açısı", dCore: "Çekirdek çapı (dc)", kosePahi: "Köşe pahı", rCorner: "Köşe radyüsü (R)",
-  pointAngle: "Uç açısı", pahGenisligi: "Giriş pahı", kureRadyusu: "Küre radyüsü (D/2 ile karşılaştırılır)",
+  pointAngle: "Uç açısı", kademeBoyu: "Kademe boyu (uç konisinden havşaya)", havsaCap: "Havşa çapı (takım kodundan)", pahGenisligi: "Giriş pahı", kureRadyusu: "Küre radyüsü (D/2 ile karşılaştırılır)",
 };
 
 /**
@@ -152,6 +152,13 @@ export function isEmriMetniCoz(metin) {
   }
   const kod = /\d+(?:[.,]\d+)?(?:\s*x\s*\d+(?:[.,]\d+)?){2,}/.exec(bolge);
   const tipKodu = kod ? temizle(bolgeOz.slice(kod.index, kod.index + kod[0].length)).replace(/\s*x\s*/g, "x") : "";
+  // Havşalı matkap kodu "921-1513/Ø16,4+Ø18": ikinci sayı havşa (2. kademe) çapı
+  const havsa = /(\S*Ø\s*(\d+(?:[.,]\d+)?)\s*\+\s*Ø\s*(\d+(?:[.,]\d+)?))/.exec(ozgun);
+  const havsaKodu = havsa && tip === "stepdrill" ? temizle(havsa[1]) : "";
+  if (havsaKodu) {
+    const h = parseFloat(havsa[3].replace(",", "."));
+    if (h > 0) { degerler.havsaCap = h; bulunan.push({ etiket: "Takım kodu", ham: havsaKodu, kullanim: KULLANIM_AD.havsaCap }); }
+  }
   if (!tip) uyarilar.push("Takım tipi okunamadı; Düz Freze varsayıldı. Tipi Takım sekmesinden seçin.");
   if (tip && /ozel\s*takim/.test(bolge)) uyarilar.push("Özel takım: tip belirsiz, Düz Freze olarak çizildi; geometriyi elle düzeltin.");
 
@@ -191,7 +198,7 @@ export function isEmriMetniCoz(metin) {
   for (const [k, ad] of [["D", "Takım çapı"], ["d", "Şaft çapı"], ["L", "Takım boyu"]]) {
     if (!(degerler[k] > 0)) uyarilar.push(`${ad} bulunamadı: çizimde mevcut değer korundu, elle girin.`);
   }
-  return { tip, tipAdi, tipKodu, degerler, bulunan, ekOzellikler, bilgi, uyarilar };
+  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, bilgi, uyarilar };
 }
 
 // İş emri etiketi → diş profili alanı (norm ile karşılaştırılır). Eşleme etiketlerin okunuşuna göredir:
@@ -224,6 +231,44 @@ const gecerliTarih = (s) => {
 };
 
 /**
+ * Std. Havşalı Matkap: Ø D bölümü, uç konisi bittikten sonra "Kademe Boyu" kadar sürer; sonra havşa açısıyla
+ * (varsayılan 90°) havşa çapına çıkar. Helis (kesici) boyu uçtan ölçülür ve iki çapı birlikte kapsar.
+ * Kademe 1 boyu uç konisini de içerir (kademeli matkap modeli uçtan ölçer): kademeBoyu + koni boyu.
+ * @returns {{ steps: object[]|null, notlar: string[] }}
+ */
+function havsaliKademeleri(sonuc, p) {
+  const g = sonuc.degerler;
+  if (!/havsali/.test(norm(sonuc.tipAdi))) return { steps: null, notlar: [] };
+  if (!(g.kademeBoyu > 0)) return { steps: null, notlar: ["Havşalı matkapta 'Kademe Boyu' okunamadı."] };
+  if (!(g.l1 > 0)) return { steps: null, notlar: ["Havşalı matkapta kesici (helis) boyu okunamadı."] };
+  const notlar = [];
+  const D = p.D, ucAci = p.pointAngle > 0 ? p.pointAngle : 140;
+  const aciOz = (sonuc.ekOzellikler || []).find(([a]) => norm(a).replace(/[\s.]/g, "") === "kademeacisi");
+  const havsaAci = (aciOz && sayiOku(aciOz[1])) || 90;
+  let havsaCap = g.havsaCap;
+  if (!(havsaCap > 0)) {
+    havsaCap = g.d;
+    notlar.push(`Havşa çapı takım kodunda (Ø…+Ø…) okunamadı: şaft çapı (${havsaCap}) kullanıldı; kontrol edin.`);
+  } else if (g.d > 0 && Math.abs(havsaCap - g.d) > 1e-6) {
+    notlar.push(`Havşa çapı (${havsaCap}) şaft çapından (${g.d}) farklı: koddaki değer çizildi.`);
+  }
+  const koni = D / 2 / Math.tan((ucAci / 2) * Math.PI / 180);
+  const len1 = Math.round((g.kademeBoyu + koni) * 1000) / 1000;
+  const len2 = Math.round((g.l1 - len1) * 1000) / 1000;
+  const rampa = (havsaCap - D) / 2 / Math.tan((havsaAci / 2) * Math.PI / 180);
+  if (!(havsaCap > D)) return { steps: null, notlar: [...notlar, `Havşa çapı (${havsaCap}) kesici çaptan (${D}) büyük değil: kademeler çizilemedi.`] };
+  if (!(len2 > rampa)) return { steps: null, notlar: [...notlar, `Helis boyu (${g.l1}) kademe boyu + uç konisi (${len1}) ile havşa geçişini (${rampa.toFixed(2)}) kapsamıyor: kademeler çizilemedi.`] };
+  notlar.push(`Havşalı matkap: Ø${D} bölümü uç konisinden sonra ${g.kademeBoyu} mm, ardından ${havsaAci}° havşa ile Ø${havsaCap}; helis boyu ${g.l1} mm uçtan ölçülür (iki çapı birlikte kapsar). Kontrol edin.`);
+  return {
+    steps: [
+      { dia: D, len: len1, angle: ucAci, tolDia: "", tolLen: "" },
+      { dia: havsaCap, len: len2, angle: havsaAci, tolDia: "", tolLen: "" },
+    ],
+    notlar,
+  };
+}
+
+/**
  * Okunan veriyi resim parametrelerine çevirir. Bulunamayan değer eski halinde kalmaz:
  * tip ön ayarı uygulanır, ardından yalnız İE'den gelenler üzerine yazılır.
  * @returns {{ params: object, uyarilar: string[] }}
@@ -254,7 +299,20 @@ export function isEmriParametreleri(sonuc, mevcut) {
   if (g.rCorner > 0 && tip !== "bullnose") uyarilar.push(`Köşe radyüsü (${g.rCorner}) bu takım tipinde çizilmedi.`);
 
   // Çizilemeyen/okunamayan: dürüstçe bildir
-  if (tip === "stepdrill") uyarilar.push("Kademe çapları ve boyları iş emrinde yok: iki kademeli varsayılan çizildi. Takım sekmesinden kademeleri girin.");
+  let ekOz = sonuc.ekOzellikler;
+  if (tip === "stepdrill") {
+    const hv = havsaliKademeleri(sonuc, p);
+    if (hv.steps) {
+      p.steps = hv.steps;
+      p.kademeOlcu = "toplam";
+      ekOz = [["Kademe Boyu", `${g.kademeBoyu} mm`], ...ekOz.filter(([a]) => norm(a).replace(/[\s.]/g, "") !== "kademeacisi")];
+      uyarilar.push(...hv.notlar);
+    } else {
+      uyarilar.push(...hv.notlar);
+      if (g.kademeBoyu > 0) ekOz = [["Kademe Boyu", `${g.kademeBoyu} mm`], ...ekOz];
+      uyarilar.push("Kademe çapları ve boyları iş emrinde yok: iki kademeli varsayılan çizildi. Takım sekmesinden kademeleri girin.");
+    }
+  }
   if (tip === "taperreamer") uyarilar.push("Koniklik ve uç çapı iş emrinde yok: 1:50 varsayılan çizildi. Takım sekmesinden uç çapını girin.");
   if (tip === "tslot") uyarilar.push("T-freze baş genişliği ve boğaz ölçüleri iş emrinde yok: varsayılan çizildi.");
   if (tip === "chamfer" && !(g.pahGenisligi > 0)) uyarilar.push("Pah ölçüsü iş emrinde yok: varsayılan pah çizildi.");
@@ -276,7 +334,7 @@ export function isEmriParametreleri(sonuc, mevcut) {
   p.deliveryDate = gecerliTarih(b.teslim);
   p.material = b.kalite ? `Karbür (${b.kalite})` : "Karbür";
   p.coating = b.kaplama || "";
-  p.ekOzellikler = sonuc.ekOzellikler;
+  p.ekOzellikler = ekOz;
   p.ekGoster = true;
   Object.assign(p, disProfiliDegerleri(sonuc.ekOzellikler));
   const dp = disProfiliDegerleri(sonuc.ekOzellikler);

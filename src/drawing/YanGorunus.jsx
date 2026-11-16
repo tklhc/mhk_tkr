@@ -153,13 +153,20 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     e.push(<Olcu key="dl2" id="dl2" alan="l2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(g.x.boyunSonu), Y(yaricapAt(g, g.x.boyunSonu))]}
       konum={ust - 7} deger={g.l2} tol={params.toll2} anma={g.l2} {...ek} />);
   }
+  // Havşalı matkap ("toplam"): kesici boy uçtan tek ölçü (kademe boyları ayrı gösterilmez);
+  // şafta eşit çaplı kademenin çapı sol taraftaki d ölçüsünde zaten var
+  const toplamOlcu = stepdrill && params.kademeOlcu === "toplam";
+  if (toplamOlcu && params.showDiml1 !== false) {
+    e.push(<Olcu key="dst-toplam" id="dst-toplam" yon="yatay" p1={[X(g.L - g.l1), Y(yaricapAt(g, g.L - g.l1))]} p2={[X(g.L), Y(0)]}
+      konum={ust - 7} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
+  }
   if (stepdrill) {
     g.kademeler.forEach((kd, i) => {
-      if (params.showDiml1 !== false) {
+      if (params.showDiml1 !== false && !toplamOlcu) {
         e.push(<Olcu key={`dst${i}`} id={`dst${i}`} yon="yatay" p1={[X(kd.sol), Y(yaricapAt(g, kd.sol))]} p2={[X(kd.sag), Y(yaricapAt(g, kd.sag))]}
           konum={ust - 7} deger={kd.len} tol={kd.tolLen} anma={kd.len} {...ek} />);
       }
-      if (params.showDimD) {
+      if (params.showDimD && !(toplamOlcu && i > 0 && Math.abs(kd.dia - g.d) < 1e-9)) {
         const xm = (kd.sol + kd.sag - kd.gecisBoyu) / 2;
         e.push(<Olcu key={`dsd${i}`} id={`dsd${i}`} yon="dikey" p1={[X(xm), Y(kd.dia / 2)]} p2={[X(xm), Y(-kd.dia / 2)]}
           konum={X(xm)} deger={kd.dia} onEk="⌀" tol={kd.tolDia} anma={kd.dia} {...ek} />);
