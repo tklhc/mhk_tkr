@@ -195,6 +195,7 @@ describe("İE-831 (Std. Havşalı Matkap)", () => {
     expect(p.steps[1].angle).toBe(90);
     const g = takimProfili(p);
     expect(g.hatalar).toEqual([]);
+    expect(p.steps.map((k) => k.len)).toEqual([10, 20]);   // iş emrindeki gibi: Ø16,4 = 10, kalan Ø18 = 20 (toplam helis boyu 30)
     const [k0, k1] = g.kademeler;
     const koni = 8.2 / Math.tan((70 * Math.PI) / 180);
     // Ø16,4 silindiri: koni bitişinden havşa başlangıcına tam 10 mm

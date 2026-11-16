@@ -171,6 +171,7 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
             <Grup baslik="Kademeler" sag="uçtan sapa">
               <Secim label="Boy ölçüsü" value={params.kademeOlcu || "kademe"} onChange={(v) => u("kademeOlcu", v)}
                 secenekler={[["kademe", "Her kademenin boyu"], ["toplam", "Uçtan tek kesici boy (havşalı)"]]} />
+              {params.kademeOlcu === "toplam" && <div className="ipucu">1. kademe boyu uç konisi bittiği yerden ölçülür. Boyların toplamı kesici (helis) boyudur ve uçtan ölçülür.</div>}
               {(params.steps || []).map((st, i) => (
                 <div key={i} className="kademe">
                   <div className="kademe-ust">

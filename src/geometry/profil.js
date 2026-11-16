@@ -169,14 +169,20 @@ export function takimProfili(params) {
     // sağ ucunda, önceki kademeye açılı geçişle bağlanır.
     let sag = L;
     let oncekiR = 0;
+    // "toplam" ölçü (havşalı matkap): 1. kademenin boyu uç konisi bittiği yerden sayılır, boyların toplamı
+    // (helis boyu) uçtan ölçülür. Çizimde 1. kademe koni kadar uzar, 2. kademe aynı kadar kısalır; toplam değişmez.
+    const toplam = params.kademeOlcu === "toplam";
+    const aci0 = sayi(kademeGirdi[0].angle, 140) || 140;
+    const koni0 = toplam ? sayi(kademeGirdi[0].dia) / 2 / Math.tan((aci0 / 2) * DEG) : 0;
     kademeGirdi.forEach((k, i) => {
-      const dia = sayi(k.dia), len = sayi(k.len);
+      const dia = sayi(k.dia), boy = sayi(k.len);
+      const len = toplam ? boy + (i === 0 ? koni0 : i === 1 ? -koni0 : 0) : boy;   // çizimdeki uçtan boy
       const angle = sayi(k.angle, i === 0 ? 140 : 90) || (i === 0 ? 140 : 90);
       const r = dia / 2;
       const gecis = i === 0 ? r / Math.tan((angle / 2) * DEG) : (r - oncekiR) / Math.tan((angle / 2) * DEG);
-      kademeler.push({ dia, len, angle, sol: sag - len, sag, gecisBoyu: gecis, tolDia: k.tolDia || "", tolLen: k.tolLen || "" });
+      kademeler.push({ dia, len, boy, angle, sol: sag - len, sag, gecisBoyu: gecis, tolDia: k.tolDia || "", tolLen: k.tolLen || "" });
       if (i > 0 && dia <= sayi(kademeGirdi[i - 1].dia)) hata(`steps.${i}.dia`, `Kademe ${i + 1} çapı (${dia}) bir önceki kademeden (${sayi(kademeGirdi[i - 1].dia)}) büyük olmalı.`);
-      if (!(len > 0)) hata(`steps.${i}.len`, `Kademe ${i + 1} boyu sıfırdan büyük olmalı.`);
+      if (!(boy > 0)) hata(`steps.${i}.len`, `Kademe ${i + 1} boyu sıfırdan büyük olmalı.`);
       else if (gecis > len) hata(`steps.${i}.len`, `Kademe ${i + 1} boyu (${len}) açılı geçişten (${gecis.toFixed(2)}) kısa.`);
       sag -= len;
       oncekiR = r;
