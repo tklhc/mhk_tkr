@@ -62,6 +62,9 @@ const TIPLER = [
   ["matkap", "drill"], ["std\\.?\\s*freze", "flat"], ["ozel\\s*takim", "flat"], ["freze", "flat"],
 ];
 
+// İE'deki ölçü alanlarından üretim tablosunda da yazılacaklar (çap, şaft çapı, takım boyu ve helis boyu zaten çizimde ölçülüdür)
+const URETIM_ALANLARI = new Set(["z", "helix", "dCore", "pointAngle", "kademeBoyu", "kosePahi", "rCorner", "pahGenisligi", "kureRadyusu"]);
+
 const BOS = /^[\s_\-—–.:/]*$/;
 /** Boş yer tutucuları ("____", "—", "☐") ve bölüm işaretlerini ayıklar. */
 const temizle = (s) => String(s ?? "").replace(/[①②③④⑤⑥⑦⑧⑨■□☐☑→▸]/g, " ").replace(/_{2,}/g, " ").replace(/\s+/g, " ").trim();
@@ -115,6 +118,7 @@ export function isEmriMetniCoz(metin) {
   const bulunan = [];
   const degerler = {};
   const ekOzellikler = [];
+  const uretimOzellikleri = [];   // tablo için: İE'deki sırayla, ölçü olmayan + sayısal özellikler
   const bilgi = { ieNo: "", tarih: "", teslim: "", musteri: "", kalite: "", kaplama: "" };
   const gorulen = new Set();
 
@@ -128,13 +132,14 @@ export function isEmriMetniCoz(metin) {
     }
     if (gorulen.has(k.kullanim) && k.kullanim !== "ek") return; // aynı alan iki kez: ilki geçerli
     if (k.kullanim === "ek") {
-      if (!bosMu(ham)) { ekOzellikler.push([k.ad, ham]); bulunan.push({ etiket: k.ad, ham, kullanim: "Üretim özelliği (çizilmez)" }); }
+      if (!bosMu(ham)) { ekOzellikler.push([k.ad, ham]); uretimOzellikleri.push([k.ad, ham]); bulunan.push({ etiket: k.ad, ham, kullanim: "Üretim özelliği (çizilmez)" }); }
       return;
     }
     const v = sayiOku(ham);
     if (v == null) { uyarilar.push(`"${k.ad}" bulundu ama sayı okunamadı ("${ham}").`); return; }
     gorulen.add(k.kullanim);
     degerler[k.kullanim] = v;
+    if (URETIM_ALANLARI.has(k.kullanim)) uretimOzellikleri.push([k.ad, ham]);
     bulunan.push({ etiket: k.ad, ham, kullanim: KULLANIM_AD[k.kullanim] || k.kullanim });
   });
 
@@ -198,7 +203,7 @@ export function isEmriMetniCoz(metin) {
   for (const [k, ad] of [["D", "Takım çapı"], ["d", "Şaft çapı"], ["L", "Takım boyu"]]) {
     if (!(degerler[k] > 0)) uyarilar.push(`${ad} bulunamadı: çizimde mevcut değer korundu, elle girin.`);
   }
-  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, bilgi, uyarilar };
+  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, uretimOzellikleri, bilgi, uyarilar };
 }
 
 // İş emri etiketi → diş profili alanı (norm ile karşılaştırılır). Eşleme etiketlerin okunuşuna göredir:
@@ -300,17 +305,15 @@ export function isEmriParametreleri(sonuc, mevcut) {
   if (g.rCorner > 0 && tip !== "bullnose") uyarilar.push(`Köşe radyüsü (${g.rCorner}) bu takım tipinde çizilmedi.`);
 
   // Çizilemeyen/okunamayan: dürüstçe bildir
-  let ekOz = sonuc.ekOzellikler;
+  const ekOz = sonuc.uretimOzellikleri || sonuc.ekOzellikler;
   if (tip === "stepdrill") {
     const hv = havsaliKademeleri(sonuc, p);
     if (hv.steps) {
       p.steps = hv.steps;
       p.kademeOlcu = "toplam";
-      ekOz = [["Kademe Boyu", `${g.kademeBoyu} mm`], ...ekOz.filter(([a]) => norm(a).replace(/[\s.]/g, "") !== "kademeacisi")];
       uyarilar.push(...hv.notlar);
     } else {
       uyarilar.push(...hv.notlar);
-      if (g.kademeBoyu > 0) ekOz = [["Kademe Boyu", `${g.kademeBoyu} mm`], ...ekOz];
       uyarilar.push("Kademe çapları ve boyları iş emrinde yok: iki kademeli varsayılan çizildi. Takım sekmesinden kademeleri girin.");
     }
   }

@@ -92,7 +92,8 @@ describe("İE-818 (Std. Freze)", () => {
       tolD: "", told: "", tolL: "", toll1: "", sapTipi: "HA", coolantHole: false, cizimTuru: "ie",
       drawingNo: "", revision: "", approvedBy: "", notes: [], stamp: "",
     });
-    expect(p.ekOzellikler).toHaveLength(10);
+    expect(p.ekOzellikler).toHaveLength(14);   // 10 çizilmeyen özellik + ağız sayısı, helis açısı, çekirdek çapı, köşe pahı (İE sırasıyla)
+    expect(p.ekOzellikler.some(([a]) => a === "Ağız Sayısı")).toBe(true);
     expect(uyarilar.join("|")).toMatch(/Toleranslar iş emrinde yok/);
     expect(uyarilar.join("|")).toMatch(/Helis yönü ve kesim yönü/);
     expect(takimProfili(p).hatalar).toEqual([]);
@@ -207,8 +208,11 @@ describe("İE-831 (Std. Havşalı Matkap)", () => {
     expect(Math.max(...g.kademeler.map((k) => k.dia))).toBe(18);
   });
   it("Kademe Boyu üretim özelliklerinde, açıklayıcı not var, 'varsayılan çizildi' uyarısı yok", () => {
-    expect(p.ekOzellikler[0]).toEqual(["Kademe Boyu", "10 mm"]);
-    expect(p.ekOzellikler.some(([a]) => /Kademe Açısı/.test(a))).toBe(false);
+    // üretim tablosu: İE'deki teknik özelliklerin hepsi (çap/şaft/boy ölçüleri çizimde ölçülü), İE sırasıyla
+    expect(p.ekOzellikler).toEqual([
+      ["Kademe Boyu", "10 mm"], ["Ağız Sayısı", "2"], ["Helis Açısı", "30 °"], ["Uç Açısı", "140 °"],
+      ["Çekirdek Çapı", "4,95 mm"], ["Kademe Açısı", "90 °"], ["Kesme Açısı", "8 °"],
+    ]);
     expect(uyarilar.some((u) => /Havşalı matkap: Ø16.4/.test(u))).toBe(true);
     expect(uyarilar.some((u) => /varsayılan çizildi/.test(u) && /Kademe/.test(u))).toBe(false);
   });
