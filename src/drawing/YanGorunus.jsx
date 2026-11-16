@@ -153,12 +153,17 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     e.push(<Olcu key="dl2" id="dl2" alan="l2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(g.x.boyunSonu), Y(yaricapAt(g, g.x.boyunSonu))]}
       konum={ust - 7} deger={g.l2} tol={params.toll2} anma={g.l2} {...ek} />);
   }
-  // Havşalı matkap ("toplam"): kesici boy uçtan tek ölçü (kademe boyları ayrı gösterilmez);
-  // şafta eşit çaplı kademenin çapı sol taraftaki d ölçüsünde zaten var
+  // Havşalı matkap ("toplam"): 1. kademenin boyu uç konisi bittiği yerden havşa başlangıcına (alt satır),
+  // kesici (helis) boyu uçtan tek ölçü (üst satır). Diğer kademelerin boyu ayrı gösterilmez;
+  // şafta eşit çaplı kademenin çapı sol taraftaki d ölçüsünde zaten var.
   const toplamOlcu = stepdrill && params.kademeOlcu === "toplam";
   if (toplamOlcu && params.showDiml1 !== false) {
+    const k0 = g.kademeler[0];
+    const xKoni = k0.sag - k0.gecisBoyu;   // uç konisinin bittiği yer
+    e.push(<Olcu key="dst0" id="dst0" yon="yatay" p1={[X(k0.sol), Y(yaricapAt(g, k0.sol))]} p2={[X(xKoni), Y(k0.dia / 2)]}
+      konum={ust - 7} deger={k0.boy} tol={k0.tolLen} anma={k0.boy} {...ek} />);
     e.push(<Olcu key="dst-toplam" id="dst-toplam" yon="yatay" p1={[X(g.L - g.l1), Y(yaricapAt(g, g.L - g.l1))]} p2={[X(g.L), Y(0)]}
-      konum={ust - 7} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
+      konum={ust - 14} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
   }
   if (stepdrill) {
     g.kademeler.forEach((kd, i) => {
@@ -258,7 +263,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
         const rr = i === 0 ? r / 2 : (r + g.kademeler[i - 1].dia / 2) / 2;
         const xm = kd.sag - kd.gecisBoyu / 2;
         const hx = X(xm);
-        if (i === 0) e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(rr)]} dirsek={[hx, ust - 13]} metin={`${fmt(kd.angle)}°`} {...ek} />);
+        if (i === 0) e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(rr)]} dirsek={[hx, ust - (params.kademeOlcu === "toplam" ? 21 : 13)]} metin={`${fmt(kd.angle)}°`} {...ek} />);
         else e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(-rr)]} dirsek={[hx, alt + 5]} metin={`${fmt(kd.angle)}°`} {...ek} />);
       });
     }

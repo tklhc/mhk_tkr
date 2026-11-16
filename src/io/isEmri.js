@@ -233,7 +233,8 @@ const gecerliTarih = (s) => {
 /**
  * Std. Havşalı Matkap: Ø D bölümü, uç konisi bittikten sonra "Kademe Boyu" kadar sürer; sonra havşa açısıyla
  * (varsayılan 90°) havşa çapına çıkar. Helis (kesici) boyu uçtan ölçülür ve iki çapı birlikte kapsar.
- * Kademe 1 boyu uç konisini de içerir (kademeli matkap modeli uçtan ölçer): kademeBoyu + koni boyu.
+ * Kademe boyları iş emrindeki gibi tutulur: 1. kademe = Kademe Boyu (uç konisinden sonra), 2. kademe = helis boyu − kademe boyu.
+ * Çizimde koni boyu hesaba katılır (bkz. profil.js, kademeOlcu "toplam").
  * @returns {{ steps: object[]|null, notlar: string[] }}
  */
 function havsaliKademeleri(sonuc, p) {
@@ -253,11 +254,11 @@ function havsaliKademeleri(sonuc, p) {
     notlar.push(`Havşa çapı (${havsaCap}) şaft çapından (${g.d}) farklı: koddaki değer çizildi.`);
   }
   const koni = D / 2 / Math.tan((ucAci / 2) * Math.PI / 180);
-  const len1 = Math.round((g.kademeBoyu + koni) * 1000) / 1000;
+  const len1 = g.kademeBoyu;
   const len2 = Math.round((g.l1 - len1) * 1000) / 1000;
   const rampa = (havsaCap - D) / 2 / Math.tan((havsaAci / 2) * Math.PI / 180);
   if (!(havsaCap > D)) return { steps: null, notlar: [...notlar, `Havşa çapı (${havsaCap}) kesici çaptan (${D}) büyük değil: kademeler çizilemedi.`] };
-  if (!(len2 > rampa)) return { steps: null, notlar: [...notlar, `Helis boyu (${g.l1}) kademe boyu + uç konisi (${len1}) ile havşa geçişini (${rampa.toFixed(2)}) kapsamıyor: kademeler çizilemedi.`] };
+  if (!(len2 - koni > rampa)) return { steps: null, notlar: [...notlar, `Helis boyu (${g.l1}) kademe boyu (${len1}), uç konisi (${koni.toFixed(2)}) ve havşa geçişini (${rampa.toFixed(2)}) kapsamıyor: kademeler çizilemedi.`] };
   notlar.push(`Havşalı matkap: Ø${D} bölümü uç konisinden sonra ${g.kademeBoyu} mm, ardından ${havsaAci}° havşa ile Ø${havsaCap}; helis boyu ${g.l1} mm uçtan ölçülür (iki çapı birlikte kapsar). Kontrol edin.`);
   return {
     steps: [
