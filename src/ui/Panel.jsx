@@ -234,7 +234,6 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
               <Secim label="Ölçek" value={params.olcek} onChange={(v) => u("olcek", v)} secenekler={[["otomatik", "Otomatik"], ...OLCEKLER.map((o) => [olcekYaz(o), olcekYaz(o)])]} />
             </div>
             <Secim label="Resim dili" value={params.dil || "tr"} onChange={(v) => u("dil", v)} secenekler={DILLER} />
-            <Metin label="Genel tolerans" value={params.genelTolerans} onChange={(v) => u("genelTolerans", v)} />
             <Metin label="Tarih" type="date" value={params.tarih} onChange={(v) => u("tarih", v)} />
             <div className="ipucu">Tarih boşsa bugünün tarihi yazılır.</div>
           </Grup>

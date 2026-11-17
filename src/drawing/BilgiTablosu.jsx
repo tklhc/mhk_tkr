@@ -1,6 +1,6 @@
 import { CIZGI, YAZI, fmt } from "./iso";
 import { sigdir } from "./Antet";
-import { TABLO, tabloSutunlari } from "./sayfaDuzeni";
+import { TABLO } from "./sayfaDuzeni";
 import { mt, yonMetni } from "./metinler";
 
 /** Üretim özelliği tablosu gösterilecek mi? Yalnız iş emri çiziminde (müşteri çiziminde üretim verisi yok). */
@@ -68,22 +68,4 @@ export function BilgiTablosu({ icerik, sayfa, kutu, yer }) {
       })}
     </g>
   );
-}
-
-/**
- * Sayfa notları tablosu (genel tolerans): şeritte antet-solundaki tablonun da soluna,
- * çerçevenin sol alt köşesine konur; yer yoksa null. Genel tolerans boşsa kutu yoktur.
- * @returns {null | {icerik: object, kutu: object, yer: object}}
- */
-export function sayfaNotlari(params, sayfa) {
-  // Ölçek ve birim yazılmaz (kesit/detay başlıklarında kendi ölçekleri var); kutu yalnız genel tolerans girilmişse çıkar
-  const ogeler = [];
-  if (String(params.genelTolerans || "").trim()) ogeler.push([mt(params, "genel_tol"), String(params.genelTolerans).trim()]);
-  if (ogeler.length === 0) return null;
-  const yer = tabloSutunlari(ogeler.length, sayfa.antet.h);
-  const sagSinir = sayfa.veriTablosu.w > 0 ? sayfa.veriTablosu.x : sayfa.antet.x;
-  const serbest = sagSinir - sayfa.cerceve.x;
-  if (!yer || serbest < yer.w + 4) return null;
-  const alt = sayfa.antet.y + sayfa.antet.h;
-  return { icerik: { id: "sayfa-notlari", baslik: mt(params, "sayfa"), ogeler }, yer, kutu: { x: sayfa.cerceve.x, y: alt - yer.h, w: yer.w, h: yer.h } };
 }
