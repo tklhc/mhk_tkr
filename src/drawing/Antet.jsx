@@ -80,6 +80,10 @@ export function Antet({ params, sayfa }) {
       {/* Sol sütun: logo ve firma adı */}
       <image href={logoAl()} x={a.x + (sol - logoW) / 2} y={a.y + 7} width={logoW} height={logoH} preserveAspectRatio="xMidYMid meet" />
       <text x={a.x + sol / 2} y={a.y + 35} fontSize={firmaFs} fontWeight={700} textAnchor="middle" fill="#000" letterSpacing="0.3">{FIRMA.ad}</text>
+      {/* Firma adının altında iletişim bilgileri (Dosya → Firma ayarları); boş alan yazılmaz */}
+      {[FIRMA.tel, FIRMA.eposta, FIRMA.web].filter((m) => String(m || "").trim()).map((m, i) => (
+        <text key={i} x={a.x + sol / 2} y={a.y + 40.2 + i * 4} fontSize={sigdir(m, sol - 4, 2.7, 2)} textAnchor="middle" fill="#333">{m}</text>
+      ))}
 
       {/* Sağ alan: ALET ADI / ÇİZİM NO / REV; TARİH / MÜŞTERİ / İE NO; ÇİZEN / ONAYLAYAN */}
       <Hucre x={rx} y={a.y} w={60} h={h1} etiket={mt(params, "alet_adi")} deger={ad} boyut={9} kalinYazi />

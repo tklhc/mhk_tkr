@@ -32,12 +32,12 @@ describe("resim dili: sözlük", () => {
 describe("resim dili: sayfa", () => {
   it("varsayılan Türkçe: etiketler değişmedi", () => {
     const svg = render(DEFAULT_PARAMS);
-    for (const e of ["ALET ADI", "ÇİZİM NO", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN", "TEKNİK VERİ", "Malzeme", "SAYFA", "Genel tol."]) expect(svg).toContain(`>${e}<`);
+    for (const e of ["ALET ADI", "ÇİZİM NO", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN", "TEKNİK VERİ", "Malzeme"]) expect(svg).toContain(`>${e}<`);
     expect(svg).toContain("UÇTAN GÖRÜNÜŞ");
   });
   it("İngilizce: antet, tablo, notlar ve görünüş başlıkları çevrilir", () => {
     const svg = render({ ...DEFAULT_PARAMS, dil: "en" });
-    for (const e of ["TOOL NAME", "DRAWING NO", "DATE", "CUSTOMER", "ORDER NO", "DRAWN BY", "APPROVED BY", "TECHNICAL DATA", "Material", "Coating", "Flutes", "Helix", "Cutting dir.", "Flute length", "Core", "Coolant", "SHEET", "Gen. tol."]) expect(svg).toContain(`>${e}<`);
+    for (const e of ["TOOL NAME", "DRAWING NO", "DATE", "CUSTOMER", "ORDER NO", "DRAWN BY", "APPROVED BY", "TECHNICAL DATA", "Material", "Coating", "Flutes", "Helix", "Cutting dir.", "Flute length", "Core", "Coolant"]) expect(svg).toContain(`>${e}<`);
     expect(svg).toContain("END VIEW");
     expect(svg).toContain("35° Right".replace("35", "30"));   // varsayılan helis 30° Sağ → Right
     expect(svg).not.toContain(">ALET ADI<");

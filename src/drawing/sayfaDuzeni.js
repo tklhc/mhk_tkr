@@ -34,11 +34,12 @@ export function olcekSec(sigdirmalar) {
 
 // Antetin solundaki bilgi tablosu (müşteri çiziminde TEKNİK VERİ, iş emri çiziminde ÜRETİM ÖZELLİKLERİ):
 // iki türde de aynı genişlik, başlık ve satır ölçüleri.
-export const TABLO = { baslikH: 6, satirMin: 3.9, satirAzami: 5.7, sutunW: 54 };
+export const TABLO = { baslikH: 6, satirMin: 3.9, satirAzami: 6.6, sutunW: 54 };
 
 /**
  * n satır, antet yüksekliğindeki şeride kaç sütunla sığar? Satır yüksekliği 3,9 mm'nin
- * altına inmez; sığmayan fazlalık atılır (en çok 3 sütun). Satır yüksekliği en çok 5,7 mm.
+ * altına inmez; sığmayan fazlalık atılır (en çok 3 sütun). Satır yüksekliği en çok 6,6 mm (7 satır şeridi tam doldurur).
+ * Tablo kutusu her zaman şerit (antet) yüksekliğindedir: üstü antetin üstüyle hizalıdır, satır azsa altı boş kalır.
  * @returns {null | {sutun:number, satir:number, satirH:number, w:number, h:number, adet:number}}
  */
 export function tabloSutunlari(n, h = 52) {
@@ -49,7 +50,7 @@ export function tabloSutunlari(n, h = 52) {
   const adet = Math.min(n, sutun * azami);
   const satir = Math.ceil(adet / sutun);
   const satirH = Math.min(TABLO.satirAzami, mesaj / satir);
-  return { sutun, satir, satirH, w: sutun * TABLO.sutunW, h: TABLO.baslikH + 1 + satir * satirH, adet };
+  return { sutun, satir, satirH, w: sutun * TABLO.sutunW, h, adet };
 }
 
 const CERCEVE = { sol: 20, ust: 10, sag: 10, alt: 10 }; // ISO 5457

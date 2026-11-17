@@ -32,7 +32,7 @@ export function cakismaBul(kutular, pay = 0.2) {
 }
 
 /** Denetlenmeyecek bölgeler (kimliğine göre): sabit yerleşimli antet, tablolar, çerçeve. */
-export const YOK_SAYILAN = ["antet", "cerceve", "uretim-tablosu", "teknik-veri", "sayfa-notlari", "revizyon-tablosu"];
+export const YOK_SAYILAN = ["antet", "cerceve", "uretim-tablosu", "teknik-veri", "revizyon-tablosu"];
 
 /** Çizimdeki bütün yazıların kâğıt koordinatındaki kutuları (tarayıcıda). */
 export function kutulariTopla(svg) {

@@ -149,7 +149,6 @@ describe("Antet okunabilirliği", () => {
     for (const e of ["ALET ADI", "ÇİZİM NO", "REV.", "TARİH", "MÜŞTERİ", "İE / SİP. NO", "ÇİZEN", "ONAYLAYAN"]) expect(svg).toContain(`>${e}<`);
     expect(svg).not.toContain(">TESLİM<");
     expect(svg).not.toContain(">GENEL TOLERANS<");
-    expect(svg).not.toContain("0507");
     expect(svg).toContain(">MHK-TR-1<");
   });
   it("antette Ölçek ve Kağıt hücresi yok", () => {
@@ -218,7 +217,6 @@ describe("Ölçü yazısı toleransı", () => {
 });
 
 import { tabloSutunlari } from "../src/drawing/sayfaDuzeni.js";
-import { sayfaNotlari } from "../src/drawing/BilgiTablosu.jsx";
 import { duzenHesapla } from "../src/drawing/Sayfa.jsx";
 
 describe("Üretim özellikleri tablosu", () => {
@@ -292,32 +290,22 @@ describe("Görünüşlerin sürüklenmesi", () => {
   });
 });
 
-describe("Sayfa notları (yalnız genel tolerans; ölçek ve birim yazılmaz)", () => {
-  it("müşteri ve iş emri çiziminde ölçek ve birim yazılmaz; genel tolerans doluysa kutu çıkar", () => {
+describe("Sol alttaki sayfa notları kutusu yok; tablo antetle aynı yükseklikte", () => {
+  it("ölçek, birim ve genel tolerans kutusu hiçbir çizimde yazılmaz", () => {
     for (const cizimTuru of ["musteri", "ie"]) {
-      const svg = render({ ...DEFAULT_PARAMS, cizimTuru, ekOzellikler: [["Kesme Açısı", "8 °"]] });
-      expect(svg).toContain('id="sayfa-notlari"');
-      expect(svg).not.toContain(">Ölçek<");
-      expect(svg).not.toContain(">Birim<");
-      expect(svg).toContain(">Genel tol.<");
-      expect(svg).toContain(">ISO 2768-m<");
+      const svg = render({ ...DEFAULT_PARAMS, cizimTuru, olcek: "1:1", ekOzellikler: [["Kesme Açısı", "8 °"]] });
+      for (const e of ['id="sayfa-notlari"', ">SAYFA<", ">Ölçek<", ">Birim<", ">Genel tol.<"]) expect(svg).not.toContain(e);
     }
   });
-  it("genel tolerans boşsa kutu hiç çıkmaz; ölçek elle seçilse de notta yazılmaz", () => {
-    const svg = render({ ...DEFAULT_PARAMS, genelTolerans: "  ", olcek: "1:1" });
-    expect(svg).not.toContain('id="sayfa-notlari"');
-    expect(svg).not.toContain(">Genel tol.<");
-    expect(svg).not.toContain(">Ölçek<");
+  it("üretim ve teknik veri tablosunun üstü antetin üstüyle hizalıdır, az satırda da", () => {
+    for (const ek of [[["Kesme Açısı", "8 °"]], Array.from({ length: 7 }, (_, i) => [`Ö${i}`, "1"]), Array.from({ length: 10 }, (_, i) => [`Ö${i}`, "1"])]) {
+      const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: ek });
+      expect(d.veriTablosu.y).toBeCloseTo(d.antet.y, 6);
+      expect(d.veriTablosu.h).toBeCloseTo(d.antet.h, 6);
+    }
   });
-  it("çok sütunlu üretim tablosunda yer yoksa sayfa notları atlanır, çökmez", () => {
-    const cok = Array.from({ length: 30 }, (_, i) => [`Özellik ${i}`, `${i} mm`]);
-    expect(() => render({ ...DEFAULT_PARAMS, cizimTuru: "ie", ekOzellikler: cok })).not.toThrow();
-  });
-  it("sayfa notları tablosu antet-solu tabloyla çakışmaz", () => {
-    const d = duzenHesapla({ ...DEFAULT_PARAMS, cizimTuru: "musteri" });
-    const n = sayfaNotlari({ ...DEFAULT_PARAMS }, d);
-    expect(n).not.toBeNull();
-    expect(n.kutu.x + n.kutu.w).toBeLessThanOrEqual(d.veriTablosu.x);
-    expect(n.kutu.y + n.kutu.h).toBeCloseTo(d.antet.y + d.antet.h, 6);
+  it("firma iletişim bilgileri antette firma adının altında yazılır", () => {
+    const svg = render({ ...DEFAULT_PARAMS, cizimTuru: "ie" });
+    for (const e of ["0507 321 62 80", "taha@mihenk.net", "www.mihenkkesicitakimlar.com"]) expect(svg).toContain(`>${e}<`);
   });
 });

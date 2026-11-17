@@ -10,7 +10,7 @@ import { ToleransSembolleri, SALGI_UST_EK } from "./ToleransSembolleri";
 import { Antet } from "./Antet";
 import { RevizyonTablosu } from "./RevizyonTablosu";
 import { Cerceve } from "./Cerceve";
-import { BilgiTablosu, tabloIcerigi, sayfaNotlari } from "./BilgiTablosu";
+import { BilgiTablosu, tabloIcerigi } from "./BilgiTablosu";
 import { YAZI } from "./iso";
 import { mt } from "./metinler";
 
@@ -38,7 +38,6 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
   const olcekMetni = olcekYaz(yan.olcek);
   const ek = { dimOff, setDimOff };
   const notlar = params.notes || [];
-  const sayfaNot = sayfaNotlari(params, duzen);
   const detayHarfi = kesitVarMi(params, takimProfili(params)) ? "B" : "A";
 
   return (
@@ -61,7 +60,6 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
         <UcGorunus params={params} yerlesim={uc} {...ek} />
       </Surukle>
       <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
-      {sayfaNot && <BilgiTablosu icerik={sayfaNot.icerik} kutu={sayfaNot.kutu} yer={sayfaNot.yer} sayfa={duzen} />}
       <Antet params={params} sayfa={duzen} />
       <RevizyonTablosu params={params} sayfa={duzen} />
 
