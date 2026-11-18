@@ -318,3 +318,53 @@ describe("İE-839 (gerçek PDF metni, Ø15,9 +0,08)", () => {
     expect(p.told).toBe("");
   });
 });
+
+describe("yalnız ÜRETİM bölümü okunur", () => {
+  // Kesim ve Taşlama bölümüne ölçü etiketleri ve toleranslar konunca bile ÜRETİM'deki değerler alınır
+  const kirli = IE839
+    .replace("Hammadde Çapı 18 Tezgâh Ref S22", "Hammadde Çapı 18 Tezgâh Ref S22\nŞaft Çapı 20 mm h6 Takım Boyu 99 mm ±0,5")
+    .replace("Kesilecek Boy 80 mm Taşlama Boyu 10 mm +1", "Kesilecek Boy 80 mm Taşlama Boyu 10 mm +1\nÇap 16 mm -0,02 Helis Boyu 45 mm");
+  const s = isEmriMetniCoz(kirli);
+  const { params: p, uyarilar } = isEmriParametreleri(s, DEFAULT_PARAMS);
+  it("şaft çapı, çap, boylar ve toleranslar ÜRETİM'den; dışarıdakiler kullanılmaz ve bildirilir", () => {
+    expect(s.kaynak).toBe("uretim");
+    expect(s.degerler).toMatchObject({ D: 15.9, d: 18, L: 80, l1: 30, kademeBoyu: 10 });
+    expect(Object.keys(s.toleranslar)).toEqual(["D"]);
+    expect(p.tolD).toBe("+0,08/0");
+    expect(p.told).toBe("");
+    expect(p.tolL).toBe("");
+    expect(p.steps[0].tolLen).toBe("");   // Taşlama Boyu +1 kademe boyuna yazılmaz
+    const dis = uyarilar.find((u) => /dışında kalan/.test(u));
+    expect(dis).toMatch(/Şaft Çapı 20 mm h6/);
+    expect(dis).toMatch(/Çap 16 mm -0,02/);
+    expect(uyarilar[0]).toMatch(/yalnız ÜRETİM bölümünden/);
+  });
+  it("kalite ve kaplama belge bilgisi olarak bölüm dışından okunmaya devam eder", () => {
+    expect(s.bilgi.kalite).toBe("BM-1");
+    expect(s.bilgi.kaplama).toMatch(/ALT[İI]N/);
+  });
+  it("ÜRETİM'de yazılı şaft, boy ve kademe boyu toleransları ilgili ölçüye gider", () => {
+    const m = IE839.replace("Şaft Çapı 18 mm Helis Boyu 30 mm", "Şaft Çapı 18 mm h6 Helis Boyu 30 mm ±0,5")
+      .replace("Takım Boyu 80 mm Ağız Sayısı 2", "Takım Boyu 80 mm ±0,2 Ağız Sayısı 2")
+      .replace("Kademe Boyu 10 mm\n", "Kademe Boyu 10 mm +0,1/-0,1\n");
+    const { params: q } = isEmriParametreleri(isEmriMetniCoz(m), DEFAULT_PARAMS);
+    expect(q).toMatchObject({ tolD: "+0,08/0", told: "h6", tolL: "±0,2", toll1: "±0,5" });
+    expect(q.steps[0]).toMatchObject({ tolDia: "+0,08/0", tolLen: "+0,1/-0,1" });
+  });
+  it("yuvarlak rakamsız yapıştırılan yazıda da bölüm bulunur", () => {
+    const m = IE839.replace(/[①②③④⑤⑥]\s*/g, "");
+    const s2 = isEmriMetniCoz(m.replace("Hammadde Çapı 18 Tezgâh Ref S22", "Hammadde Çapı 18 Tezgâh Ref S22 Şaft Çapı 20 mm"));
+    expect(s2.kaynak).toBe("uretim");
+    expect(s2.degerler.d).toBe(18);
+  });
+  it("ÜRETİM başlığıyla aynı satırdaki komşu bölüm başlığı bölümü bitirmez", () => {
+    const m = IE839.replace("③ ÜRETİM (CNC) Bitirince QR okut →", "③ ÜRETİM (CNC) Bitirince QR okut → ⑤ LAZER QR okut →");
+    expect(isEmriMetniCoz(m).degerler).toMatchObject({ D: 15.9, d: 18, L: 80 });
+  });
+  it("bölüm başlığı olmayan yazı tümüyle okunur ve bu bildirilir", () => {
+    const s3 = isEmriMetniCoz("Takım Çapı 10 mm Şaft Çapı 10 mm Takım Boyu 75 mm");
+    expect(s3.kaynak).toBe("tum");
+    expect(s3.degerler).toMatchObject({ D: 10, d: 10, L: 75 });
+    expect(s3.uyarilar[0]).toMatch(/ÜRETİM bölümü başlığı bulunamadı/);
+  });
+});

@@ -2,7 +2,10 @@
 // ve teknik resim parametrelerine çevirir.
 //
 // Kural: İş emrinde olmayan bir değer UYDURULMAZ. Bulunamayan alan boş/varsayılan kalır ve
-// kullanıcıya uyarı olarak bildirilir. Toleranslar iş emrinde yer almadığı için boş bırakılır.
+// kullanıcıya uyarı olarak bildirilir.
+// Ölçüler, toleranslar ve teknik özellikler YALNIZ "③ ÜRETİM" bölümünden okunur: Kesim (hammadde çapı,
+// kesilecek boy) ve Taşlama (taşlama çapı/boyu ve toleransları) bölümleri başka bir işin verisidir.
+// Bölümün dışından yalnız belge bilgileri alınır (iş emri no, tarih, kalite, kaplama, takım kodu).
 
 import { tipUygula } from "../geometry/tipler";
 import { disProfiliYeterli } from "../geometry/disProfili";
@@ -43,7 +46,36 @@ const AYIRICI = [
   "Hammadde Çapı", "Kalitesi", "Kesilecek Boy", "330'dan Çıkan", "Adet", "Hatalı Adet", "Firma", "Kaplama Çeşidi", "Drag Finish", "Not",
   "Takım Özellikleri", "Teknik Özellikler", "Kalite Kontrol", "Kaplama", "Üretim", "Kesim", "Bitirince QR okut", "QR okut", "Bitiş",
   "Tarih", "Teslim", "Müşteri", "Öncelik", "Takım Bilgisi", "İş Emri",
+  "Tezgâh Ref", "Taşlama Çapı", "Taşlama Boyu", "Birim Süre", "Toplam Süre", "Opsiyonel",
 ];
+
+// İş emri kağıdının bölüm başlıkları: "③ ÜRETİM (CNC) Bitirince QR okut →", "② TAŞLAMA (Opsiyonel) QR okut →"
+const BOLUM_ADI = String.raw`kesim|taslama|uretim|kalite\s*kontrol|lazer|parcali|kaplama|sevk(?:iyat)?`;
+const BOLUM_RE = new RegExp(
+  String.raw`[①②③④⑤⑥⑦⑧⑨]\s*(${BOLUM_ADI})(?![a-z])|(?<![a-z])(${BOLUM_ADI})(?![a-z])(?=\s*(?:\((?:opsiyonel|cnc)\)\s*)?(?:bitirince\s*)?qr\s*okut)`,
+  "g",
+);
+
+/**
+ * ÜRETİM bölümünün metindeki aralığı (norm metin konumları); bölüm başlığı yoksa null (tüm metin okunur).
+ * Bölüm, başlığından sonraki SATIRLARDA başlayan ilk bölüm başlığında biter (iki sütunlu kağıtta
+ * aynı satırdaki komşu başlık bölümü bitirmez).
+ */
+export function uretimBolgesi(n) {
+  const basliklar = [];
+  BOLUM_RE.lastIndex = 0;
+  let m;
+  while ((m = BOLUM_RE.exec(n)) !== null) basliklar.push({ bas: m.index, ad: (m[1] || m[2]).replace(/\s+/g, " ") });
+  let bas = basliklar.find((b) => b.ad === "uretim")?.bas;
+  if (bas == null) {
+    const t = /takim\s*ozellikleri/.exec(n);
+    if (!t) return null;
+    bas = t.index;
+  }
+  const satirSonu = n.indexOf("\n", bas);
+  const son = satirSonu < 0 ? n.length : (basliklar.find((b) => b.bas > satirSonu)?.bas ?? n.length);
+  return { bas, son };
+}
 
 /** Tek bir etiketin tüm eşleşmelerini bulur. Tek harfli "Çap" etiketi yalnız tek başına eşleşir. */
 const ETIKETLER = [
@@ -141,6 +173,9 @@ export function isEmriMetniCoz(metin) {
     }
   }
   adaylar.sort((a, b) => (b.son - b.bas) - (a.son - a.bas) || a.bas - b.bas);
+  const ub = uretimBolgesi(n);
+  const icerde = (k) => !ub || (k.bas >= ub.bas && k.bas < ub.son);
+  const disarida = [];             // ÜRETİM dışında kalan ölçü etiketleri (kullanılmadı)
   const kabul = [];
   for (const a of adaylar) if (!kabul.some((k) => a.bas < k.son && k.bas < a.son)) kabul.push(a);
   kabul.sort((a, b) => a.bas - b.bas);
@@ -155,7 +190,10 @@ export function isEmriMetniCoz(metin) {
 
   kabul.forEach((k, i) => {
     const sonraki = kabul[i + 1];
-    const ham = temizle(ozgun.slice(k.son, sonraki ? sonraki.bas : ozgun.length)).slice(0, 60);
+    const ic = icerde(k);
+    const bitis = Math.min(sonraki ? sonraki.bas : ozgun.length, ub && ic ? ub.son : ozgun.length);
+    const ham = temizle(ozgun.slice(k.son, bitis)).slice(0, 60);
+    if (k.kullanim !== "ayirici" && !ic) { if (!bosMu(ham)) disarida.push(`${k.ad} ${ham}`); return; }
     if (k.kullanim === "ayirici") {
       if (k.ad === "Kalitesi" && !bosMu(ham)) bilgi.kalite = ham.split(" ")[0];
       if (k.ad === "Kaplama Çeşidi" && !bosMu(ham)) bilgi.kaplama = ham;
@@ -171,12 +209,16 @@ export function isEmriMetniCoz(metin) {
     gorulen.add(k.kullanim);
     degerler[k.kullanim] = v;
     if (URETIM_ALANLARI.has(k.kullanim)) uretimOzellikleri.push([k.ad, ham]);
-    if (["D", "d", "L", "l1"].includes(k.kullanim)) {
+    if (["D", "d", "L", "l1", "kademeBoyu"].includes(k.kullanim)) {
       const t = toleransAyikla(ham);
       if (t) { toleranslar[k.kullanim] = { ...t, ad: k.ad }; bulunan.push({ etiket: `${k.ad} toleransı`, ham: t.metin, kullanim: "Tolerans" }); }
     }
     bulunan.push({ etiket: k.ad, ham, kullanim: KULLANIM_AD[k.kullanim] || k.kullanim });
   });
+
+  if (ub) uyarilar.unshift("Ölçüler, toleranslar ve teknik özellikler yalnız ÜRETİM bölümünden okundu; Kesim ve Taşlama bölümlerindeki sayılar kullanılmadı.");
+  else uyarilar.unshift("İş emrinde ÜRETİM bölümü başlığı bulunamadı: yazının tamamı okundu. Değerleri kontrol edin.");
+  if (disarida.length) uyarilar.push(`ÜRETİM bölümü dışında kalan ve kullanılmayan alanlar: ${disarida.join("; ")}.`);
 
   // 2) Başlık: iş emri no, takım tipi ve kodu
   const ie = /(?<![a-z])ie\s*-\s*(\d+)/.exec(n);
@@ -238,7 +280,7 @@ export function isEmriMetniCoz(metin) {
   for (const [k, ad] of [["D", "Takım çapı"], ["d", "Şaft çapı"], ["L", "Takım boyu"]]) {
     if (!(degerler[k] > 0)) uyarilar.push(`${ad} bulunamadı: çizimde mevcut değer korundu, elle girin.`);
   }
-  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, uretimOzellikleri, toleranslar, bilgi, uyarilar };
+  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, uretimOzellikleri, toleranslar, bilgi, uyarilar, kaynak: ub ? "uretim" : "tum" };
 }
 
 // İş emri etiketi → diş profili alanı (norm ile karşılaştırılır). Eşleme etiketlerin okunuşuna göredir:
@@ -366,6 +408,10 @@ export function isEmriParametreleri(sonuc, mevcut) {
   if (tl.d) p.told = tl.d.metin;
   if (tl.L) p.tolL = tl.L.metin;
   if (tl.l1) p.toll1 = tl.l1.metin;
+  if (tl.kademeBoyu) {
+    if (tip === "stepdrill" && Array.isArray(p.steps) && p.steps[0] && p.kademeOlcu === "toplam") p.steps[0].tolLen = tl.kademeBoyu.metin;
+    else uyarilar.push(`Kademe boyu toleransı (${tl.kademeBoyu.metin}) bu çizimde bir ölçüye bağlanamadı; Takım sekmesinden girin.`);
+  }
   const tlListe = Object.values(tl);
   if (tlListe.length === 0) uyarilar.push("Toleranslar iş emrinde yok: ölçü toleransları boş bırakıldı (Takım sekmesinden girin).");
   else {
