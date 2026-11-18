@@ -377,7 +377,7 @@ describe("Okunaklı ölçüler", () => {
 });
 
 describe("Çap ölçüsü yazısı eksende kalır", () => {
-  it("küçük ölçekte bile 1. kademe çapı (toleranslı) eksene ortalanır, aşağı kaymaz", () => {
+  it("1. kademe çapı (toleranslı) eksene ortalanır, ölçü çizgisinin önüne (sağına) yazılır", () => {
     const p = { ...DEFAULT_PARAMS, toolType: "stepdrill", d: 16, L: 82, kademeOlcu: "toplam", olcek: "1:1",
       steps: [{ dia: 14.75, len: 10, angle: 140, tolDia: "+0,08/0", tolLen: "" }, { dia: 16, len: 20, angle: 90, tolDia: "", tolLen: "" }] };
     const svg = render(p);
@@ -390,5 +390,7 @@ describe("Çap ölçüsü yazısı eksende kalır", () => {
     const yariBoy = +m[1] - +yazi[1];
     expect(yariBoy).toBeGreaterThan(2);
     expect(yariBoy).toBeLessThan(10);
+    // Yazı ölçü çizgisinin (ucun 10 mm önünde) sağında, takımın önünde durur
+    expect(+m[1]).toBeGreaterThan(d.yan.ox + 82 * d.yan.olcek + 10);
   });
 });

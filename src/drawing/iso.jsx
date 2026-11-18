@@ -57,6 +57,8 @@ export function tolYigini(tol, anma) {
 
 /** Yığınlı toleransta yazının ölçü çizgisinden ne kadar yukarı alınacağı (alt sapma taban çizgisinin altına iner). */
 export const YAZI_PAYI = { duz: 1, yigin: 2.8 };
+/** Dikey ölçüde yazı çizginin sağındaysa taban çizgisinin ölçü çizgisine uzaklığı (1 mm boşluk + büyük harf boyu) */
+export const DIS_YAZI_X = 1 + 0.75 * YAZI.olcu;
 
 /**
  * Ölçü yazısı: değer + tolerans (ISO 129-1).
@@ -130,7 +132,7 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
  * Sürüklenince yalnız ölçü çizgisinin yeri değişir; yardımcı çizgiler uzar/kısalır.
  * referans: başka ölçülerden hesaplanan ölçü, parantez içinde yazılır.
  */
-export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false, yaziYani = "hi" }) {
+export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false, yaziYani = "hi", yaziSagda = false }) {
   const yatay = yon === "yatay";
   const { off, olaylar } = useSurukle(id, offsets, setOffsets, yatay ? "y" : "x");
   const k = konum + (yatay ? off.dy : off.dx);
@@ -175,14 +177,16 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
     <Ok key="o2" x={ox2} y={oy2} ux={-sy * ex} uy={-sy * ey} />,
   ];
 
-  // Yazı: yatayda çizginin üstünde, dikeyde solunda (sağdan okunur); sapma yığını varsa daha yukarı/uzağa
+  // Yazı: yatayda çizginin üstünde, dikeyde solunda (sağdan okunur); sapma yığını varsa daha yukarı/uzağa.
+  // yaziSagda: takımın önündeki (uç tarafındaki) çap ölçüsünde yazı çizginin sağına, takımdan uzağa yazılır.
+  // -90° dönen yazının gövdesi taban çizgisinin soluna düşer: taban çizgisi 1 mm boşluk + büyük harf boyu kadar sağda.
   const pay = tolYigini(tol, anma ?? deger) ? YAZI_PAYI.yigin : YAZI_PAYI.duz;
   const orta = disari ? disUc : (lo + hi) / 2;
   // Dikeyde yazı -90° döner: "start" yukarı, "end" aşağı doğru uzar
   const hizala = !disari ? "middle" : yatay ? (disari === "hi" ? "start" : "end") : (disari === "hi" ? "end" : "start");
   const yazi = yatay
     ? <OlcuYazisi x={orta} y={k - pay} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} hizala={hizala} />
-    : <OlcuYazisi x={k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} hizala={hizala} dondur />;
+    : <OlcuYazisi x={yaziSagda ? k + DIS_YAZI_X : k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} hizala={hizala} dondur />;
 
   return (
     <g {...olaylar} data-alan={alan}>

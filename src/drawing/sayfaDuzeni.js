@@ -88,7 +88,7 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
   const yanBolge = { x: alan.x, y: alan.y, w: alan.w - ucW, h: alan.h };
 
   // Ölçü çizgileri için pay: solda d, sağda D; altta L ve l1, üstte l2/kademeler
-  const yatayPay = 36;
+  const yatayPay = 44;   // uç tarafındaki çap yazıları çizginin sağında
   const ustPay = 18 + kademeSayisi * OLCU_SATIR + ustEk;
   const altPay = 36 + altEk;
   const secilen = olcekOku(olcek);
