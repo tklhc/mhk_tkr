@@ -350,3 +350,28 @@ describe("Uçtan görünüş kapatılabilir", () => {
     expect(dxfOlustur({ ...DEFAULT_PARAMS, ucGorunus: false })).not.toContain("UCTAN GORUNUS");
   });
 });
+
+describe("Okunaklı ölçüler", () => {
+  it("uç konisi boyu ölçüsü ayrıca kapatılabilir (resim ve DXF)", async () => {
+    const p = { ...DEFAULT_PARAMS, toolType: "drill", D: 15.9, pointAngle: 140 };
+    expect(render({ ...p, showUcKonisi: false })).not.toContain(">(2,89)<");
+    expect(render({ ...p, showUcKonisi: false })).toMatch(/>⌀15,9[ <]/);   // diğer ölçüler yerinde
+    const { generateDXF } = await import("../src/io/dxf.js");
+    expect(generateDXF(p)).toContain("(2,89)");
+    expect(generateDXF({ ...p, showUcKonisi: false })).not.toContain("(2,89)");
+  });
+  it("oklar arasına sığmayan yazı ölçü çizgisinin uzantısına, dışarı yazılır", async () => {
+    const { olcuYaziGenisligi } = await import("../src/drawing/iso.jsx");
+    const w = olcuYaziGenisligi({ deger: 2.89, referans: true });
+    expect(w).toBeGreaterThan(5);   // "(2,89)" 5 mm'den uzun: 2,89×2 = 5,8 mm'lik ölçüye oklarla sığmaz
+    const p = { ...DEFAULT_PARAMS, toolType: "drill", D: 15.9, pointAngle: 140 };
+    const m = /<text[^>]*x="([\d.]+)"[^>]*>\(2,89\)<\/text>/.exec(render(p));
+    const d = duzenHesapla(p);
+    const xUc = d.yan.ox + p.L * d.yan.olcek;          // takımın tepesi
+    expect(+m[1]).toBeGreaterThan(xUc);               // yazı tepenin dışında başlar, okların arasında değil
+  });
+  it("satırlar arası 10 mm", async () => {
+    const { OLCU_SATIR } = await import("../src/drawing/sayfaDuzeni.js");
+    expect(OLCU_SATIR).toBe(10);
+  });
+});

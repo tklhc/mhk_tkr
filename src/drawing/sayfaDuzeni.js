@@ -69,6 +69,9 @@ export const ANTET = { w: 140, h: 52 };                  // iki çizim türünde
  * @param {boolean} [o.ucKolon]  sağda uç görünüş/kesit sütunu var mı (ikisi de kapalıysa false: yan görünüş tüm genişlikte)
  * @param {number} [o.tabloSayisi]  antetin solundaki bilgi tablosunun satır sayısı (0: tablo yok)
  */
+/** Takımın üstünde/altında art arda gelen ölçü çizgileri arasındaki uzaklık (mm, kağıtta) */
+export const OLCU_SATIR = 10;
+
 export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0, altEk = 0, ustEk = 0, ucKolon = true }) {
   const k = KAGITLAR[kagit] || KAGITLAR.A4;
   const ie = tur === "ie";
@@ -86,8 +89,8 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
 
   // Ölçü çizgileri için pay: solda d, sağda D; altta L ve l1, üstte l2/kademeler
   const yatayPay = 36;
-  const ustPay = 16 + kademeSayisi * 7 + ustEk;
-  const altPay = 30 + altEk;
+  const ustPay = 18 + kademeSayisi * OLCU_SATIR + ustEk;
+  const altPay = 36 + altEk;
   const secilen = olcekOku(olcek);
   const yanOlcek = secilen || olcekSec([[L, yanBolge.w - yatayPay], [D, yanBolge.h - ustPay - altPay]]);
   const ucOlcek = olcekSec([[D, Math.min(ucBolge.w - 30, ucBolge.h - 46)]]);
