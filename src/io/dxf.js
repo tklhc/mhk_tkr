@@ -95,12 +95,14 @@ function generateDXF(params) {
     addLine(cLeft, -dCore / 2, L, -dCore / 2, "HIDDEN", 3);
   }
   // Uçtan görünüş: dış çap, çekirdek, eksen çizgileri
-  const ecx = L + D + 30;
-  addCircle(ecx, 0, hD, "CONTOUR", 7);
-  if (dCore > 0 && dCore < D) addCircle(ecx, 0, dCore / 2, "HIDDEN", 3);
-  addLine(ecx - hD - 2, 0, ecx + hD + 2, 0, "CENTER", 1);
-  addLine(ecx, -hD - 2, ecx, hD + 2, "CENTER", 1);
-  addText(ecx, -hD - 7, 3, `UCTAN GORUNUS  ${params.z} Z`, "TEXT", 7, 0, true);
+  if (params.ucGorunus !== false) {
+    const ecx = L + D + 30;
+    addCircle(ecx, 0, hD, "CONTOUR", 7);
+    if (dCore > 0 && dCore < D) addCircle(ecx, 0, dCore / 2, "HIDDEN", 3);
+    addLine(ecx - hD - 2, 0, ecx + hD + 2, 0, "CENTER", 1);
+    addLine(ecx, -hD - 2, ecx, hD + 2, "CENTER", 1);
+    addText(ecx, -hD - 7, 3, `UCTAN GORUNUS  ${params.z} Z`, "TEXT", 7, 0, true);
+  }
 
   // ── Ölçüler ──
   const stepdrill = g.tip === "stepdrill";

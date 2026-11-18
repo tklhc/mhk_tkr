@@ -64,6 +64,7 @@ const DEFAULT_PARAMS = {
   showDimAngles: true,
   kesitAA: false,       // kesit görünüşü A-A (şematik; açık değilse çizilmez)
   detayA: true,         // büyütülmüş uç detayı
+  ucGorunus: true,      // uçtan görünüş (kapatılırsa sağdaki sütun yalnız kesite kalır; kesit de yoksa yan görünüş tüm genişliği kullanır)
   disProfili: true,     // diş profili detayı (yalnız iş emri çiziminde, verisi varsa)
   ekOzellikler: [],     // iş emrinden gelen çizilmeyen üretim özellikleri: [[ad, değer], ...]
   ekGoster: true,       // üretim özellikleri tablosu resimde görünsün

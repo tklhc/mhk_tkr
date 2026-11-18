@@ -326,3 +326,27 @@ describe("Matkap uç konisi boyu (tepeden 1. çapa, referans ölçü)", () => {
     expect(render({ ...DEFAULT_PARAMS, toolType: "flat" })).not.toMatch(/>\(\d/);
   });
 });
+
+describe("Uçtan görünüş kapatılabilir", () => {
+  it("varsayılan açık; kapatılınca çizilmez ve yan görünüş tüm genişliği kullanır", () => {
+    expect(render({ ...DEFAULT_PARAMS })).toContain("UÇTAN GÖRÜNÜŞ");
+    const p = { ...DEFAULT_PARAMS, ucGorunus: false };
+    expect(render(p)).not.toContain("UÇTAN GÖRÜNÜŞ");
+    const d = duzenHesapla(p), d0 = duzenHesapla(DEFAULT_PARAMS);
+    expect(d.yan.bolge.w).toBeCloseTo(d.alan.w, 6);
+    expect(d.yan.bolge.w).toBeGreaterThan(d0.yan.bolge.w);
+    expect(d.yan.olcek).toBeGreaterThanOrEqual(d0.yan.olcek);
+  });
+  it("kesit A-A açıksa sağ sütun kesite kalır, kesit çizilir", () => {
+    const p = { ...DEFAULT_PARAMS, ucGorunus: false, kesitAA: true, dCore: 6 };
+    const svg = render(p);
+    expect(svg).not.toContain("UÇTAN GÖRÜNÜŞ");
+    expect(svg).toMatch(/KESİT A-A/);
+    expect(duzenHesapla(p).yan.bolge.w).toBeLessThan(duzenHesapla(p).alan.w);
+  });
+  it("DXF'te de uçtan görünüş yazılmaz", async () => {
+    const { generateDXF: dxfOlustur } = await import("../src/io/dxf.js");
+    expect(dxfOlustur({ ...DEFAULT_PARAMS })).toContain("UCTAN GORUNUS");
+    expect(dxfOlustur({ ...DEFAULT_PARAMS, ucGorunus: false })).not.toContain("UCTAN GORUNUS");
+  });
+});

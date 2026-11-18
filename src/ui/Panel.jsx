@@ -20,7 +20,7 @@ const SEKMELER = [["takim", "Takım"], ["resim", "Resim"], ["belge", "Belge"], [
 const GOSTER = [
   ["showDimD", "⌀D"], ["showDimd", "⌀d"], ["showDimL", "L"], ["showDiml1", "l₁"], ["showDiml2", "l₂"],
   ["showDimNeck", "⌀ Boğaz"], ["showDimHelix", "Helis açısı"], ["showDimAngles", "Açı / R / pah"],
-  ["kesitAA", "Kesit A-A"], ["detayA", "Uç detayı"], ["disProfili", "Diş profili"],
+  ["ucGorunus", "Uçtan görünüş"], ["kesitAA", "Kesit A-A"], ["detayA", "Uç detayı"], ["disProfili", "Diş profili"],
 ];
 
 const DAMGALAR = [

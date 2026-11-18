@@ -36,11 +36,12 @@ export function Kesit({ params, yan, uc, bolum, dimOff, setDimOff }) {
 
   // ── Kesit görünüşünün yeri: uç görünüşün altı ──
   const RendMm = g.D / 2;
-  const cyUst = uc.cy + RendMm * uc.olcek + 26;    // uç görünüşün başlığının altı
+  // uç görünüşün başlığının altı; uç görünüş kapalıysa sütunun üstü
+  const cyUst = params.ucGorunus === false ? uc.bolge.y + 8 : uc.cy + RendMm * uc.olcek + 26;
   const alt = uc.bolge.y + uc.bolge.h - 3;
   let sk = null;
   for (const o of OLCEKLER) {
-    if (o > uc.olcek) continue;
+    if (params.ucGorunus !== false && o > uc.olcek) continue;
     const Rk = Rmm * o;
     if (cyUst + 2 * Rk + 16 <= alt) { sk = o; break; }
   }
