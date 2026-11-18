@@ -375,3 +375,20 @@ describe("Okunaklı ölçüler", () => {
     expect(OLCU_SATIR).toBe(10);
   });
 });
+
+describe("Çap ölçüsü yazısı eksende kalır", () => {
+  it("küçük ölçekte bile 1. kademe çapı (toleranslı) eksene ortalanır, aşağı kaymaz", () => {
+    const p = { ...DEFAULT_PARAMS, toolType: "stepdrill", d: 16, L: 82, kademeOlcu: "toplam", olcek: "1:1",
+      steps: [{ dia: 14.75, len: 10, angle: 140, tolDia: "+0,08/0", tolLen: "" }, { dia: 16, len: 20, angle: 90, tolDia: "", tolLen: "" }] };
+    const svg = render(p);
+    const m = /<g transform="rotate\(-90 ([\d.]+) ([\d.]+)\)"><text[^>]*>⌀14,75<\/text>/.exec(svg);
+    expect(m).not.toBeNull();
+    const d = duzenHesapla(p);
+    const yazi = /<text x="([\d.]+)"[^>]*>⌀14,75<\/text>/.exec(svg.slice(m.index));
+    expect(+m[2]).toBeCloseTo(d.yan.oy, 0);   // döndürme noktası eksende
+    // -90° döndürmede yazının başlangıcı (yerel x) döndürme noktasının yarım yazı boyu kadar önünde: eksene ortalı
+    const yariBoy = +m[1] - +yazi[1];
+    expect(yariBoy).toBeGreaterThan(2);
+    expect(yariBoy).toBeLessThan(10);
+  });
+});
