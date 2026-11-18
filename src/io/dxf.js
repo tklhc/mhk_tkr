@@ -1,4 +1,4 @@
-import { takimProfili, tamKontur } from "../geometry/profil";
+import { takimProfili, tamKontur, ucKonisiBoyu } from "../geometry/profil";
 import { toleransCoz, sapmaYaz } from "../geometry/tolerans";
 
 // DXF dışa aktarma (AC1015 / R2000) — kontur, eksen, ölçüler, uçtan görünüş. Kontur geometri modelinden
@@ -110,6 +110,11 @@ function generateDXF(params) {
   }
   if (stepdrill && params.kademeOlcu === "toplam" && params.showDiml1 !== false) {
     olcuYatay(L - g.l1, hmax, L, hmax, hmax + 7, olcuMetni(g.l1, { tol: params.toll1, anma: g.l1 }));
+  }
+  // Uç konisi (tepeden 1. çapa), referans ölçü
+  const koni = ucKonisiBoyu(g, params);
+  if (koni && params.showDiml1 !== false) {
+    olcuYatay(L - koni.boy, koni.r, L, 0, hmax + (stepdrill ? 14 : 7), `(${fmt(Math.round(koni.boy * 100) / 100)})`);
   }
   if (params.showDimL !== false) {
     olcuYatay(0, -hd, L, -hD, yAlt - (stepdrill ? 7 : 14), olcuMetni(L, { tol: params.tolL, anma: L }));

@@ -309,3 +309,20 @@ export function parcaNoktalari(s, adim = 12) {
   }
   return pts;
 }
+
+/**
+ * Matkap uç konisi: takımın tepesinden 1. çapın tam çaplı başladığı yere eksen boyunca mesafe.
+ * boy = (D/2) / tan(uç açısı / 2). Matkap ve kademeli matkap dışında null.
+ * @returns {null | { boy: number, r: number }}
+ */
+export function ucKonisiBoyu(g, params) {
+  if (g.tip === "stepdrill") {
+    const k0 = g.kademeler?.[0];
+    return k0 && k0.gecisBoyu > 0 ? { boy: k0.gecisBoyu, r: k0.dia / 2 } : null;
+  }
+  if (g.tip === "drill") {
+    const r = g.D / 2, aci = params.pointAngle || 140;
+    return r > 0 && aci > 0 && aci < 180 ? { boy: r / Math.tan((aci / 2) * Math.PI / 180), r } : null;
+  }
+  return null;
+}

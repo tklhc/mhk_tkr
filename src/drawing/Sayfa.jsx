@@ -24,7 +24,7 @@ export function duzenHesapla(params) {
     olcek: params.olcek,
     tur: params.cizimTuru === "ie" ? "ie" : "musteri",
     tabloSayisi: tabloIcerigi(params, g)?.ogeler.length ?? 0,
-    ustEk: (String(params.salgi ?? "").trim() ? SALGI_UST_EK : 0) + (g.tip === "stepdrill" && params.kademeOlcu === "toplam" ? 8 : 0),   // salgı çerçevesi / ikinci boy ölçü satırı için takımın üstünde yer aç
+    ustEk: (String(params.salgi ?? "").trim() ? SALGI_UST_EK : 0) + ((g.tip === "stepdrill" || g.tip === "drill") && params.showDiml1 !== false ? 8 : 0),   // salgı çerçevesi / ikinci boy ölçü satırı için takımın üstünde yer aç
     altEk: disProfiliGorunsun(params, g) ? 30 : 0,   // diş profili detayı için takımın altında yer aç
   });
 }
