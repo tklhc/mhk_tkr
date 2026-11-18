@@ -183,7 +183,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
         // 1. kademe (uç) çapı takımın dışında, uç tarafında; diğerleri kendi bölümünün üstünde
         const xm = i === 0 ? kd.sag - kd.gecisBoyu : (kd.sol + kd.sag - kd.gecisBoyu) / 2;
         e.push(<Olcu key={`dsd${i}`} id={`dsd${i}`} yon="dikey" p1={[X(xm), Y(kd.dia / 2)]} p2={[X(xm), Y(-kd.dia / 2)]}
-          konum={i === 0 ? X(g.L) + 10 : X(xm)} deger={kd.dia} onEk="⌀" tol={kd.tolDia} anma={kd.dia} {...ek} />);
+          konum={i === 0 ? X(g.L) + 10 : X(xm)} yaziSagda={i === 0} deger={kd.dia} onEk="⌀" tol={kd.tolDia} anma={kd.dia} {...ek} />);
       }
     });
   }
@@ -215,12 +215,12 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   if (!stepdrill && !ozel && params.showDimD) {
     const xd = xCapta(g, hD);
     e.push(<Olcu key="dD" id="dD" alan="D" yon="dikey" p1={[X(xd), Y(hD)]} p2={[X(xd), Y(-hD)]}
-      konum={X(g.L) + (g.konik ? 20 : 10)} deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
+      konum={X(g.L) + (g.konik ? 20 : 10)} yaziSagda deger={g.D} onEk="⌀" tol={params.tolD} anma={g.D} {...ek} />);
   }
   if (g.konik && params.showDimD) {
     const rt = params.tipD / 2;
     e.push(<Olcu key="dTip" id="dTip" alan="tipD" yon="dikey" p1={[X(g.L), Y(rt)]} p2={[X(g.L), Y(-rt)]}
-      konum={X(g.L) + 10} deger={params.tipD} onEk="⌀" tol={params.tolTip} anma={params.tipD} {...ek} />);
+      konum={X(g.L) + 10} yaziSagda deger={params.tipD} onEk="⌀" tol={params.tolTip} anma={params.tipD} {...ek} />);
   }
   // Sol: sap çapı (d)
   if (params.showDimd) {
