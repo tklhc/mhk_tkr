@@ -4,7 +4,7 @@ import { DEFAULT_PARAMS } from "../constants";
 // kalıntıları (notlar, damga, üretim özellikleri, sürüklenmiş konumlar) taşınmaz.
 
 /** Takım değişse de kullanıcının seçili kalmasını beklediği sayfa tercihleri. */
-export const TERCIHLER = ["dil", "kagit", "olcek", "sunum", "cizimTuru", "genelTolerans", "createdBy", "kesitAA", "detayA", "ucGorunus",
+export const TERCIHLER = ["dil", "kagit", "olcek", "sunum", "cizimTuru", "genelTolerans", "createdBy", "kesitAA", "detayA", "ucGorunus", "showUcKonisi",
   "showDimD", "showDimd", "showDimL", "showDiml1", "showDiml2", "showDimNeck", "showDimHelix", "showDimAngles"];
 
 /** Derin kopya: kayıtlar ve varsayılanlar paylaşılan nesneleri (steps, notes…) değiştirmesin. */

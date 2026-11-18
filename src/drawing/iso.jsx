@@ -67,7 +67,8 @@ export const YAZI_PAYI = { duz: 1, yigin: 2.8 };
  * Ana yazının ve sapmaların gerçek genişliği tarayıcıda ölçülür; böylece sapmalar
  * ana yazıya bitişik durur (sunucuda ve ilk çizimde tahmin kullanılır).
  */
-export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, hizala = "middle", referans = false }) {
+/** Ölçü yazısının parçaları: ana satır (değer + ISO sınıfı / ±) ve varsa üst/alt sapma */
+export function yaziParcalari({ deger, onEk = "", tol, anma, referans = false }) {
   const t = toleransCoz(tol, anma ?? deger);
   const ana = referans ? `(${onEk}${fmt(deger)})` : `${onEk}${fmt(deger)}`;   // referans (hesaplanan) ölçü parantez içinde, ISO 129-1
   let ek = "";       // ana satıra eklenen (ISO sınıfı, ±)
@@ -82,7 +83,17 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
   } else if (tol && String(tol).trim()) {
     ek = ` ${String(tol).trim()}`; // tanınmayan metin olduğu gibi
   }
-  const anaMetin = ana + ek;
+  return { anaMetin: ana + ek, ust, alt };
+}
+
+/** Ölçü yazısının tahmini genişliği (mm); ok arasına sığıp sığmadığına karar vermek için */
+export function olcuYaziGenisligi(o) {
+  const { anaMetin, ust, alt } = yaziParcalari(o);
+  return yaziGenisligi(anaMetin, YAZI.olcu) + (ust != null ? 0.7 + Math.max(yaziGenisligi(ust, YAZI.tol), yaziGenisligi(alt, YAZI.tol)) : 0);
+}
+
+export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, hizala = "middle", referans = false }) {
+  const { anaMetin, ust, alt } = yaziParcalari({ deger, onEk, tol, anma, referans });
 
   const refA = useRef(null), refU = useRef(null), refL = useRef(null);
   const [olc, setOlc] = useState(null);
@@ -119,7 +130,7 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
  * Sürüklenince yalnız ölçü çizgisinin yeri değişir; yardımcı çizgiler uzar/kısalır.
  * referans: başka ölçülerden hesaplanan ölçü, parantez içinde yazılır.
  */
-export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false }) {
+export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false, yaziYani = "hi" }) {
   const yatay = yon === "yatay";
   const { off, olaylar } = useSurukle(id, offsets, setOffsets, yatay ? "y" : "x");
   const k = konum + (yatay ? off.dy : off.dx);
@@ -146,8 +157,13 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
   // Ok yeri: sığıyorsa içte, sığmıyorsa dışta (çizgi dışa uzar)
   const icte = uzunluk >= 2 * OK.boy + 1.5;
   const uzat = icte ? 0 : OK.boy + 3;
-  const [cx1, cy1] = P(lo - uzat, k);
-  const [cx2, cy2] = P(hi + uzat, k);
+  // Yazı oklar arasına rahat sığmıyorsa ölçü çizgisinin uzantısına, okların dışına yazılır (ISO 129-1)
+  const wYazi = olcuYaziGenisligi({ deger, onEk, tol, anma, referans });
+  const disari = uzunluk < wYazi + 2 * OK.boy + 2 ? (yaziYani === "lo" ? "lo" : "hi") : null;
+  const YAZI_ARA = 1.2;
+  const disUc = disari === "hi" ? hi + uzat + YAZI_ARA : lo - uzat - YAZI_ARA;   // yazının ölçüye yakın ucu
+  const [cx1, cy1] = P(disari === "lo" ? disUc - wYazi - 0.5 : lo - uzat, k);
+  const [cx2, cy2] = P(disari === "hi" ? disUc + wYazi + 0.5 : hi + uzat, k);
   const [ox1, oy1] = P(lo, k);
   const [ox2, oy2] = P(hi, k);
   // İçte: oklar dışa (lo ucunda -eksen, hi ucunda +eksen); dışta: içe bakar
@@ -160,10 +176,12 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
 
   // Yazı: yatayda çizginin üstünde, dikeyde solunda (sağdan okunur); sapma yığını varsa daha yukarı/uzağa
   const pay = tolYigini(tol, anma ?? deger) ? YAZI_PAYI.yigin : YAZI_PAYI.duz;
-  const orta = (lo + hi) / 2;
+  const orta = disari ? disUc : (lo + hi) / 2;
+  // Dikeyde yazı -90° döner: "start" yukarı, "end" aşağı doğru uzar
+  const hizala = !disari ? "middle" : yatay ? (disari === "hi" ? "start" : "end") : (disari === "hi" ? "end" : "start");
   const yazi = yatay
-    ? <OlcuYazisi x={orta} y={k - pay} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} />
-    : <OlcuYazisi x={k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} dondur />;
+    ? <OlcuYazisi x={orta} y={k - pay} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} hizala={hizala} />
+    : <OlcuYazisi x={k - pay} y={orta} deger={deger} onEk={onEk} tol={tol} anma={anma} referans={referans} hizala={hizala} dondur />;
 
   return (
     <g {...olaylar} data-alan={alan}>

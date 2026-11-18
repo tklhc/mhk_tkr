@@ -115,7 +115,7 @@ function generateDXF(params) {
   }
   // Uç konisi (tepeden 1. çapa), referans ölçü
   const koni = ucKonisiBoyu(g, params);
-  if (koni && params.showDiml1 !== false) {
+  if (koni && params.showDiml1 !== false && params.showUcKonisi !== false) {
     olcuYatay(L - koni.boy, koni.r, L, 0, hmax + (stepdrill ? 14 : 7), `(${fmt(Math.round(koni.boy * 100) / 100)})`);
   }
   if (params.showDimL !== false) {
@@ -130,8 +130,8 @@ function generateDXF(params) {
   if (stepdrill && params.showDimD !== false) {
     for (const [i, kd] of g.kademeler.entries()) {
       if (params.kademeOlcu === "toplam" && i > 0 && Math.abs(kd.dia - d) < 1e-9) continue;
-      const xm = (kd.sol + kd.sag - kd.gecisBoyu) / 2;
-      olcuDikey(xm, kd.dia / 2, xm, -kd.dia / 2, xm, olcuMetni(kd.dia, { onEk: "⌀", tol: kd.tolDia, anma: kd.dia }));
+      const xm = i === 0 ? kd.sag - kd.gecisBoyu : (kd.sol + kd.sag - kd.gecisBoyu) / 2;
+      olcuDikey(xm, kd.dia / 2, xm, -kd.dia / 2, i === 0 ? L + 10 : xm, olcuMetni(kd.dia, { onEk: "⌀", tol: kd.tolDia, anma: kd.dia }));
     }
   }
   if (params.showDimd !== false) {
