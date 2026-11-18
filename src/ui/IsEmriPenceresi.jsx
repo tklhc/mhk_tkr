@@ -83,6 +83,7 @@ export function IsEmriPenceresi({ mevcut, kapat, uygula, baslangicMetni = "" }) 
               <div><small>Takım tipi</small><b>{onizleme.sonuc.tip ? TOOL_TYPES[onizleme.sonuc.tip] : "Okunamadı"}</b></div>
               <div><small>Takım kodu</small><b>{onizleme.sonuc.tipKodu || "-"}</b></div>
               <div><small>İş emri</small><b>{onizleme.sonuc.bilgi.ieNo || "-"}</b></div>
+              <div><small>Ölçü kaynağı</small><b>{onizleme.sonuc.kaynak === "uretim" ? "ÜRETİM bölümü" : "Tüm yazı"}</b></div>
             </div>
 
             <div className="grup-baslik" style={{ marginTop: 14 }}><span>Okunan değerler</span><small>{onizleme.sonuc.bulunan.length} alan</small></div>
