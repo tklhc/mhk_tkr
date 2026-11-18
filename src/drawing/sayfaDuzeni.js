@@ -66,9 +66,10 @@ export const ANTET = { w: 140, h: 52 };                  // iki çizim türünde
  * @param {"musteri"|"ie"} [o.tur]  çizim türü (antet ve tablo ölçüleri aynı; yalnız tablonun içeriği değişir)
  * @param {number} [o.ustEk]  takımın üstünde ek boş yer (mm): salgı çerçevesi gibi işaretler için
  * @param {number} [o.altEk]  takımın altında ek boş yer (mm): büyük detay görünüşleri için (diş profili)
+ * @param {boolean} [o.ucKolon]  sağda uç görünüş/kesit sütunu var mı (ikisi de kapalıysa false: yan görünüş tüm genişlikte)
  * @param {number} [o.tabloSayisi]  antetin solundaki bilgi tablosunun satır sayısı (0: tablo yok)
  */
-export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0, altEk = 0, ustEk = 0 }) {
+export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "otomatik", tur = "musteri", tabloSayisi = 0, altEk = 0, ustEk = 0, ucKolon = true }) {
   const k = KAGITLAR[kagit] || KAGITLAR.A4;
   const ie = tur === "ie";
   const cerceve = { x: CERCEVE.sol, y: CERCEVE.ust, w: k.w - CERCEVE.sol - CERCEVE.sag, h: k.h - CERCEVE.ust - CERCEVE.alt };
@@ -79,7 +80,7 @@ export function sayfaDuzeni({ kagit = "A4", L, D, kademeSayisi = 0, olcek = "oto
   const alan = { x: cerceve.x, y: cerceve.y, w: cerceve.w, h: antet.y - cerceve.y };
 
   // Uç görünüş sağda, yan görünüş solda
-  const ucW = Math.min(Math.max(alan.w * 0.26, 64), 120);
+  const ucW = ucKolon ? Math.min(Math.max(alan.w * 0.26, 64), 120) : 0;
   const ucBolge = { x: alan.x + alan.w - ucW, y: alan.y, w: ucW, h: alan.h };
   const yanBolge = { x: alan.x, y: alan.y, w: alan.w - ucW, h: alan.h };
 

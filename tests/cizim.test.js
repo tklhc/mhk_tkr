@@ -309,3 +309,44 @@ describe("Sol alttaki sayfa notları kutusu yok; tablo antetle aynı yükseklikt
     for (const e of ["0507 321 62 80", "taha@mihenk.net", "www.mihenkkesicitakimlar.com"]) expect(svg).toContain(`>${e}<`);
   });
 });
+
+describe("Matkap uç konisi boyu (tepeden 1. çapa, referans ölçü)", () => {
+  it("ucKonisiBoyu = (D/2) / tan(uç açısı/2); matkap dışı takımda yok", async () => {
+    const { ucKonisiBoyu, takimProfili } = await import("../src/geometry/profil.js");
+    const p = { ...DEFAULT_PARAMS, toolType: "drill", D: 15.9, pointAngle: 140 };
+    expect(ucKonisiBoyu(takimProfili(p), p).boy).toBeCloseTo(7.95 / Math.tan((70 * Math.PI) / 180), 6);
+    const f = { ...DEFAULT_PARAMS, toolType: "flat" };
+    expect(ucKonisiBoyu(takimProfili(f), f)).toBeNull();
+  });
+  it("matkapta ve kademeli matkapta parantez içinde yazılır; kapatılınca yazılmaz", () => {
+    expect(render({ ...DEFAULT_PARAMS, toolType: "drill", D: 15.9, pointAngle: 140 })).toContain(">(2,89)<");
+    expect(render({ ...DEFAULT_PARAMS, toolType: "stepdrill" })).toContain(">(1,82)<");   // varsayılan 1. kademe ⌀10, 140°
+    expect(render({ ...DEFAULT_PARAMS, toolType: "stepdrill", kademeOlcu: "toplam" })).toContain(">(1,82)<");
+    expect(render({ ...DEFAULT_PARAMS, toolType: "drill", showDiml1: false })).not.toMatch(/>\(\d/);
+    expect(render({ ...DEFAULT_PARAMS, toolType: "flat" })).not.toMatch(/>\(\d/);
+  });
+});
+
+describe("Uçtan görünüş kapatılabilir", () => {
+  it("varsayılan açık; kapatılınca çizilmez ve yan görünüş tüm genişliği kullanır", () => {
+    expect(render({ ...DEFAULT_PARAMS })).toContain("UÇTAN GÖRÜNÜŞ");
+    const p = { ...DEFAULT_PARAMS, ucGorunus: false };
+    expect(render(p)).not.toContain("UÇTAN GÖRÜNÜŞ");
+    const d = duzenHesapla(p), d0 = duzenHesapla(DEFAULT_PARAMS);
+    expect(d.yan.bolge.w).toBeCloseTo(d.alan.w, 6);
+    expect(d.yan.bolge.w).toBeGreaterThan(d0.yan.bolge.w);
+    expect(d.yan.olcek).toBeGreaterThanOrEqual(d0.yan.olcek);
+  });
+  it("kesit A-A açıksa sağ sütun kesite kalır, kesit çizilir", () => {
+    const p = { ...DEFAULT_PARAMS, ucGorunus: false, kesitAA: true, dCore: 6 };
+    const svg = render(p);
+    expect(svg).not.toContain("UÇTAN GÖRÜNÜŞ");
+    expect(svg).toMatch(/KESİT A-A/);
+    expect(duzenHesapla(p).yan.bolge.w).toBeLessThan(duzenHesapla(p).alan.w);
+  });
+  it("DXF'te de uçtan görünüş yazılmaz", async () => {
+    const { generateDXF: dxfOlustur } = await import("../src/io/dxf.js");
+    expect(dxfOlustur({ ...DEFAULT_PARAMS })).toContain("UCTAN GORUNUS");
+    expect(dxfOlustur({ ...DEFAULT_PARAMS, ucGorunus: false })).not.toContain("UCTAN GORUNUS");
+  });
+});

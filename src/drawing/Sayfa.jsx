@@ -24,8 +24,9 @@ export function duzenHesapla(params) {
     olcek: params.olcek,
     tur: params.cizimTuru === "ie" ? "ie" : "musteri",
     tabloSayisi: tabloIcerigi(params, g)?.ogeler.length ?? 0,
-    ustEk: (String(params.salgi ?? "").trim() ? SALGI_UST_EK : 0) + (g.tip === "stepdrill" && params.kademeOlcu === "toplam" ? 8 : 0),   // salgı çerçevesi / ikinci boy ölçü satırı için takımın üstünde yer aç
+    ustEk: (String(params.salgi ?? "").trim() ? SALGI_UST_EK : 0) + ((g.tip === "stepdrill" || g.tip === "drill") && params.showDiml1 !== false ? 8 : 0),   // salgı çerçevesi / ikinci boy ölçü satırı için takımın üstünde yer aç
     altEk: disProfiliGorunsun(params, g) ? 30 : 0,   // diş profili detayı için takımın altında yer aç
+    ucKolon: params.ucGorunus !== false || kesitVarMi(params, g),   // uçtan görünüş ya da kesit için sağ sütun
   });
 }
 
@@ -56,9 +57,11 @@ export function Sayfa({ params, dimOff, setDimOff, style, cakisma }) {
       <DetayA params={params} yerlesim={yan} bolum="gorunum" harf={detayHarfi} {...ek} />
       <Kesit params={params} yan={yan} uc={uc} bolum="gorunum" {...ek} />
       <DisProfili params={params} yerlesim={yan} {...ek} />
-      <Surukle id="g-uc" offsets={dimOff} setOffsets={setDimOff}>
-        <UcGorunus params={params} yerlesim={uc} {...ek} />
-      </Surukle>
+      {params.ucGorunus !== false && (
+        <Surukle id="g-uc" offsets={dimOff} setOffsets={setDimOff}>
+          <UcGorunus params={params} yerlesim={uc} {...ek} />
+        </Surukle>
+      )}
       <BilgiTablosu icerik={tabloIcerigi(params, takimProfili(params))} sayfa={duzen} />
       <Antet params={params} sayfa={duzen} />
       <RevizyonTablosu params={params} sayfa={duzen} />

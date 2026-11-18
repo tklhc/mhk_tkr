@@ -1,4 +1,4 @@
-import { takimProfili, tamKontur, svgYolu, parcaUclari } from "../geometry/profil";
+import { takimProfili, tamKontur, svgYolu, parcaUclari, ucKonisiBoyu } from "../geometry/profil";
 import { CIZGI, Eksen, Olcu, Kilavuz, fmt } from "./iso";
 import { kaplamaRengi, silindirDuraklari } from "./stil";
 import { mt, yonMetni } from "./metinler";
@@ -165,6 +165,13 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     e.push(<Olcu key="dst-toplam" id="dst-toplam" yon="yatay" p1={[X(g.L - g.l1), Y(yaricapAt(g, g.L - g.l1))]} p2={[X(g.L), Y(0)]}
       konum={ust - 14} deger={g.l1} tol={params.toll1} anma={g.l1} {...ek} />);
   }
+  // Matkap ucu: takımın tepesinden 1. çapın başladığı yere kadar uç konisinin boyu (çap ve uç açısından hesaplanır;
+  // başka ölçülerden türediği için referans ölçü, parantezli). Havşalıda 1. kademe boyuyla aynı satırda zincir.
+  const ucKonisi = ucKonisiBoyu(g, params);
+  if (ucKonisi && params.showDiml1 !== false) {
+    e.push(<Olcu key="dUcKoni" id="dUcKoni" yon="yatay" p1={[X(g.L - ucKonisi.boy), Y(ucKonisi.r)]} p2={[X(g.L), Y(0)]}
+      konum={ust - (stepdrill && !toplamOlcu ? 14 : 7)} deger={Math.round(ucKonisi.boy * 100) / 100} referans {...ek} />);
+  }
   if (stepdrill) {
     g.kademeler.forEach((kd, i) => {
       if (params.showDiml1 !== false && !toplamOlcu) {
@@ -254,7 +261,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
     if (g.tip === "drill") {
       const ucBoyu = hD / Math.tan(((params.pointAngle || 140) / 2) * DEG);
       const hx = X(g.L - ucBoyu / 2), hy = Y(hD / 2);
-      e.push(<Kilavuz key="aPoint" id="aPoint" hedef={[hx, hy]} dirsek={[hx, ust - 6]} metin={`${fmt(params.pointAngle || 140)}°`} {...ek} />);
+      e.push(<Kilavuz key="aPoint" id="aPoint" hedef={[hx, hy]} dirsek={[hx, ust - (params.showDiml1 !== false ? 14 : 6)]} metin={`${fmt(params.pointAngle || 140)}°`} {...ek} />);
     }
     // Kademeli matkap: uç ve geçiş açıları
     if (stepdrill) {
@@ -263,7 +270,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
         const rr = i === 0 ? r / 2 : (r + g.kademeler[i - 1].dia / 2) / 2;
         const xm = kd.sag - kd.gecisBoyu / 2;
         const hx = X(xm);
-        if (i === 0) e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(rr)]} dirsek={[hx, ust - (params.kademeOlcu === "toplam" ? 21 : 13)]} metin={`${fmt(kd.angle)}°`} {...ek} />);
+        if (i === 0) e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(rr)]} dirsek={[hx, ust - (params.showDiml1 !== false ? 21 : 13)]} metin={`${fmt(kd.angle)}°`} {...ek} />);
         else e.push(<Kilavuz key={`aS${i}`} id={`aS${i}`} hedef={[hx, Y(-rr)]} dirsek={[hx, alt + 5]} metin={`${fmt(kd.angle)}°`} {...ek} />);
       });
     }
