@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isEmriMetniCoz, isEmriParametreleri, norm } from "../src/io/isEmri.js";
+import { toleransAyikla, isEmriMetniCoz, isEmriParametreleri, norm } from "../src/io/isEmri.js";
 import { takimProfili } from "../src/geometry/profil.js";
 import { DEFAULT_PARAMS } from "../src/constants.js";
 
@@ -224,5 +224,54 @@ describe("İE-831 (Std. Havşalı Matkap)", () => {
     const kisa = isEmriParametreleri(isEmriMetniCoz(IE831.replace("Helis Boyu 30 mm", "Helis Boyu 12 mm")), DEFAULT_PARAMS);
     expect(kisa.params.kademeOlcu).not.toBe("toplam");
     expect(kisa.uyarilar.some((u) => /kapsamıyor/.test(u))).toBe(true);
+  });
+});
+
+describe("İE'de ölçünün yanında yazılı toleranslar", () => {
+  const ie = (cap, saft = "16 mm", boy = "100 mm") => `TAKIM BİLGİSİ
+İŞ EMRİ
+Std. Freze 114x15,9x45x16x100
+İE-900
+TAKIM ÖZELLİKLERİ
+Takım Çapı ${cap} Helis Boyu 45 mm
+Şaft Çapı ${saft} Ağız Sayısı 4
+Takım Boyu ${boy}
+TEKNİK ÖZELLİKLER
+Helis Açısı 35 °`;
+  const coz = (m) => isEmriParametreleri(isEmriMetniCoz(m), DEFAULT_PARAMS);
+
+  it("toleransAyikla: yaygın yazımlar", () => {
+    const t = (h) => toleransAyikla(h)?.metin ?? null;
+    expect(t("15,9 +0,08 mm")).toBe("+0,08/0");
+    expect(t("15,9 mm +0,08/0")).toBe("+0,08/0");
+    expect(t("15,9 (+0,05 -0,02)")).toBe("+0,05/-0,02");
+    expect(t("15,9 0/-0,02 mm")).toBe("0/-0,02");
+    expect(t("15,9 ± 0,01")).toBe("±0,01");
+    expect(t("15,9 h6 mm")).toBe("h6");
+    expect(t("15,9 Tol. -0,02")).toBe("0/-0,02");
+    for (const yok of ["15,9 mm", "100 mm", "2", "15,9 x 45", "114x15,5x45", "15,9 0,5"]) expect(t(yok)).toBeNull();
+  });
+  it("Ø15,9 +0,08: çapın toleransı resme gelir, değer bozulmaz, tek yönlü olduğu uyarılır", () => {
+    const { params: p, uyarilar } = coz(ie("15,9 +0,08 mm"));
+    expect(p.D).toBe(15.9);
+    expect(p.tolD).toBe("+0,08/0");
+    expect(p.told).toBe("");
+    expect(uyarilar.join("|")).toMatch(/Toleranslar iş emrinden okundu: Takım Çapı \+0,08\/0/);
+    expect(uyarilar.join("|")).toMatch(/tek yönlü sapma/);
+    expect(uyarilar.join("|")).not.toMatch(/Toleranslar iş emrinde yok/);
+  });
+  it("çap, şaft ve boy toleransları ayrı alanlara; yazılmayan boş kalır", () => {
+    const { params: p } = coz(ie("15,9 +0,08/0 mm", "16 h6 mm", "100 ±0,1 mm"));
+    expect(p).toMatchObject({ tolD: "+0,08/0", told: "h6", tolL: "±0,1", toll1: "" });
+  });
+  it("okunan tolerans önizleme listesinde 'Tolerans' olarak görünür", () => {
+    const s = isEmriMetniCoz(ie("15,9 +0,05/-0,02 mm"));
+    expect(s.bulunan.some((b) => b.etiket === "Takım Çapı toleransı" && b.ham === "+0,05/-0,02" && b.kullanim === "Tolerans")).toBe(true);
+  });
+  it("kademeli matkapta çap toleransı ilk kademeye yazılır", () => {
+    const m = IE831.replace("Çap 16,4 mm", "Çap 16,4 +0,05/0 mm");
+    const { params: p } = coz(m);
+    expect(p.steps[0].tolDia).toBe("+0,05/0");
+    expect(p.tolD).toBe("+0,05/0");
   });
 });

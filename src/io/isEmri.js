@@ -65,6 +65,36 @@ const TIPLER = [
 // İE'deki ölçü alanlarından üretim tablosunda da yazılacaklar (çap, şaft çapı, takım boyu ve helis boyu zaten çizimde ölçülüdür)
 const URETIM_ALANLARI = new Set(["z", "helix", "dCore", "pointAngle", "kademeBoyu", "kosePahi", "rCorner", "pahGenisligi", "kureRadyusu"]);
 
+// Ölçü değerinin hemen ardından yazılan tolerans: "15,9 +0,08 mm", "15,9 mm +0,08/0", "15,9 ±0,01", "15,9 h6", "15,9 (+0,05 -0,02)", "15,9 Tol. 0/-0,02"
+const TOL_SAYI = String.raw`\d+(?:[.,]\d+)?`;
+const TOL_ISR = String.raw`[+\-−]\s*${TOL_SAYI}`;                       // işaretli sapma: +0,08  -0,02
+const TOL_SIFIR = String.raw`0(?![.,\d])`;                              // yalnız "0"
+const TOL_IKI = new RegExp(String.raw`^(?:(${TOL_ISR})\s*[/\s]\s*(${TOL_ISR}|${TOL_SIFIR})|(${TOL_SIFIR})\s*[/\s]\s*(${TOL_ISR}))`);
+const TOL_SIM = new RegExp(String.raw`^(?:±|\+\s*/?\s*[-−])\s*(${TOL_SAYI})`);
+const TOL_TEK = new RegExp(String.raw`^([+\-−])\s*(${TOL_SAYI})`);
+const TOL_ISO = /^(js|JS|[defghkmnpDEFGH])(\d{1,2})(?![\w.,])/;
+const isaret = (s) => s.replace(/\s+/g, "").replace("−", "-");
+
+/**
+ * Değer metninde (ham) ilk sayıdan sonra gelen toleransı ayıklar; yoksa null.
+ * @returns {null | { metin: string, tek: boolean }}  tek: yalnız tek yönlü sapma yazılmıştı (öbür sapma 0 varsayıldı)
+ */
+export function toleransAyikla(ham) {
+  const m = /-?\d+(?:[.,]\d+)?/.exec(String(ham ?? ""));
+  if (!m) return null;
+  let rest = String(ham).slice(m.index + m[0].length);
+  rest = rest.replace(/^\s*(?:mm)?\s*(?:\(\s*)?(?:tol(?:eransı|erans)?\.?\s*:?\s*)?/i, "").replace(/^\s*(?:mm)?\s*/i, "");
+  let t;
+  if ((t = TOL_IKI.exec(rest))) {
+    const ust = isaret(t[1] || t[3]), alt = isaret(t[2] || t[4]);
+    return { metin: `${ust}/${alt}`, tek: false };
+  }
+  if ((t = TOL_SIM.exec(rest))) return { metin: `±${t[1]}`, tek: false };
+  if ((t = TOL_TEK.exec(rest))) return { metin: isaret(t[1]) === "+" ? `+${t[2]}/0` : `0/-${t[2]}`, tek: true };
+  if ((t = TOL_ISO.exec(rest))) return { metin: `${t[1]}${t[2]}`, tek: false };
+  return null;
+}
+
 const BOS = /^[\s_\-—–.:/]*$/;
 /** Boş yer tutucuları ("____", "—", "☐") ve bölüm işaretlerini ayıklar. */
 const temizle = (s) => String(s ?? "").replace(/[①②③④⑤⑥⑦⑧⑨■□☐☑→▸]/g, " ").replace(/_{2,}/g, " ").replace(/\s+/g, " ").trim();
@@ -118,6 +148,7 @@ export function isEmriMetniCoz(metin) {
   const bulunan = [];
   const degerler = {};
   const ekOzellikler = [];
+  const toleranslar = {};          // D, d, L, l1 → { metin, tek }
   const uretimOzellikleri = [];   // tablo için: İE'deki sırayla, ölçü olmayan + sayısal özellikler
   const bilgi = { ieNo: "", tarih: "", teslim: "", musteri: "", kalite: "", kaplama: "" };
   const gorulen = new Set();
@@ -140,6 +171,10 @@ export function isEmriMetniCoz(metin) {
     gorulen.add(k.kullanim);
     degerler[k.kullanim] = v;
     if (URETIM_ALANLARI.has(k.kullanim)) uretimOzellikleri.push([k.ad, ham]);
+    if (["D", "d", "L", "l1"].includes(k.kullanim)) {
+      const t = toleransAyikla(ham);
+      if (t) { toleranslar[k.kullanim] = { ...t, ad: k.ad }; bulunan.push({ etiket: `${k.ad} toleransı`, ham: t.metin, kullanim: "Tolerans" }); }
+    }
     bulunan.push({ etiket: k.ad, ham, kullanim: KULLANIM_AD[k.kullanim] || k.kullanim });
   });
 
@@ -203,7 +238,7 @@ export function isEmriMetniCoz(metin) {
   for (const [k, ad] of [["D", "Takım çapı"], ["d", "Şaft çapı"], ["L", "Takım boyu"]]) {
     if (!(degerler[k] > 0)) uyarilar.push(`${ad} bulunamadı: çizimde mevcut değer korundu, elle girin.`);
   }
-  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, uretimOzellikleri, bilgi, uyarilar };
+  return { tip, tipAdi, tipKodu: tipKodu || havsaKodu, degerler, bulunan, ekOzellikler, uretimOzellikleri, toleranslar, bilgi, uyarilar };
 }
 
 // İş emri etiketi → diş profili alanı (norm ile karşılaştırılır). Eşleme etiketlerin okunuşuna göredir:
@@ -321,11 +356,22 @@ export function isEmriParametreleri(sonuc, mevcut) {
   if (tip === "tslot") uyarilar.push("T-freze baş genişliği ve boğaz ölçüleri iş emrinde yok: varsayılan çizildi.");
   if (tip === "chamfer" && !(g.pahGenisligi > 0)) uyarilar.push("Pah ölçüsü iş emrinde yok: varsayılan pah çizildi.");
   if (!(g.l1 > 0) && tip !== "stepdrill") uyarilar.push("Kesici/helis boyu okunamadı: varsayılan kesici boy kullanıldı.");
-  uyarilar.push("Toleranslar iş emrinde yok: ölçü toleransları boş bırakıldı (Takım sekmesinden girin).");
   uyarilar.push("Helis yönü ve kesim yönü iş emrinde yok: Sağ varsayıldı.");
 
   // Toleransları, sapı ve soğutmayı temizle (önceki çalışmadan kalmasın)
   Object.assign(p, { tolD: "", told: "", tolL: "", toll1: "", toll2: "", tolNeck: "", tolTip: "", sapTipi: "HA", sapDuzUzunluk: 0, sapDuzDerinlik: 0, coolantHole: false });
+  // İE'de ölçünün yanında yazılı toleranslar (çap, şaft çapı, takım boyu, helis boyu); yazılmayanlar boş kalır
+  const tl = sonuc.toleranslar || {};
+  if (tl.D) { p.tolD = tl.D.metin; if (Array.isArray(p.steps) && p.steps[0]) p.steps[0].tolDia = tl.D.metin; }
+  if (tl.d) p.told = tl.d.metin;
+  if (tl.L) p.tolL = tl.L.metin;
+  if (tl.l1) p.toll1 = tl.l1.metin;
+  const tlListe = Object.values(tl);
+  if (tlListe.length === 0) uyarilar.push("Toleranslar iş emrinde yok: ölçü toleransları boş bırakıldı (Takım sekmesinden girin).");
+  else {
+    uyarilar.push(`Toleranslar iş emrinden okundu: ${tlListe.map((t) => `${t.ad} ${t.metin}`).join(", ")}. İş emrinde yazılmayan ölçülerin toleransı boş bırakıldı.`);
+    for (const t of tlListe) if (t.tek) uyarilar.push(`${t.ad} için tek yönlü sapma yazılmış: öbür sapma 0 sayıldı (${t.metin}); iş emriyle karşılaştırın.`);
+  }
   // Önceki çalışmanın belge bilgileri yeni resme taşınmasın (çizen ve sayfa tercihleri kalır)
   Object.assign(p, { drawingNo: "", revision: "", approvedBy: "", notes: [], stamp: "", stampDate: "" });
 
