@@ -275,3 +275,46 @@ Helis Açısı 35 °`;
     expect(p.tolD).toBe("+0,05/0");
   });
 });
+
+// İE-839 PDF'inden satır satır çıkan metin (müşteri kodu çıkarıldı): tolerans değerin ardından, ayrı parça olarak
+const IE839 = `TAKIM BİLGİSİ
+İŞ EMRİ
+Std. Havşalı Matkap (90°)
+İE-839
+921-1367/Ø15,9+Ø18
+TARİH TESLİM MÜŞTERİ ADET ÖNCELİK
+2026-11-18 2026-11-25 — 8 ACİL
+① KESİM Bitirince QR okut → ② TAŞLAMA (Opsiyonel) QR okut →
+Hammadde Çapı 18 Tezgâh Ref S22
+Kalitesi BM-1 Taşlama Çapı 15.9 mm +0,08
+Kesilecek Boy 80 mm Taşlama Boyu 10 mm +1
+Adet 8 Birim Süre* ____ dk
+■ BİTİŞ ■ BİTİŞ
+330'dan Çıkan 4 Toplam Süre* ____ sa
+③ ÜRETİM (CNC) Bitirince QR okut →
+TAKIM ÖZELLİKLERİ
+Çap 15,9 mm +0,08 Kademe Boyu 10 mm
+Şaft Çapı 18 mm Helis Boyu 30 mm
+Takım Boyu 80 mm Ağız Sayısı 2
+TEKNİK ÖZELLİKLER
+Helis Açısı 30 ° Kesme Açısı 8 ° ■ BİTİŞ
+Çekirdek Çapı 4.77 mm Uç Açısı 140 °
+Matkap Yüzey Gen. 0.795 mm Kademe Açısı 90 °
+④ KALİTE KONTROL QR okut → ⑥ KAPLAMA (Opsiyonel)
+Hatalı Adet ____ Firma P01
+Not Kaplama Çeşidi ALTİN
+Drag Finish ☐ Yok
+■ BİTİŞ`;
+
+describe("İE-839 (gerçek PDF metni, Ø15,9 +0,08)", () => {
+  const s = isEmriMetniCoz(IE839);
+  const { params: p } = isEmriParametreleri(s, DEFAULT_PARAMS);
+  it("çap 15,9 ve toleransı +0,08/0; taşlama bölümündeki değerler karışmaz", () => {
+    expect(s.degerler).toMatchObject({ D: 15.9, d: 18, L: 80, l1: 30, kademeBoyu: 10, havsaCap: 18 });
+    expect(Object.keys(s.toleranslar)).toEqual(["D"]);
+    expect(p.tolD).toBe("+0,08/0");
+    expect(p.steps[0]).toMatchObject({ dia: 15.9, len: 10, tolDia: "+0,08/0" });
+    expect(p.steps[1]).toMatchObject({ dia: 18, len: 20, tolDia: "" });
+    expect(p.told).toBe("");
+  });
+});
