@@ -157,9 +157,10 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
   // Ok yeri: sığıyorsa içte, sığmıyorsa dışta (çizgi dışa uzar)
   const icte = uzunluk >= 2 * OK.boy + 1.5;
   const uzat = icte ? 0 : OK.boy + 3;
-  // Yazı oklar arasına rahat sığmıyorsa ölçü çizgisinin uzantısına, okların dışına yazılır (ISO 129-1)
+  // Yatay ölçüde yazı oklar arasına rahat sığmıyorsa ölçü çizgisinin uzantısına, okların dışına yazılır (ISO 129-1).
+  // Dikey (çap) ölçüde yazı çizginin yanında durur, çizgiden uzun olsa da eksene ortalanır.
   const wYazi = olcuYaziGenisligi({ deger, onEk, tol, anma, referans });
-  const disari = uzunluk < wYazi + 2 * OK.boy + 2 ? (yaziYani === "lo" ? "lo" : "hi") : null;
+  const disari = yatay && uzunluk < wYazi + 2 * OK.boy + 2 ? (yaziYani === "lo" ? "lo" : "hi") : null;
   const YAZI_ARA = 1.2;
   const disUc = disari === "hi" ? hi + uzat + YAZI_ARA : lo - uzat - YAZI_ARA;   // yazının ölçüye yakın ucu
   const [cx1, cy1] = P(disari === "lo" ? disUc - wYazi - 0.5 : lo - uzat, k);
