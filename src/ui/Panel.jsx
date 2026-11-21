@@ -117,6 +117,8 @@ function Panel({ params, setParams, dimOff, kayitYukle, odak, isMobile, showPane
             {!kademeli && !ozel && <Sayi alan="l2" label="Boğaz boyu  l₂" value={params.l2} onChange={(v) => u("l2", v)} step={0.5} tol={params.toll2} onTol={(v) => u("toll2", v)} />}
             {!kademeli && !ozel && params.l2 > 0 && <Sayi alan="neckDia" label="Boğaz çapı" value={params.neckDia} onChange={(v) => u("neckDia", v)} step={0.1} hata={hata.neckDia} tol={params.tolNeck} onTol={(v) => u("tolNeck", v)} />}
             {!kademeli && !ozel && params.l2 > 0 && <Sayi label="Geçiş açısı" value={params.neckAngle} onChange={(v) => u("neckAngle", v)} step={5} unit="°" hata={hata.neckAngle} />}
+            {!kademeli && !ozel && params.l2 > 0 && <Secim label="Boğaz ölçüsü" value={params.bogazOlcu || "boyun"} onChange={(v) => u("bogazOlcu", v)}
+              secenekler={[["boyun", "Yalnız boğaz (l₂)"], ["uctan", "Uçtan boğaz başına (dalma, l₁+l₂)"]]} />}
             {tip === "taperreamer" && <Sayi alan="tipD" label="Uç çapı" value={params.tipD} onChange={(v) => u("tipD", v)} step={0.01} hata={hata.tipD} tol={params.tolTip} onTol={(v) => u("tolTip", v)} />}
             {kademeli && <div className="ipucu">Kesici boy ve çaplar kademelerden hesaplanır.</div>}
             {ozel && (<>
