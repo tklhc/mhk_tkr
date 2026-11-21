@@ -220,7 +220,7 @@ describe("İE-831 (Std. Havşalı Matkap)", () => {
     const kodsuz = IE831.replace("921-1513/Ø16,4+Ø18\n", "");
     const r = isEmriParametreleri(isEmriMetniCoz(kodsuz), DEFAULT_PARAMS);
     expect(r.params.steps[1].dia).toBe(18);
-    expect(r.uyarilar.some((u) => /Havşa çapı takım kodunda/.test(u))).toBe(true);
+    expect(r.uyarilar.some((u) => /2\. kademe çapı iş emrinde ve takım kodunda/.test(u))).toBe(true);
     const kisa = isEmriParametreleri(isEmriMetniCoz(IE831.replace("Helis Boyu 30 mm", "Helis Boyu 12 mm")), DEFAULT_PARAMS);
     expect(kisa.params.kademeOlcu).not.toBe("toplam");
     expect(kisa.uyarilar.some((u) => /kapsamıyor/.test(u))).toBe(true);
@@ -366,5 +366,79 @@ describe("yalnız ÜRETİM bölümü okunur", () => {
     expect(s3.kaynak).toBe("tum");
     expect(s3.degerler).toMatchObject({ D: 10, d: 10, L: 75 });
     expect(s3.uyarilar[0]).toMatch(/ÜRETİM bölümü başlığı bulunamadı/);
+  });
+});
+
+// ÜTS İE kağıdında ÜRETİM satırı "etiket değer birim"; tolerans değerin içinde parantezle yazılır: "9,5(-0,1) mm"
+const ieUret = (tip, satirlar) => `TAKIM BİLGİSİ\n${tip}\nİE-900\n③ ÜRETİM (CNC) Bitirince QR okut →\nTAKIM ÖZELLİKLERİ\n${satirlar}\n④ KALİTE KONTROL QR okut →`;
+const oku = (metin) => isEmriParametreleri(isEmriMetniCoz(metin), { ...DEFAULT_PARAMS });
+
+describe("boğaz ve kademe ölçüleri (ÜRETİM)", () => {
+  it("Boğaz Çapı ve Boğaz Boyu (helis hariç) toleranslarıyla okunur ve çizilir", () => {
+    const { params: p, uyarilar } = oku(ieUret("Aluminyum Freze",
+      "Takım Çapı 10 mm Boğaz Çapı 9,5(-0,1) mm\nŞaft Çapı 10 mm Boğaz Boyu 65(±0,5) mm\nTakım Boyu 110 mm Ağız Sayısı 3\nHelis Boyu 15 mm"));
+    expect(p.l2).toBe(65);
+    expect(p.neckDia).toBe(9.5);
+    expect(p.tolNeck).toBe("0/-0,1");
+    expect(p.toll2).toBe("±0,5");
+    expect(p.bogazOlcu).toBe("boyun");
+    const g = takimProfili(p);
+    expect(g.hatalar).toEqual([]);
+    expect(g.x.boyunSonu - g.x.gecisSonu).toBeCloseTo(65, 6);
+    expect(uyarilar.join(" ")).toMatch(/Boğaz: 65 mm/);
+  });
+
+  it("Dalma Boyu uçtan ölçülür: boğaz = dalma − helis boyu, ölçü kipi 'uctan'", () => {
+    const { params: p } = oku(ieUret("Aluminyum Freze",
+      "Takım Çapı 12 mm Boğaz Çapı 11,5 mm\nŞaft Çapı 12 mm Dalma Boyu 105 mm\nTakım Boyu 145 mm Helis Boyu 30 mm"));
+    expect(p.l2).toBe(75);
+    expect(p.neckDia).toBe(11.5);
+    expect(p.bogazOlcu).toBe("uctan");
+  });
+
+  it("Boğaz Boyu ile Dalma Boyu birlikteyse boğaz boyu çizilir, tutarlıysa uyarı yok", () => {
+    const { params: p, uyarilar } = oku(ieUret("Chatter Free Freze",
+      "Takım Çapı 16 mm Boğaz Çapı 11,80(-0,1) mm\nŞaft Çapı 16 mm Boğaz Boyu 35 mm\nTakım Boyu 92 mm Dalma Boyu 54 mm\nHelis Boyu 19 mm Boğaz Çıkış Açısı 30 °"));
+    expect(p.l2).toBe(35);
+    expect(p.neckAngle).toBe(30);
+    expect(uyarilar.join(" ")).not.toMatch(/eşit değil/);
+  });
+
+  it("Boğaz boyu olmadan yalnız boğaz çapı varsa boğaz çizilmez ve söylenir", () => {
+    const { params: p, uyarilar } = oku(ieUret("Std. Freze", "Takım Çapı 12 mm Boğaz Çapı 7 mm\nŞaft Çapı 12 mm Takım Boyu 82 mm\nHelis Boyu 27 mm"));
+    expect(p.l2).toBe(0);
+    expect(uyarilar.join(" ")).toMatch(/boğaz ya da dalma boyu yok/);
+  });
+
+  it("'Havşalı Matkap' (kısa ad) kademeli matkap olarak okunur; Kademe Boyu ve Kademe Çapı toleransları kademelere gider", () => {
+    const { params: p } = oku(ieUret("Havşalı Matkap",
+      "Çap 9 mm Kademe Çapı 11,5(±0,02) mm\nŞaft Çapı 12 mm Takım Boyu 82 mm\nKademe Boyu 10(±0,1) mm Helis Boyu 30 mm"));
+    expect(p.toolType).toBe("stepdrill");
+    expect(p.steps[1].dia).toBe(11.5);
+    expect(p.steps[1].tolDia).toBe("±0,02");
+    expect(p.steps[0].tolLen).toBe("±0,1");
+    expect(p.steps[1].angle).toBe(90);
+  });
+
+  it("Kademeli Matkap (180°): 2.Kademe Çapı okunur, kademe açısı 180°", () => {
+    const { params: p } = oku(ieUret("Kademeli Matkap (180°)",
+      "Çap 18(+0,08) mm 2.Kademe Çapı 23,2(+0,08) mm\nŞaft Çapı 25 mm Takım Boyu 120 mm\nKademe Boyu 10 mm Helis Boyu 40 mm"));
+    expect(p.toolType).toBe("stepdrill");
+    expect(p.steps.map((s) => s.dia)).toEqual([18, 23.2]);
+    expect(p.steps[1].angle).toBe(180);
+    expect(p.steps[0].tolDia).toBe("+0,08/0");
+    expect(p.steps[1].tolDia).toBe("+0,08/0");
+  });
+
+  it("kademeler okunamazsa varsayılan kademe toleransları (±0.01) resme taşınmaz", () => {
+    const { params: p } = oku(ieUret("Kademeli Matkap", "Çap 9 mm Şaft Çapı 12 mm\nTakım Boyu 82 mm"));
+    expect(p.steps.every((s) => s.tolDia === "" && s.tolLen === "")).toBe(true);
+  });
+
+  it("1./3. kademe etiketleri 'Kademe Çapı/Boyu' ile karışmaz", () => {
+    const s = isEmriMetniCoz(ieUret("Rayba", "Takım Çapı 7,5 mm 1.Kademe Boyu 7,79 mm\n3.Kademe Çapı 15,9 mm 2.Kademe Çapı 11,2 mm\nŞaft Çapı 16 mm Takım Boyu 200 mm"));
+    expect(s.degerler.kademeBoyu).toBeUndefined();
+    expect(s.degerler.kademeCap).toBe(11.2);
+    expect(s.ekOzellikler.map(([a]) => a)).toEqual(expect.arrayContaining(["1.Kademe Boyu", "3.Kademe Çapı"]));
   });
 });

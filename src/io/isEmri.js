@@ -33,6 +33,10 @@ const CIZIM = [
   ["Kademe Boyu", "kademeBoyu"], ["Köşe Radyusu", "rCorner"], ["Köşe Radyüsü", "rCorner"], ["Uç Açısı", "pointAngle"],
   ["1.Pah Genişliği", "pahGenisligi"], ["Pah Genişliği", "pahGenisligi"],
   ["Küre Radyusu", "kureRadyusu"], ["Küre Radyüsü", "kureRadyusu"],
+  // Boğaz: "Boğaz Boyu" helis hariç yalnız boğazın boyudur, "Dalma Boyu" uçtan boğaz sonuna kadar (erişim boyu)
+  ["Boğaz Çapı", "neckDia"], ["Boğaz Boyu", "neckLen"], ["Dalma Boyu", "dalma"], ["Boğaz Çıkış Açısı", "neckAngle"],
+  // Kademeli / havşalı matkabın 2. (büyük) kademe çapı
+  ["Kademe Çapı", "kademeCap"], ["2.Kademe Çapı", "kademeCap"],
 ];
 // Çizilmeyen ama üretim için değerli teknik özellikler (ÜTS takım tipi şablonları + ekran yazımları)
 const EK = [
@@ -40,13 +44,18 @@ const EK = [
   "Gashing Çarpması", "Kısa Diş Genişliği", "Alın Açısı", "Alın Kaçıklığı", "1.Alın SY. Açısı", "2.Alın SY. Açısı", "3.Alın SY. Açısı",
   "1.Alın Açısı", "2.Alın Açısı", "1. Serbest Yüzey Gen.", "2.Serb. Yüzey Gen.", "2. Serbest Yüzey Gen.", "Matkap Yüzey Gen.",
   "Kademe Açısı", "1.Kademe Açısı", "2.Kademe Açısı", "Kanal Talaş Açısı", "Talaş Yüzey Boyunca Radyus", "Pah Açısı",
-  "1.SY Genişliği", "2.SY Genişliği",
+  "1.SY Genişliği", "2.SY Genişliği", "Boğaz Çıkışı",
+  // Çok kademeli takımların ayrı kademe ölçüleri: çizilmez, tabloya gider ("Kademe Çapı/Boyu" ile karışmasın diye ayrı etiket)
+  "1.Kademe Çapı", "3.Kademe Çapı", "4.Kademe Çapı", "Konik Kademe Çapı",
+  "1.Kademe Boyu", "2.Kademe Boyu", "3.Kademe Boyu", "4.Kademe Boyu",
+  // ÜRETİM bölümünde de yazılabilir (ör. "Taşlama Boyu 120 (Koniklik)"); Taşlama bölümündekiler zaten okunmaz
+  "Taşlama Çapı", "Taşlama Boyu",
 ];
 const AYIRICI = [
   "Hammadde Çapı", "Kalitesi", "Kesilecek Boy", "330'dan Çıkan", "Adet", "Hatalı Adet", "Firma", "Kaplama Çeşidi", "Drag Finish", "Not",
   "Takım Özellikleri", "Teknik Özellikler", "Kalite Kontrol", "Kaplama", "Üretim", "Kesim", "Bitirince QR okut", "QR okut", "Bitiş",
   "Tarih", "Teslim", "Müşteri", "Öncelik", "Takım Bilgisi", "İş Emri",
-  "Tezgâh Ref", "Taşlama Çapı", "Taşlama Boyu", "Birim Süre", "Toplam Süre", "Opsiyonel",
+  "Tezgâh Ref", "Birim Süre", "Toplam Süre", "Opsiyonel",
 ];
 
 // İş emri kağıdının bölüm başlıkları: "③ ÜRETİM (CNC) Bitirince QR okut →", "② TAŞLAMA (Opsiyonel) QR okut →"
@@ -87,7 +96,7 @@ const ETIKETLER = [
 
 // Takım tipi adları (ÜTS) → çizim tipi. Sıra önemli: özel olan önce.
 const TIPLER = [
-  ["std\\.?\\s*havsali\\s*matkap", "stepdrill"], ["cok\\s*kademeli\\s*matkap", "stepdrill"], ["kademeli\\s*matkap", "stepdrill"],
+  ["(?:std\\.?\\s*)?havsali\\s*matkap", "stepdrill"], ["cok\\s*kademeli\\s*matkap", "stepdrill"], ["kademeli\\s*matkap", "stepdrill"],
   ["konik\\s*rayba", "taperreamer"], ["rayba", "reamer"],
   ["chatter\\s*free\\s*freze", "flat"], ["kure\\s*freze", "ballnose"], ["radyus(?:lu)?\\s*freze", "bullnose"],
   ["aluminyum\\s*freze", "flat"], ["pah\\s*freze", "chamfer"], ["t\\s*-?\\s*freze", "tslot"],
@@ -144,6 +153,8 @@ const KULLANIM_AD = {
   D: "Kesici çap (D)", d: "Sap çapı (d)", L: "Toplam boy (L)", l1: "Kesici boy (l₁)", z: "Diş sayısı (z)",
   helix: "Helis açısı", dCore: "Çekirdek çapı (dc)", kosePahi: "Köşe pahı", rCorner: "Köşe radyüsü (R)",
   pointAngle: "Uç açısı", kademeBoyu: "Kademe boyu (uç konisinden havşaya)", havsaCap: "Havşa çapı (takım kodundan)", pahGenisligi: "Giriş pahı", kureRadyusu: "Küre radyüsü (D/2 ile karşılaştırılır)",
+  neckDia: "Boğaz çapı", neckLen: "Boğaz boyu (l₂, helis hariç)", dalma: "Dalma boyu (uçtan boğaz sonuna)", neckAngle: "Boğaz çıkış (geçiş) açısı",
+  kademeCap: "2. kademe çapı",
 };
 
 /**
@@ -209,7 +220,7 @@ export function isEmriMetniCoz(metin) {
     gorulen.add(k.kullanim);
     degerler[k.kullanim] = v;
     if (URETIM_ALANLARI.has(k.kullanim)) uretimOzellikleri.push([k.ad, ham]);
-    if (["D", "d", "L", "l1", "kademeBoyu"].includes(k.kullanim)) {
+    if (["D", "d", "L", "l1", "kademeBoyu", "neckDia", "neckLen", "dalma", "kademeCap"].includes(k.kullanim)) {
       const t = toleransAyikla(ham);
       if (t) { toleranslar[k.kullanim] = { ...t, ad: k.ad }; bulunan.push({ etiket: `${k.ad} toleransı`, ham: t.metin, kullanim: "Tolerans" }); }
     }
@@ -321,19 +332,26 @@ const gecerliTarih = (s) => {
  */
 function havsaliKademeleri(sonuc, p) {
   const g = sonuc.degerler;
-  if (!/havsali/.test(norm(sonuc.tipAdi))) return { steps: null, notlar: [] };
-  if (!(g.kademeBoyu > 0)) return { steps: null, notlar: ["Havşalı matkapta 'Kademe Boyu' okunamadı."] };
-  if (!(g.l1 > 0)) return { steps: null, notlar: ["Havşalı matkapta kesici (helis) boyu okunamadı."] };
+  const ad = norm(sonuc.tipAdi);
+  const havsali = /havsali/.test(ad);
+  if (!havsali && !/kademeli\s*matkap/.test(ad)) return { steps: null, notlar: [] };
+  const tur = havsali ? "Havşalı matkap" : "Kademeli matkap";
+  if (!(g.kademeBoyu > 0)) return { steps: null, notlar: [`${tur}ta 'Kademe Boyu' okunamadı.`] };
+  if (!(g.l1 > 0)) return { steps: null, notlar: [`${tur}ta kesici (helis) boyu okunamadı.`] };
   const notlar = [];
   const D = p.D, ucAci = p.pointAngle > 0 ? p.pointAngle : 140;
   const aciOz = (sonuc.ekOzellikler || []).find(([a]) => norm(a).replace(/[\s.]/g, "") === "kademeacisi");
-  const havsaAci = (aciOz && sayiOku(aciOz[1])) || 90;
-  let havsaCap = g.havsaCap;
+  // Kademe açısı yazılmamışsa: havşalıda 90°, kademeli matkapta 180° (düz omuz; ÜTS tip adı "Kademeli Matkap (180°)")
+  const havsaAci = (aciOz && sayiOku(aciOz[1])) || (havsali ? 90 : 180);
+  // 2. kademe çapı: önce ÜRETİM'deki "Kademe Çapı / 2.Kademe Çapı", yoksa takım kodu (Ø…+Ø…), o da yoksa şaft çapı
+  let havsaCap = g.kademeCap > 0 ? g.kademeCap : g.havsaCap;
   if (!(havsaCap > 0)) {
     havsaCap = g.d;
-    notlar.push(`Havşa çapı takım kodunda (Ø…+Ø…) okunamadı: şaft çapı (${havsaCap}) kullanıldı; kontrol edin.`);
+    notlar.push(`2. kademe çapı iş emrinde ve takım kodunda (Ø…+Ø…) okunamadı: şaft çapı (${havsaCap}) kullanıldı; kontrol edin.`);
+  } else if (g.kademeCap > 0 && g.havsaCap > 0 && Math.abs(g.kademeCap - g.havsaCap) > 1e-6) {
+    notlar.push(`2. kademe çapı (${g.kademeCap}) takım kodundakinden (${g.havsaCap}) farklı: ÜRETİM'deki değer çizildi.`);
   } else if (g.d > 0 && Math.abs(havsaCap - g.d) > 1e-6) {
-    notlar.push(`Havşa çapı (${havsaCap}) şaft çapından (${g.d}) farklı: koddaki değer çizildi.`);
+    notlar.push(`2. kademe çapı (${havsaCap}) şaft çapından (${g.d}) farklı.`);
   }
   const koni = D / 2 / Math.tan((ucAci / 2) * Math.PI / 180);
   const len1 = g.kademeBoyu;
@@ -341,7 +359,7 @@ function havsaliKademeleri(sonuc, p) {
   const rampa = (havsaCap - D) / 2 / Math.tan((havsaAci / 2) * Math.PI / 180);
   if (!(havsaCap > D)) return { steps: null, notlar: [...notlar, `Havşa çapı (${havsaCap}) kesici çaptan (${D}) büyük değil: kademeler çizilemedi.`] };
   if (!(len2 - koni > rampa)) return { steps: null, notlar: [...notlar, `Helis boyu (${g.l1}) kademe boyu (${len1}), uç konisi (${koni.toFixed(2)}) ve havşa geçişini (${rampa.toFixed(2)}) kapsamıyor: kademeler çizilemedi.`] };
-  notlar.push(`Havşalı matkap: Ø${D} bölümü uç konisinden sonra ${g.kademeBoyu} mm, ardından ${havsaAci}° havşa ile Ø${havsaCap}; helis boyu ${g.l1} mm uçtan ölçülür (iki çapı birlikte kapsar). Kontrol edin.`);
+  notlar.push(`${tur}: Ø${D} bölümü uç konisinden sonra ${g.kademeBoyu} mm, ardından ${havsaAci}° kademe ile Ø${havsaCap}; helis boyu ${g.l1} mm uçtan ölçülür (iki çapı birlikte kapsar). Kontrol edin.`);
   return {
     steps: [
       { dia: D, len: len1, angle: ucAci, tolDia: "", tolLen: "" },
@@ -394,24 +412,58 @@ export function isEmriParametreleri(sonuc, mevcut) {
       uyarilar.push("Kademe çapları ve boyları iş emrinde yok: iki kademeli varsayılan çizildi. Takım sekmesinden kademeleri girin.");
     }
   }
+  // Boğaz: "Boğaz Boyu" helis hariç yalnız boğazdır (l₂); "Dalma Boyu" uçtan boğaz sonuna ölçülür (l₂ = dalma − helis boyu)
+  p.bogazOlcu = "boyun";
+  const bogazBoyuVar = g.neckLen > 0 || g.dalma > 0;
+  if ((bogazBoyuVar || g.neckDia > 0 || g.neckAngle > 0) && tip === "stepdrill") {
+    uyarilar.push("Boğaz ölçüleri kademeli matkapta çizilmez; üretim özellikleri tablosuna bakın.");
+  } else if (bogazBoyuVar || g.neckDia > 0) {
+    let l2 = 0;
+    if (g.neckLen > 0) {
+      l2 = g.neckLen;
+      if (g.dalma > 0 && Math.abs(p.l1 + g.neckLen - g.dalma) > 0.01) uyarilar.push(`Dalma boyu (${g.dalma}) helis boyu + boğaz boyuna (${p.l1} + ${g.neckLen}) eşit değil: boğaz boyu çizildi; kontrol edin.`);
+    } else if (g.dalma > 0) {
+      l2 = Math.round((g.dalma - p.l1) * 1000) / 1000;
+      if (l2 > 0) p.bogazOlcu = "uctan";
+      else { uyarilar.push(`Dalma boyu (${g.dalma}) helis boyundan (${p.l1}) uzun değil: boğaz çizilmedi.`); l2 = 0; }
+    } else {
+      uyarilar.push(`Boğaz çapı (${g.neckDia}) var ama boğaz ya da dalma boyu yok: boğaz çizilmedi; Takım sekmesinden boğaz boyunu girin.`);
+    }
+    p.l2 = l2;
+    if (l2 > 0) {
+      if (g.neckDia > 0) p.neckDia = g.neckDia;
+      else uyarilar.push(`Boğaz çapı iş emrinde yok: varsayılan Ø${p.neckDia} çizildi; kontrol edin.`);
+      if (g.neckAngle > 0 && g.neckAngle < 90) p.neckAngle = g.neckAngle;
+      else if (g.neckAngle > 0) uyarilar.push(`Boğaz çıkış açısı (${g.neckAngle}°) 0–90° dışında: ${p.neckAngle}° çizildi.`);
+      else if (p.d > p.neckDia) uyarilar.push(`Boğaz çıkış açısı iş emrinde yok: geçiş ${p.neckAngle}° çizildi.`);
+      uyarilar.push(p.bogazOlcu === "uctan"
+        ? `Boğaz: dalma boyu ${g.dalma} mm uçtan ölçüldü (boğaz = ${g.dalma} − helis ${p.l1} = ${l2} mm), Ø${p.neckDia}.`
+        : `Boğaz: ${l2} mm (helis hariç, yalnız boğaz), Ø${p.neckDia}.`);
+    }
+  }
   if (tip === "taperreamer") uyarilar.push("Koniklik ve uç çapı iş emrinde yok: 1:50 varsayılan çizildi. Takım sekmesinden uç çapını girin.");
-  if (tip === "tslot") uyarilar.push("T-freze baş genişliği ve boğaz ölçüleri iş emrinde yok: varsayılan çizildi.");
+  if (tip === "tslot") uyarilar.push(bogazBoyuVar ? "T-freze baş genişliği iş emrinde yok: helis boyu baş kalınlığı olarak çizildi." : "T-freze baş genişliği ve boğaz ölçüleri iş emrinde yok: varsayılan çizildi.");
   if (tip === "chamfer" && !(g.pahGenisligi > 0)) uyarilar.push("Pah ölçüsü iş emrinde yok: varsayılan pah çizildi.");
   if (!(g.l1 > 0) && tip !== "stepdrill") uyarilar.push("Kesici/helis boyu okunamadı: varsayılan kesici boy kullanıldı.");
   uyarilar.push("Helis yönü ve kesim yönü iş emrinde yok: Sağ varsayıldı.");
 
   // Toleransları, sapı ve soğutmayı temizle (önceki çalışmadan kalmasın)
   Object.assign(p, { tolD: "", told: "", tolL: "", toll1: "", toll2: "", tolNeck: "", tolTip: "", sapTipi: "HA", sapDuzUzunluk: 0, sapDuzDerinlik: 0, coolantHole: false });
+  if (Array.isArray(p.steps)) p.steps = p.steps.map((s) => ({ ...s, tolDia: "", tolLen: "" }));   // varsayılan kademe toleransları resme sızmasın
   // İE'de ölçünün yanında yazılı toleranslar (çap, şaft çapı, takım boyu, helis boyu); yazılmayanlar boş kalır
   const tl = sonuc.toleranslar || {};
   if (tl.D) { p.tolD = tl.D.metin; if (Array.isArray(p.steps) && p.steps[0]) p.steps[0].tolDia = tl.D.metin; }
   if (tl.d) p.told = tl.d.metin;
   if (tl.L) p.tolL = tl.L.metin;
   if (tl.l1) p.toll1 = tl.l1.metin;
-  if (tl.kademeBoyu) {
-    if (tip === "stepdrill" && Array.isArray(p.steps) && p.steps[0] && p.kademeOlcu === "toplam") p.steps[0].tolLen = tl.kademeBoyu.metin;
-    else uyarilar.push(`Kademe boyu toleransı (${tl.kademeBoyu.metin}) bu çizimde bir ölçüye bağlanamadı; Takım sekmesinden girin.`);
-  }
+  const baglanamadi = (t) => uyarilar.push(`${t.ad} toleransı (${t.metin}) bu çizimde bir ölçüye bağlanamadı; Takım sekmesinden girin.`);
+  const havsaliCizim = tip === "stepdrill" && Array.isArray(p.steps) && p.steps.length >= 2 && p.kademeOlcu === "toplam";
+  if (tl.kademeBoyu) { if (havsaliCizim) p.steps[0].tolLen = tl.kademeBoyu.metin; else baglanamadi(tl.kademeBoyu); }
+  if (tl.kademeCap) { if (havsaliCizim) p.steps[1].tolDia = tl.kademeCap.metin; else baglanamadi(tl.kademeCap); }
+  if (tl.neckDia) { if (p.l2 > 0 && tip !== "stepdrill") p.tolNeck = tl.neckDia.metin; else baglanamadi(tl.neckDia); }
+  const l2Tol = p.bogazOlcu === "uctan" ? tl.dalma : tl.neckLen;
+  if (l2Tol && p.l2 > 0 && tip !== "stepdrill") p.toll2 = l2Tol.metin;
+  for (const t of [tl.neckLen, tl.dalma]) if (t && t !== (p.l2 > 0 && tip !== "stepdrill" ? l2Tol : null)) baglanamadi(t);
   const tlListe = Object.values(tl);
   if (tlListe.length === 0) uyarilar.push("Toleranslar iş emrinde yok: ölçü toleransları boş bırakıldı (Takım sekmesinden girin).");
   else {

@@ -132,7 +132,7 @@ export function OlcuYazisi({ x, y, deger, onEk = "", tol, anma, dondur = false, 
  * Sürüklenince yalnız ölçü çizgisinin yeri değişir; yardımcı çizgiler uzar/kısalır.
  * referans: başka ölçülerden hesaplanan ölçü, parantez içinde yazılır.
  */
-export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false, yaziYani = "hi", yaziSagda = false }) {
+export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id, offsets, setOffsets, alan, referans = false, yaziYani = "hi", yaziSagda = false, dikeyDisari = false }) {
   const yatay = yon === "yatay";
   const { off, olaylar } = useSurukle(id, offsets, setOffsets, yatay ? "y" : "x");
   const k = konum + (yatay ? off.dy : off.dx);
@@ -160,9 +160,10 @@ export function Olcu({ p1, p2, yon = "yatay", konum, deger, onEk, tol, anma, id,
   const icte = uzunluk >= 2 * OK.boy + 1.5;
   const uzat = icte ? 0 : OK.boy + 3;
   // Yatay ölçüde yazı oklar arasına rahat sığmıyorsa ölçü çizgisinin uzantısına, okların dışına yazılır (ISO 129-1).
-  // Dikey (çap) ölçüde yazı çizginin yanında durur, çizgiden uzun olsa da eksene ortalanır.
+  // Dikey (çap) ölçüde yazı çizginin yanında durur, çizgiden uzun olsa da eksene ortalanır;
+  // dikeyDisari (ör. parçanın içindeki boğaz çapı): sığmayan yazı çizginin uzantısına, parçanın dışına (varsayılan aşağı; "lo" yukarı).
   const wYazi = olcuYaziGenisligi({ deger, onEk, tol, anma, referans });
-  const disari = yatay && uzunluk < wYazi + 2 * OK.boy + 2 ? (yaziYani === "lo" ? "lo" : "hi") : null;
+  const disari = (yatay || dikeyDisari) && uzunluk < wYazi + 2 * OK.boy + 2 ? (yaziYani === "lo" ? "lo" : "hi") : null;
   const YAZI_ARA = 1.2;
   const disUc = disari === "hi" ? hi + uzat + YAZI_ARA : lo - uzat - YAZI_ARA;   // yazının ölçüye yakın ucu
   const [cx1, cy1] = P(disari === "lo" ? disUc - wYazi - 0.5 : lo - uzat, k);

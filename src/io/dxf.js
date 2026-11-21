@@ -122,7 +122,9 @@ function generateDXF(params) {
     olcuYatay(0, -hd, L, -hD, yAlt - (stepdrill ? 7 : 14), olcuMetni(L, { tol: params.tolL, anma: L }));
   }
   if (g.l2 > 0 && params.showDiml2 !== false) {
-    olcuYatay(g.x.gecisSonu, hD, g.x.boyunSonu, hD, hmax + 7, olcuMetni(g.l2, { tol: params.toll2, anma: g.l2 }));
+    const uctan = params.bogazOlcu === "uctan";   // dalma boyu: uçtan boğaz başına (l₁ + l₂)
+    const deger = uctan ? Math.round((g.l1 + g.l2) * 1000) / 1000 : g.l2;
+    olcuYatay(g.x.gecisSonu, hD, uctan ? L : g.x.boyunSonu, hD, hmax + 7, olcuMetni(deger, { tol: params.toll2, anma: deger }));
   }
   if (!stepdrill && params.showDimD !== false) {
     olcuDikey(L, hD, L, -hD, L + 10, olcuMetni(D, { onEk: "⌀", tol: params.tolD, anma: D }));

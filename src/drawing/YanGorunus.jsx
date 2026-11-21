@@ -150,9 +150,12 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   }
 
   // Üst: boğaz boyu (l2) ya da kademe boyları
+  // "uctan": iş emrindeki dalma boyu gibi uçtan boğaz başına tek ölçü (l₁ + l₂)
   if (g.l2 > 0 && params.showDiml2) {
-    e.push(<Olcu key="dl2" id="dl2" alan="l2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(g.x.boyunSonu), Y(yaricapAt(g, g.x.boyunSonu))]}
-      konum={ust - OLCU_SATIR} deger={g.l2} tol={params.toll2} anma={g.l2} {...ek} />);
+    const uctan = params.bogazOlcu === "uctan";
+    const x2 = uctan ? g.L : g.x.boyunSonu, deger = uctan ? Math.round((g.l1 + g.l2) * 1000) / 1000 : g.l2;
+    e.push(<Olcu key="dl2" id="dl2" alan="l2" yon="yatay" p1={[X(g.x.gecisSonu), Y(yaricapAt(g, g.x.gecisSonu))]} p2={[X(x2), Y(yaricapAt(g, x2))]}
+      konum={ust - OLCU_SATIR} deger={deger} tol={params.toll2} anma={deger} {...ek} />);
   }
   // Havşalı matkap ("toplam"): 1. kademenin boyu uç konisi bittiği yerden havşa başlangıcına (alt satır),
   // kesici (helis) boyu uçtan tek ölçü (üst satır). Diğer kademelerin boyu ayrı gösterilmez;
@@ -231,7 +234,7 @@ export function YanGorunus({ params, yerlesim, dimOff, setDimOff }) {
   if (g.l2 > 0 && params.showDimNeck) {
     const xm = (g.x.gecisSonu + g.x.boyunSonu) / 2;
     e.push(<Olcu key="dN" id="dN" alan="neckDia" yon="dikey" p1={[X(xm), Y(hN)]} p2={[X(xm), Y(-hN)]}
-      konum={X(xm)} deger={g.nD} onEk="⌀" tol={params.tolNeck} anma={g.nD} {...ek} />);
+      konum={X(xm)} dikeyDisari deger={g.nD} onEk="⌀" tol={params.tolNeck} anma={g.nD} {...ek} />);
   }
 
   // Sap düzlüğü (HB/HE): uzunluk ölçüsü ve tip etiketi

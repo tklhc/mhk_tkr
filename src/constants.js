@@ -20,6 +20,7 @@ const DEFAULT_PARAMS = {
   l2: 0, toll2: "",
   neckDia: 8.5, tolNeck: "",
   neckAngle: 45,
+  bogazOlcu: "boyun",   // boğaz boyu ölçüsü: "boyun" yalnız boğaz (l₂) | "uctan" uçtan boğaz sonuna (dalma boyu = l₁ + l₂)
   z: 4,
   helix: 30,
   helixHand: "Sağ",
